@@ -1,0 +1,23 @@
+{
+  "prdPath": "/root/.claude/requirements/2025-08-15-0802-contracts-only/",
+  "projectName": "ContractsOnly",
+  "projectType": "webapp",
+  "initDate": "2025-08-15T08:30:00Z",
+  "implementationStatus": "initializing",
+  "techStack": {
+    "frontend": "Next.js 15",
+    "backend": "Next.js API Routes",
+    "database": "Supabase PostgreSQL",
+    "auth": "NextAuth.js",
+    "payments": "Stripe (feature-flagged)",
+    "analytics": "Google Analytics 4",
+    "styling": "Tailwind CSS",
+    "deployment": "Vercel"
+  },
+  "features": {
+    "authentication": true,
+    "payments": "feature-flagged",
+    "analytics": true,
+    "freeTier": true
+  }
+}
