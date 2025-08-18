@@ -1,5 +1,5 @@
 {
-  "prdPath": "/root/.claude/requirements/2025-08-15-0802-contracts-only/",
+  "prdPath": "./.claude/requirements/",
   "projectName": "ContractsOnly",
   "projectType": "webapp",
   "initDate": "2025-08-15T08:30:00Z",

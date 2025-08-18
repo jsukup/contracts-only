@@ -1,0 +1,30 @@
+{
+  "id": "contracts-only",
+  "projectName": "ContractsOnly",
+  "projectType": "webapp",
+  "exampleUrl": "https://4dayweek.io/",
+  "started": "2025-08-15T08:02:00Z",
+  "lastUpdated": "2025-08-15T08:02:00Z",
+  "status": "active",
+  "phase": "complete",
+  "progress": {
+    "exampleAnalysis": { "completed": false },
+    "discovery": { "answered": 5, "total": 5 },
+    "detail": { "answered": 5, "total": 5 },
+    "taskBreakdown": { "generated": true },
+    "implementation": { "generated": true }
+  },
+  "exampleAnalysis": {
+    "techStack": ["React/Next.js", "Node.js", "PostgreSQL/MySQL", "Elasticsearch"],
+    "keyFeatures": ["advanced-search", "company-profiles", "email-alerts", "job-filtering", "responsive-design"],
+    "performanceMetrics": {
+      "loadTime": "fast",
+      "userBase": "400k+ newsletter subscribers"
+    },
+    "designPatterns": ["card-layout", "faceted-search", "mobile-first", "clean-typography"]
+  },
+  "contextFiles": [],
+  "relatedFeatures": [],
+  "autonomousTasks": 0,
+  "userInterventionTasks": 0
+}
