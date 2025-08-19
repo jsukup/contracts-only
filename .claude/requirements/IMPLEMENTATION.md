@@ -54,6 +54,45 @@
 - [ ] Set up dark mode support (optional)
 - [ ] Create loading and error states
 
+### 1.5 Directory Structure Fix [AUTONOMOUS] - **CRITICAL PRIORITY**
+⚠️ **BLOCKING ISSUE**: Jobs page shows white screen due to Next.js App Router structure mismatch
+
+- [ ] Create missing utility functions
+  ```bash
+  # Create /src/lib/utils.ts with className merging function
+  npm install clsx tailwind-merge
+  ```
+  - Add `cn()` function for className merging with clsx and tailwind-merge
+  - Add proper TypeScript types and exports
+
+- [ ] Fix App Router directory structure (CRITICAL)
+  ```bash
+  # Move misplaced directories to correct Next.js App Router structure
+  mv app/jobs/ src/app/jobs/
+  mv app/api/jobs/ src/app/api/jobs/
+  mv app/api/applications/ src/app/api/applications/
+  mv app/api/profile/ src/app/api/profile/
+  mv app/api/skills/ src/app/api/skills/
+  ```
+
+- [ ] Move component directory
+  ```bash
+  mv components/ src/components/
+  ```
+
+- [ ] Fix import paths in all moved files
+  - Update `@/lib/auth` imports to reference `/src/lib/auth`
+  - Update `@/lib/prisma` imports to reference `/src/lib/prisma`  
+  - Update `@/lib/utils` imports to reference new utils file
+  - Update all `@/components/*` imports to new structure
+  - Fix relative import paths in API routes
+
+- [ ] Verify Next.js configuration
+  - Ensure `@/` alias points to `/src/` directory in tsconfig.json
+  - Check Tailwind CSS can access moved components
+  - Test that `/jobs` route resolves correctly
+  - Verify API routes are accessible
+
 ## Phase 2: Core User Features (Week 2)
 
 ### 2.1 User Profile Management [AUTONOMOUS]
