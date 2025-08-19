@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { EmailService } from '@/lib/email'
+import { authOptions } from '@/app/api/auth/[...nextauth]/route'
 
 export async function POST(
   req: NextRequest,
@@ -10,92 +11,149 @@ export async function POST(
   try {
     const session = await getServerSession(authOptions)
     
-    if (!session?.user?.email) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
-    })
-    
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
-    }
-    
+
+    const { jobId } = params
+    const body = await req.json()
+    const { coverLetter, expectedRate, availableStartDate } = body
+
     // Check if job exists and is active
     const job = await prisma.job.findUnique({
-      where: { 
-        id: params.jobId,
-        isActive: true,
-        expiresAt: {
-          gte: new Date()
-        }
-      }
+      where: { id: jobId },
+      include: { user: true }
     })
-    
+
     if (!job) {
+      return NextResponse.json({ error: 'Job not found' }, { status: 404 })
+    }
+
+    if (job.status !== 'active') {
       return NextResponse.json(
-        { error: 'Job not found or no longer accepting applications' },
-        { status: 404 }
+        { error: 'This job is no longer accepting applications' },
+        { status: 400 }
       )
     }
-    
-    // Check if user has already applied
-    const existingApplication = await prisma.jobApplication.findUnique({
+
+    if (job.userId === session.user.id) {
+      return NextResponse.json(
+        { error: 'You cannot apply to your own job posting' },
+        { status: 400 }
+      )
+    }
+
+    // Check if user already applied
+    const existingApplication = await prisma.application.findFirst({
       where: {
-        jobId_userId: {
-          jobId: params.jobId,
-          userId: user.id
-        }
+        jobId,
+        userId: session.user.id
       }
     })
-    
+
     if (existingApplication) {
       return NextResponse.json(
         { error: 'You have already applied to this job' },
-        { status: 409 }
+        { status: 400 }
       )
     }
-    
+
     // Create application
-    const application = await prisma.jobApplication.create({
+    const application = await prisma.application.create({
       data: {
-        jobId: params.jobId,
-        userId: user.id,
-        status: 'PENDING'
+        jobId,
+        userId: session.user.id,
+        coverLetter: coverLetter?.trim(),
+        expectedRate: expectedRate ? parseInt(expectedRate) : null,
+        availableStartDate: availableStartDate ? new Date(availableStartDate) : null,
+        status: 'pending'
       },
       include: {
-        job: {
-          select: {
-            title: true,
-            company: true,
-            applicationUrl: true,
-            applicationEmail: true
-          }
-        },
         user: {
           select: {
+            id: true,
             name: true,
             email: true
+          }
+        },
+        job: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true
+              }
+            }
           }
         }
       }
     })
-    
-    // Return application with redirect URL if external
-    const response: any = {
-      application,
+
+    // Send email notifications
+    const emailService = EmailService.getInstance()
+
+    // Notify employer of new application
+    if (application.job.user.email) {
+      try {
+        await emailService.sendApplicationNotification(
+          application.job.user.email,
+          {
+            applicantName: application.user.name || 'Unknown',
+            jobTitle: application.job.title,
+            company: application.job.company,
+            jobId: application.job.id,
+            applicationId: application.id
+          }
+        )
+      } catch (error) {
+        console.error('Failed to send employer notification:', error)
+      }
+    }
+
+    // Send confirmation to applicant
+    if (application.user.email) {
+      try {
+        await emailService.sendApplicationConfirmation(
+          application.user.email,
+          {
+            applicantName: application.user.name || 'Unknown',
+            jobTitle: application.job.title,
+            company: application.job.company,
+            jobId: application.job.id,
+            applicationId: application.id
+          }
+        )
+      } catch (error) {
+        console.error('Failed to send applicant confirmation:', error)
+      }
+    }
+
+    // Create notification record for the employer
+    try {
+      await prisma.notification.create({
+        data: {
+          userId: application.job.userId,
+          type: 'application_update',
+          title: 'New Job Application',
+          message: `${application.user.name} applied for "${application.job.title}"`,
+          relatedJobId: application.job.id,
+          relatedApplicationId: application.id
+        }
+      })
+    } catch (error) {
+      console.error('Failed to create notification:', error)
+    }
+
+    return NextResponse.json({
+      id: application.id,
+      status: application.status,
+      appliedAt: application.createdAt,
       message: 'Application submitted successfully'
-    }
-    
-    if (job.applicationUrl) {
-      response.redirectUrl = job.applicationUrl
-      response.message = 'Application recorded. Redirecting to employer\'s application page...'
-    }
-    
-    return NextResponse.json(response, { status: 201 })
+    }, { status: 201 })
+
   } catch (error) {
-    console.error('Error applying to job:', error)
+    console.error('Error submitting application:', error)
     return NextResponse.json(
       { error: 'Failed to submit application' },
       { status: 500 }
