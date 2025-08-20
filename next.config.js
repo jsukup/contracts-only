@@ -1,11 +1,12 @@
+const path = require('path')
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Server external packages (moved from experimental)
+  serverExternalPackages: ['@prisma/client'],
+  
   // Enable experimental features for better performance
   experimental: {
-    // App directory (already enabled by default in Next.js 13+)
-    appDir: true,
-    // Enable Server Components optimization
-    serverComponentsExternalPackages: ['@prisma/client'],
     // Enable optimized package imports
     optimizePackageImports: [
       'lucide-react',
@@ -15,18 +16,6 @@ const nextConfig = {
     ],
   },
 
-  // Bundle analyzer (conditional)
-  ...(process.env.ANALYZE === 'true' && {
-    webpack: (config, { isServer }) => {
-      if (!isServer) {
-        config.resolve.fallback = {
-          ...config.resolve.fallback,
-          fs: false,
-        }
-      }
-      return config
-    },
-  }),
 
   // Image optimization
   images: {
@@ -99,66 +88,22 @@ const nextConfig = {
     ]
   },
 
-  // Webpack optimizations
-  webpack: (config, { dev, isServer }) => {
-    // Bundle analyzer
-    if (process.env.ANALYZE === 'true' && !isServer) {
-      const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer')
-      config.plugins.push(
-        new BundleAnalyzerPlugin({
-          analyzerMode: 'static',
-          openAnalyzer: false,
-          reportFilename: '../bundle-analyzer-report.html',
-        })
-      )
-    }
-
-    // Optimize bundle splitting
-    if (!dev && !isServer) {
-      config.optimization.splitChunks = {
-        chunks: 'all',
-        cacheGroups: {
-          default: {
-            minChunks: 2,
-            priority: -20,
-            reuseExistingChunk: true,
-          },
-          vendor: {
-            test: /[\\/]node_modules[\\/]/,
-            name: 'vendors',
-            priority: -10,
-            chunks: 'all',
-          },
-          react: {
-            test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
-            name: 'react',
-            priority: 20,
-            chunks: 'all',
-          },
-          ui: {
-            test: /[\\/]src[\\/]components[\\/]ui[\\/]/,
-            name: 'ui',
-            priority: 15,
-            chunks: 'all',
-          },
-          charts: {
-            test: /[\\/]node_modules[\\/](recharts|d3)[\\/]/,
-            name: 'charts',
-            priority: 10,
-            chunks: 'all',
-          },
-        },
+  // Bundle analyzer (Turbopack compatible)
+  ...(process.env.ANALYZE === 'true' && {
+    webpack: (config, { dev, isServer }) => {
+      if (!isServer && !dev) {
+        const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer')
+        config.plugins.push(
+          new BundleAnalyzerPlugin({
+            analyzerMode: 'static',
+            openAnalyzer: false,
+            reportFilename: '../bundle-analyzer-report.html',
+          })
+        )
       }
-    }
-
-    // Module resolution improvements
-    config.resolve.alias = {
-      ...config.resolve.alias,
-      '@': path.resolve(__dirname, 'src'),
-    }
-
-    return config
-  },
+      return config
+    },
+  }),
 
   // Environment variables for performance monitoring
   env: {
@@ -178,7 +123,5 @@ const nextConfig = {
     ignoreDuringBuilds: process.env.NODE_ENV === 'production',
   },
 }
-
-const path = require('path')
 
 module.exports = nextConfig

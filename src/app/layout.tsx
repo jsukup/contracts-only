@@ -5,6 +5,7 @@ import { NextAuthProvider } from "@/components/providers/session-provider";
 import { Navigation } from "@/components/layout/Navigation";
 import { WebSocketProvider } from "@/components/providers/WebSocketProvider";
 import { PerformanceMonitor } from "@/components/performance/LazyComponents";
+import MonitoringProvider from "@/components/monitoring/MonitoringProvider";
 import { Suspense } from 'react';
 
 const geistSans = Geist({
@@ -150,19 +151,21 @@ export default function RootLayout({
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
           </div>
         }>
-          <NextAuthProvider>
-            <WebSocketProvider>
-              <div className="relative flex min-h-screen flex-col">
-                <Navigation />
-                <main className="flex-1">
-                  {children}
-                </main>
-              </div>
-              
-              {/* Performance monitoring in development */}
-              {process.env.NODE_ENV === 'development' && <PerformanceMonitor />}
-            </WebSocketProvider>
-          </NextAuthProvider>
+          <MonitoringProvider>
+            <NextAuthProvider>
+              <WebSocketProvider>
+                <div className="relative flex min-h-screen flex-col">
+                  <Navigation />
+                  <main className="flex-1">
+                    {children}
+                  </main>
+                </div>
+                
+                {/* Performance monitoring in development */}
+                {process.env.NODE_ENV === 'development' && <PerformanceMonitor />}
+              </WebSocketProvider>
+            </NextAuthProvider>
+          </MonitoringProvider>
         </Suspense>
         
         {/* Analytics scripts */}

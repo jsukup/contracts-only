@@ -62,17 +62,25 @@ export function JobCard({ job, showActions = true }: JobCardProps) {
   }
 
   return (
-    <Card className="hover:shadow-lg transition-shadow">
+    <Card 
+      className="hover:shadow-lg transition-shadow" 
+      data-job-id={job.id}
+    >
       <CardHeader>
         <div className="flex justify-between items-start">
           <div className="flex-1">
             <CardTitle className="text-xl mb-1">
-              <Link href={`/jobs/${job.id}`} className="hover:text-primary">
+              <Link 
+                href={`/jobs/${job.id}`} 
+                className="hover:text-primary"
+                data-track="view-job"
+                data-job-title
+              >
                 {job.title}
               </Link>
             </CardTitle>
             <CardDescription className="flex items-center gap-4 text-sm">
-              <span className="flex items-center gap-1">
+              <span className="flex items-center gap-1" data-job-company>
                 <Building className="h-4 w-4" />
                 {job.company}
               </span>
@@ -92,7 +100,7 @@ export function JobCard({ job, showActions = true }: JobCardProps) {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
           <div className="flex items-center gap-2">
             <DollarSign className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">
+            <span className="text-sm font-medium" data-job-rate>
               {formatRate(job.hourlyRateMin, job.hourlyRateMax, job.currency)}
             </span>
           </div>
@@ -143,7 +151,12 @@ export function JobCard({ job, showActions = true }: JobCardProps) {
               <Link href={`/jobs/${job.id}`}>View Details</Link>
             </Button>
             <Button size="sm" asChild>
-              <Link href={`/jobs/${job.id}/apply`}>Apply Now</Link>
+              <Link 
+                href={`/jobs/${job.id}/apply`} 
+                data-track="apply-job"
+              >
+                Apply Now
+              </Link>
             </Button>
           </div>
         </CardFooter>
