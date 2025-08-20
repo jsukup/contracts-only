@@ -72,7 +72,7 @@ const mockPrisma = {
     delete: jest.fn(),
     count: jest.fn(),
   },
-  application: {
+  jobApplication: {
     findMany: jest.fn(),
     findUnique: jest.fn(),
     create: jest.fn(),
@@ -109,6 +109,24 @@ const mockPrisma = {
     delete: jest.fn(),
     count: jest.fn(),
   },
+  application: {
+    findMany: jest.fn(),
+    findUnique: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+    count: jest.fn(),
+    groupBy: jest.fn(),
+    aggregate: jest.fn(),
+  },
+  notification: {
+    findMany: jest.fn(),
+    findUnique: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+    count: jest.fn(),
+  },
 }
 
 // Global mock for prisma
@@ -116,6 +134,52 @@ global.__mockPrisma = mockPrisma
 
 // Mock fetch for API calls
 global.fetch = jest.fn()
+
+// Mock Request and Response for Next.js API routes
+global.Request = jest.fn().mockImplementation((url, options = {}) => ({
+  url,
+  method: options.method || 'GET',
+  headers: new Map(Object.entries(options.headers || {})),
+  body: options.body,
+  json: jest.fn().mockResolvedValue({}),
+  text: jest.fn().mockResolvedValue(''),
+  formData: jest.fn().mockResolvedValue(new FormData()),
+  arrayBuffer: jest.fn().mockResolvedValue(new ArrayBuffer(0)),
+  blob: jest.fn().mockResolvedValue(new Blob())
+}))
+
+// Mock NextResponse for API routes
+jest.mock('next/server', () => ({
+  NextRequest: jest.fn(),
+  NextResponse: {
+    json: jest.fn((data, options = {}) => ({
+      json: jest.fn().mockResolvedValue(data),
+      status: options.status || 200,
+      ok: (options.status || 200) >= 200 && (options.status || 200) < 300,
+      headers: new Map(Object.entries(options.headers || {}))
+    }))
+  }
+}))
+
+global.Response = jest.fn().mockImplementation((body, options = {}) => ({
+  ok: (options.status || 200) >= 200 && (options.status || 200) < 300,
+  status: options.status || 200,
+  statusText: options.statusText || 'OK',
+  headers: new Map(Object.entries(options.headers || {})),
+  body,
+  json: jest.fn().mockResolvedValue(body ? JSON.parse(body) : {}),
+  text: jest.fn().mockResolvedValue(body || ''),
+  arrayBuffer: jest.fn().mockResolvedValue(new ArrayBuffer(0)),
+  blob: jest.fn().mockResolvedValue(new Blob([body || '']))
+}))
+
+// Add static methods to Response
+global.Response.json = jest.fn((data, options = {}) => ({
+  json: jest.fn().mockResolvedValue(data),
+  status: options.status || 200,
+  ok: (options.status || 200) >= 200 && (options.status || 200) < 300,
+  headers: new Map(Object.entries(options.headers || {}))
+}))
 
 // Mock localStorage
 const localStorageMock = {

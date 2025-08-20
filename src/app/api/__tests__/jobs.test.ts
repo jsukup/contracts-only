@@ -1,17 +1,29 @@
-import { NextRequest } from 'next/server'
-import { GET, POST } from '../jobs/route'
-import { prisma } from '@/lib/prisma'
+// NextRequest and NextResponse are mocked globally in jest.setup.js
 
-// Mock the prisma client
-jest.mock('@/lib/prisma')
-const mockPrisma = prisma as jest.Mocked<typeof prisma>
+// Mock all auth-related modules first to avoid ESM issues
+jest.mock('../../../../lib/auth', () => ({
+  authOptions: {}
+}))
 
-// Mock NextAuth
-jest.mock('next-auth/next', () => ({
+jest.mock('next-auth', () => ({
   getServerSession: jest.fn()
 }))
 
-const mockGetServerSession = require('next-auth/next').getServerSession
+jest.mock('@auth/prisma-adapter', () => ({
+  PrismaAdapter: jest.fn()
+}))
+
+// Mock the prisma client
+jest.mock('../../../lib/prisma', () => ({
+  prisma: (global as any).__mockPrisma
+}))
+
+const mockPrisma = (global as any).__mockPrisma
+
+// Import after mocking to avoid ESM issues
+import { GET, POST } from '../jobs/route'
+
+const mockGetServerSession = require('next-auth').getServerSession
 
 describe('/api/jobs', () => {
   beforeEach(() => {

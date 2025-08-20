@@ -2,19 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { EmailTemplateEngine, EmailTemplateData } from './templates'
 import { sendEmail } from './sender'
 import { JobMatchingEngine } from '@/lib/matching'
-
-export interface EmailJob {
-  id: string
-  type: string
-  recipient: string
-  data: any
-  scheduledFor: Date
-  attempts: number
-  status: 'pending' | 'processing' | 'sent' | 'failed'
-  createdAt: Date
-  sentAt?: Date
-  error?: string
-}
+import { EmailType, EmailJobStatus } from '@prisma/client'
 
 export type EmailAutomationType = 
   | 'welcome'
@@ -24,6 +12,25 @@ export type EmailAutomationType =
   | 'profile_completion_reminder'
   | 'job_expiring_reminder'
   | 'match_notification'
+
+// Map custom types to Prisma enum values
+function mapToEmailType(type: EmailAutomationType): EmailType {
+  switch (type) {
+    case 'welcome':
+    case 'job_alert':
+      return EmailType.JOB_APPLICATION_NOTIFICATION
+    case 'application_confirmation':
+      return EmailType.JOB_POSTING_CONFIRMATION
+    case 'employer_weekly_digest':
+      return EmailType.WEEKLY_DIGEST
+    case 'profile_completion_reminder':
+    case 'job_expiring_reminder':
+    case 'match_notification':
+      return EmailType.APPLICATION_STATUS_UPDATE
+    default:
+      return EmailType.JOB_APPLICATION_NOTIFICATION
+  }
+}
 
 export class EmailAutomationEngine {
   /**
@@ -119,7 +126,8 @@ export class EmailAutomationEngine {
           dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
           unsubscribeUrl: `${process.env.NEXT_PUBLIC_APP_URL}/unsubscribe?email=${encodeURIComponent(user.email)}`
         },
-        scheduledFor: new Date(Date.now() + 5 * 60 * 1000) // 5 minutes delay
+        scheduledFor: new Date(Date.now() + 5 * 60 * 1000), // 5 minutes delay
+        jobId: jobId
       })
     }
   }
@@ -205,7 +213,7 @@ export class EmailAutomationEngine {
           },
           select: { id: true, title: true }
         }),
-        prisma.application.count({
+        prisma.jobApplication.count({
           where: {
             job: { postedById: employer.id },
             createdAt: { gte: oneWeekAgo }
@@ -292,7 +300,7 @@ export class EmailAutomationEngine {
 
     const expiringJobs = await prisma.job.findMany({
       where: {
-        status: 'open',
+        isActive: true,
         expiresAt: {
           lte: threeDaysFromNow,
           gte: new Date() // Not already expired
@@ -429,24 +437,35 @@ export class EmailAutomationEngine {
     type,
     recipient,
     data,
-    scheduledFor
+    scheduledFor,
+    jobId
   }: {
-    type: string
+    type: EmailAutomationType
     recipient: string
     data: EmailTemplateData
     scheduledFor: Date
+    jobId?: string
   }): Promise<void> {
     try {
+      // Find recipient user by email
+      const recipientUser = await prisma.user.findUnique({
+        where: { email: recipient },
+        select: { id: true }
+      })
+
+      if (!recipientUser) {
+        console.error('Recipient user not found:', recipient)
+        return
+      }
+
       await prisma.emailJob.create({
         data: {
-          id: `email_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-          type,
-          recipient,
+          type: mapToEmailType(type),
+          recipientId: recipientUser.id,
+          jobId,
           data: JSON.parse(JSON.stringify(data)), // Ensure serializable
-          scheduledFor,
-          attempts: 0,
-          status: 'pending',
-          createdAt: new Date()
+          scheduledAt: scheduledFor,
+          status: EmailJobStatus.PENDING
         }
       })
     } catch (error) {

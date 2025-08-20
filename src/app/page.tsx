@@ -1,78 +1,61 @@
 import Link from "next/link"
 import { getServerSession } from "next-auth"
 import { authOptions } from "../../lib/auth"
-import { prisma } from "../../lib/prisma"
+import { prisma } from "@/lib/prisma"
+import type { Job, JobSkill, Skill } from "@prisma/client"
+
+type JobWithSkills = Job & {
+  jobSkills: (JobSkill & {
+    skill: Skill
+  })[]
+}
 
 export default async function HomePage() {
   const session = await getServerSession(authOptions)
   
-  // Get recent jobs from database
-  const recentJobs = await prisma.job.findMany({
-    where: {
-      isActive: true,
-      expiresAt: {
-        gte: new Date()
-      }
-    },
-    include: {
-      jobSkills: {
+  let recentJobs: JobWithSkills[] = []
+  let totalJobs: number = 0
+  
+  // Get recent jobs from database with error handling
+  try {
+    [recentJobs, totalJobs] = await Promise.all([
+      prisma.job.findMany({
+        where: {
+          isActive: true,
+          expiresAt: {
+            gte: new Date()
+          }
+        },
         include: {
-          skill: true
+          jobSkills: {
+            include: {
+              skill: true
+            }
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
+        },
+        take: 6
+      }),
+      prisma.job.count({
+        where: {
+          isActive: true,
+          expiresAt: {
+            gte: new Date()
+          }
         }
-      }
-    },
-    orderBy: {
-      createdAt: 'desc'
-    },
-    take: 6
-  })
-
-  const totalJobs = await prisma.job.count({
-    where: {
-      isActive: true,
-      expiresAt: {
-        gte: new Date()
-      }
-    }
-  })
+      })
+    ])
+  } catch (error) {
+    console.error('Database connection error:', error)
+    // Continue with empty data - the page will still render without recent jobs
+    recentJobs = []
+    totalJobs = 0
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <Link href="/" className="text-xl font-bold text-indigo-600">
-                ContractsOnly
-              </Link>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link href="/jobs" className="text-gray-700 hover:text-indigo-600">
-                Browse Jobs
-              </Link>
-              {session ? (
-                <>
-                  <Link href="/jobs/new" className="text-gray-700 hover:text-indigo-600">
-                    Post a Job
-                  </Link>
-                  <Link href="/dashboard" className="text-gray-700 hover:text-indigo-600">
-                    Dashboard
-                  </Link>
-                  <Link href="/api/auth/signout" className="bg-gray-200 px-4 py-2 rounded-md hover:bg-gray-300">
-                    Sign Out
-                  </Link>
-                </>
-              ) : (
-                <Link href="/auth/signin" className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700">
-                  Sign In
-                </Link>
-              )}
-            </div>
-          </div>
-        </div>
-      </nav>
-
       {/* Hero Section */}
       <div className="bg-white">
         <div className="max-w-7xl mx-auto py-16 px-4 sm:py-24 sm:px-6 lg:px-8">
@@ -89,7 +72,7 @@ export default async function HomePage() {
                   href="/jobs"
                   className="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 md:py-4 md:text-lg md:px-10"
                 >
-                  Browse {totalJobs} Jobs
+                  Browse {totalJobs > 0 ? `${totalJobs} ` : ''}Jobs
                 </Link>
               </div>
               <div className="mt-3 rounded-md shadow sm:mt-0 sm:ml-3">
@@ -146,7 +129,7 @@ export default async function HomePage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 className="text-3xl font-extrabold text-gray-900 mb-8">Recent Opportunities</h2>
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {recentJobs.map((job: any) => (
+              {recentJobs.map((job: JobWithSkills) => (
                 <div key={job.id} className="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow">
                   <h3 className="text-lg font-semibold text-gray-900">{job.title}</h3>
                   <p className="text-gray-600 mt-1">{job.company}</p>
@@ -157,7 +140,7 @@ export default async function HomePage() {
                     ${job.hourlyRateMin}-${job.hourlyRateMax}/hr
                   </div>
                   <div className="mt-3 flex flex-wrap gap-2">
-                    {job.jobSkills.slice(0, 3).map((js: any) => (
+                    {job.jobSkills.slice(0, 3).map((js) => (
                       <span key={js.id} className="px-2 py-1 text-xs bg-gray-100 text-gray-700 rounded">
                         {js.skill.name}
                       </span>

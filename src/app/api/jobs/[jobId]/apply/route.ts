@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
 import { EmailService } from '@/lib/email'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { authOptions } from '@/lib/auth'
 
 export async function POST(
   req: NextRequest,
@@ -22,21 +22,21 @@ export async function POST(
     // Check if job exists and is active
     const job = await prisma.job.findUnique({
       where: { id: jobId },
-      include: { user: true }
+      include: { postedBy: true }
     })
 
     if (!job) {
       return NextResponse.json({ error: 'Job not found' }, { status: 404 })
     }
 
-    if (job.status !== 'active') {
+    if (!job.isActive) {
       return NextResponse.json(
         { error: 'This job is no longer accepting applications' },
         { status: 400 }
       )
     }
 
-    if (job.userId === session.user.id) {
+    if (job.postedById === session.user.id) {
       return NextResponse.json(
         { error: 'You cannot apply to your own job posting' },
         { status: 400 }
@@ -44,7 +44,7 @@ export async function POST(
     }
 
     // Check if user already applied
-    const existingApplication = await prisma.application.findFirst({
+    const existingApplication = await prisma.jobApplication.findFirst({
       where: {
         jobId,
         userId: session.user.id
@@ -59,14 +59,11 @@ export async function POST(
     }
 
     // Create application
-    const application = await prisma.application.create({
+    const application = await prisma.jobApplication.create({
       data: {
         jobId,
         userId: session.user.id,
-        coverLetter: coverLetter?.trim(),
-        expectedRate: expectedRate ? parseInt(expectedRate) : null,
-        availableStartDate: availableStartDate ? new Date(availableStartDate) : null,
-        status: 'pending'
+        status: 'PENDING'
       },
       include: {
         user: {
@@ -78,7 +75,7 @@ export async function POST(
         },
         job: {
           include: {
-            user: {
+            postedBy: {
               select: {
                 id: true,
                 name: true,

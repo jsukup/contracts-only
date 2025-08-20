@@ -9,15 +9,10 @@ import {
   BarChart3,
   Users,
   Target,
-  TrendingUp,
   Download,
   RefreshCw,
-  Eye,
-  MousePointer,
-  Clock,
   Award,
   MapPin,
-  DollarSign,
   Activity
 } from 'lucide-react'
 import { RecruiterAnalytics } from '@/lib/analytics'

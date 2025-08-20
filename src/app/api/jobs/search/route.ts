@@ -1,5 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import type { Prisma } from '@prisma/client'
+
+type JobWithIncludes = Prisma.JobGetPayload<{
+  include: {
+    jobSkills: {
+      include: {
+        skill: {
+          select: {
+            name: true
+          }
+        }
+      }
+    },
+    postedBy: {
+      select: {
+        id: true,
+        name: true
+      }
+    },
+    _count: {
+      select: {
+        applications: true
+      }
+    }
+  }
+}>
 
 export async function GET(req: NextRequest) {
   try {
@@ -24,11 +50,11 @@ export async function GET(req: NextRequest) {
     const postedWithin = searchParams.get('postedWithin')
     const rating = searchParams.get('rating')
     const sortBy = searchParams.get('sortBy') || 'createdAt'
-    const sortOrder = searchParams.get('sortOrder') || 'desc'
+    const sortOrder = (searchParams.get('sortOrder') || 'desc') as Prisma.SortOrder
 
     // Build where clause
-    const where: any = {
-      status: 'active'
+    const where: Prisma.JobWhereInput = {
+      isActive: true
     }
 
     // Text search
@@ -124,7 +150,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Build orderBy clause
-    const orderBy: any = {}
+    const orderBy: Prisma.JobOrderByWithRelationInput = {}
     switch (sortBy) {
       case 'rate':
         orderBy.hourlyRateMax = sortOrder
@@ -140,7 +166,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Execute query
-    const [jobs, total, totalActive] = await Promise.all([
+    const [jobs, total, totalActive]: [JobWithIncludes[], number, number] = await Promise.all([
       prisma.job.findMany({
         where,
         include: {
@@ -153,7 +179,7 @@ export async function GET(req: NextRequest) {
               }
             }
           },
-          user: {
+          postedBy: {
             select: {
               id: true,
               name: true
@@ -170,7 +196,7 @@ export async function GET(req: NextRequest) {
         skip: offset
       }),
       prisma.job.count({ where }),
-      prisma.job.count({ where: { status: 'active' } })
+      prisma.job.count({ where: { isActive: true } })
     ])
 
     // Get popular skills for suggestions
@@ -206,8 +232,8 @@ export async function GET(req: NextRequest) {
         hoursPerWeek: job.hoursPerWeek,
         description: job.description?.substring(0, 200) + '...',
         createdAt: job.createdAt,
-        skills: job.jobSkills.map(js => js.skill.name),
-        employer: job.user.name,
+        skills: job.jobSkills.map((js) => js.skill.name),
+        employer: job.postedBy.name,
         applicationCount: job._count.applications
       })),
       pagination: {

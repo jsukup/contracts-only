@@ -6,9 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
 // NextAuth.js required models
@@ -18,12 +17,12 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -59,11 +58,17 @@ model User {
   hourlyRateMax Int?
   availability  AvailabilityStatus @default(AVAILABLE)
 
+  // Job preferences and settings
+  jobAlertsEnabled Boolean @default(true)
+  desiredRateMin   Int?
+  desiredRateMax   Int?
+
   accounts      Account[]
   sessions      Session[]
   jobsPosted    Job[]     @relation("JobPoster")
   applications  JobApplication[]
   userSkills    UserSkill[]
+  emailJobs     EmailJob[] @relation("EmailRecipient")
 }
 
 model VerificationToken {
@@ -78,7 +83,7 @@ model VerificationToken {
 model Job {
   id          String   @id @default(cuid())
   title       String
-  description String   @db.Text
+  description String
   company     String
   location    String?
   isRemote    Boolean  @default(false)
@@ -103,12 +108,13 @@ model Job {
   postedBy     User     @relation("JobPoster", fields: [postedById], references: [id])
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-  expiresAt    DateTime @default(dbgenerated("NOW() + interval '30 days'"))
+  expiresAt    DateTime @default(now())
   isActive     Boolean  @default(true)
   
   // Relations
   jobSkills    JobSkill[]
   applications JobApplication[]
+  emailJobs    EmailJob[]
   
   @@index([isActive, expiresAt])
   @@index([jobType, isRemote])
@@ -166,6 +172,7 @@ enum UserRole {
   USER
   ADMIN
   MODERATOR
+  EMPLOYER
 }
 
 enum JobType {
@@ -186,4 +193,40 @@ enum ApplicationStatus {
   VIEWED
   REJECTED
   ACCEPTED
+}
+
+// Email automation models
+model EmailJob {
+  id        String    @id @default(cuid())
+  type      EmailType
+  recipientId String
+  jobId     String?
+  data      Json      // Store email template data
+  status    EmailJobStatus @default(PENDING)
+  scheduledAt DateTime
+  sentAt    DateTime?
+  error     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  // Relations
+  recipient User @relation("EmailRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  job       Job? @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  
+  @@index([status, scheduledAt])
+  @@index([type, recipientId])
+}
+
+enum EmailType {
+  JOB_APPLICATION_NOTIFICATION
+  JOB_POSTING_CONFIRMATION
+  WEEKLY_DIGEST
+  APPLICATION_STATUS_UPDATE
+}
+
+enum EmailJobStatus {
+  PENDING
+  SENT
+  FAILED
+  CANCELLED
 }

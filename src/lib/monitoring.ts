@@ -1,4 +1,11 @@
-import { WebVitalsMetric } from 'web-vitals'
+// Web Vitals metric interface
+export interface WebVitalsMetric {
+  id: string
+  name: string
+  value: number
+  delta: number
+  rating: 'good' | 'needs-improvement' | 'poor'
+}
 
 // Performance monitoring types
 export interface PerformanceMetric {
@@ -64,7 +71,7 @@ class PerformanceMonitor {
 
   private initializeCoreWebVitals() {
     // Dynamic import to avoid SSR issues
-    import('web-vitals').then(({ onCLS, onFCP, onFID, onLCP, onTTFB, onINP }) => {
+    import('web-vitals').then(({ onCLS, onFCP, onINP, onLCP, onTTFB }) => {
       const reportMetric = (metric: WebVitalsMetric) => {
         if (Math.random() <= this.config.sampling) {
           this.recordMetric({
@@ -83,10 +90,9 @@ class PerformanceMonitor {
       // Register all Core Web Vitals
       onCLS(reportMetric)
       onFCP(reportMetric) 
-      onFID(reportMetric)
+      onINP(reportMetric) // Interaction to Next Paint
       onLCP(reportMetric)
       onTTFB(reportMetric)
-      onINP(reportMetric) // Interaction to Next Paint
     })
   }
 
@@ -111,7 +117,7 @@ class PerformanceMonitor {
         this.recordMetric({
           id: `page-load-${Date.now()}`,
           name: 'PAGE_LOAD_TIME',
-          value: navigation.loadEventEnd - navigation.navigationStart,
+          value: navigation.loadEventEnd - navigation.fetchStart,
           unit: 'ms',
           timestamp: Date.now(),
           url: window.location.href

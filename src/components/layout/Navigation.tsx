@@ -40,13 +40,13 @@ export function Navigation() {
   ]
 
   return (
-    <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-      <div className="container mx-auto px-4">
+    <nav className="bg-white shadow-sm border-b">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center space-x-8">
             <Link href="/" className="flex items-center space-x-2">
-              <div className="text-2xl font-bold text-primary">
+              <div className="text-xl font-bold text-indigo-600">
                 ContractsOnly
               </div>
             </Link>
@@ -60,10 +60,10 @@ export function Navigation() {
                     key={item.name}
                     href={item.href}
                     className={cn(
-                      "flex items-center space-x-2 text-sm font-medium transition-colors hover:text-primary",
+                      "flex items-center space-x-2 text-sm font-medium transition-colors hover:text-indigo-600",
                       isActive(item.href) 
-                        ? "text-primary" 
-                        : "text-muted-foreground"
+                        ? "text-indigo-600" 
+                        : "text-gray-700"
                     )}
                   >
                     <Icon className="h-4 w-4" />
@@ -77,7 +77,7 @@ export function Navigation() {
           {/* Desktop Auth Section */}
           <div className="hidden md:flex items-center space-x-4">
             {status === 'loading' ? (
-              <div className="w-8 h-8 bg-muted rounded-full animate-pulse" />
+              <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse" />
             ) : session ? (
               <div className="flex items-center space-x-2">
                 {/* Notifications */}
@@ -95,18 +95,18 @@ export function Navigation() {
                   </Button>
                   
                   {/* Dropdown Menu */}
-                  <div className="absolute right-0 mt-2 w-48 bg-background border rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                     <div className="py-1">
                       <Link
                         href="/profile/settings"
-                        className="flex items-center px-4 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
                       >
                         <Settings className="h-4 w-4 mr-2" />
                         Settings
                       </Link>
                       <button
                         onClick={() => signOut({ callbackUrl: '/' })}
-                        className="flex items-center w-full px-4 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
                       >
                         <LogOut className="h-4 w-4 mr-2" />
                         Sign Out
@@ -117,10 +117,10 @@ export function Navigation() {
               </div>
             ) : (
               <div className="flex items-center space-x-2">
-                <Button variant="ghost" asChild>
+                <Button variant="ghost" asChild className="text-gray-700 hover:text-indigo-600">
                   <Link href="/auth/signin">Sign In</Link>
                 </Button>
-                <Button asChild>
+                <Button asChild className="bg-indigo-600 hover:bg-indigo-700 text-white">
                   <Link href="/jobs/post">Post a Job</Link>
                 </Button>
               </div>
@@ -156,8 +156,8 @@ export function Navigation() {
                     className={cn(
                       "flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
                       isActive(item.href)
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                        ? "bg-indigo-600 text-white"
+                        : "text-gray-700 hover:text-indigo-600 hover:bg-gray-50"
                     )}
                     onClick={() => setMobileMenuOpen(false)}
                   >
@@ -179,7 +179,7 @@ export function Navigation() {
                     </div>
                     <Link
                       href="/profile/settings"
-                      className="flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                      className="flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       <Settings className="h-4 w-4" />
@@ -190,7 +190,7 @@ export function Navigation() {
                         setMobileMenuOpen(false)
                         signOut({ callbackUrl: '/' })
                       }}
-                      className="flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors w-full text-left"
+                      className="flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 transition-colors w-full text-left"
                     >
                       <LogOut className="h-4 w-4" />
                       <span>Sign Out</span>
@@ -200,14 +200,14 @@ export function Navigation() {
                   <div className="space-y-2">
                     <Link
                       href="/auth/signin"
-                      className="block px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+                      className="block px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       Sign In
                     </Link>
                     <Link
                       href="/jobs/post"
-                      className="block px-3 py-2 rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                      className="block px-3 py-2 rounded-md text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       Post a Job

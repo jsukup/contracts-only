@@ -1,7 +1,7 @@
 // Performance optimization utilities
 // Implements code splitting, lazy loading, and performance monitoring
 
-import { ComponentType } from 'react'
+import React, { ComponentType, lazy, Suspense } from 'react'
 
 // Dynamic import wrapper with error handling
 export function dynamicImport<T = any>(
@@ -30,10 +30,10 @@ export function dynamicImport<T = any>(
 export const preloadRoutes = {
   dashboard: () => import('@/app/dashboard/page'),
   jobs: () => import('@/app/jobs/page'),
-  applications: () => import('@/app/applications/page'),
-  profile: () => import('@/app/profile/page'),
   analytics: () => import('@/app/analytics/page'),
   pricing: () => import('@/app/pricing/page'),
+  notifications: () => import('@/app/notifications/page'),
+  onboarding: () => import('@/app/onboarding/page'),
 }
 
 // Preload function for route prefetching
@@ -108,7 +108,7 @@ export class PerformanceMonitor {
         return
       }
 
-      import('web-vitals').then(({ onCLS, onFCP, onFID, onLCP, onTTFB }) => {
+      import('web-vitals').then(({ onCLS, onFCP, onINP, onLCP, onTTFB }) => {
         const vitals: Record<string, number> = {}
 
         onCLS((metric) => {
@@ -119,8 +119,8 @@ export class PerformanceMonitor {
           vitals.FCP = metric.value
         })
 
-        onFID((metric) => {
-          vitals.FID = metric.value
+        onINP((metric) => {
+          vitals.INP = metric.value
         })
 
         onLCP((metric) => {
@@ -152,7 +152,7 @@ export class PerformanceMonitor {
 }
 
 // Lazy loading utility for heavy components
-export function createLazyComponent<T = any>(
+export function createLazyComponent<T extends Record<string, any> = Record<string, any>>(
   importFunction: () => Promise<{ default: ComponentType<T> }>,
   fallback?: ComponentType
 ) {
@@ -166,7 +166,7 @@ export function createLazyComponent<T = any>(
 
       return (
         <Suspense fallback={<FallbackComponent />}>
-          <Component {...props} />
+          <Component {...(props as any)} />
         </Suspense>
       )
     }

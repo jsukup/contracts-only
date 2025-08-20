@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { authOptions } from '@/lib/auth'
 
 export async function GET(req: NextRequest) {
   try {
@@ -23,42 +23,42 @@ export async function GET(req: NextRequest) {
     ] = await Promise.all([
       // Total jobs posted by this employer
       prisma.job.count({
-        where: { userId: session.user.id }
+        where: { postedById: session.user.id }
       }),
       
       // Active jobs
       prisma.job.count({
         where: { 
-          userId: session.user.id,
-          status: 'active'
+          postedById: session.user.id,
+          isActive: true
         }
       }),
       
       // Total applications across all jobs
-      prisma.application.count({
+      prisma.jobApplication.count({
         where: {
           job: {
-            userId: session.user.id
+            postedById: session.user.id
           }
         }
       }),
       
-      // Views this month (mock data for now - would need analytics tracking)
+      // Job count for views calculation
       prisma.job.count({
         where: {
-          userId: session.user.id,
+          postedById: session.user.id,
           createdAt: {
             gte: startOfMonth
           }
         }
-      }) * 15 // Mock multiplier for views per job
+      })
     ])
 
     return NextResponse.json({
       totalJobs,
       activeJobs,
       totalApplications,
-      viewsThisMonth
+      viewsThisMonth: viewsThisMonth * 15 // Mock multiplier for views per job
     })
   } catch (error) {
     console.error('Error fetching employer stats:', error)

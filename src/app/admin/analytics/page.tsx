@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -38,19 +38,19 @@ interface AnalyticsData {
   insights: string[]
 }
 
-interface DetailedAnalytics {
-  jobsByCategory: Array<{ category: string; count: number }>
-  rateDistribution: Array<{ range: string; count: number }>
-  userGrowth: Array<{ date: string; count: number }>
-  skillDistribution: Array<{ skill: string; count: number }>
-}
+// interface DetailedAnalytics {
+//   jobsByCategory: Array<{ category: string; count: number }>
+//   rateDistribution: Array<{ range: string; count: number }>
+//   userGrowth: Array<{ date: string; count: number }>
+//   skillDistribution: Array<{ skill: string; count: number }>
+// }
 
 export default function AnalyticsPage() {
   const { data: session } = useSession()
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
-  const [detailedData, setDetailedData] = useState<DetailedAnalytics>()
+  // const [detailedData, setDetailedData] = useState<DetailedAnalytics>()
   const [selectedView, setSelectedView] = useState<'summary' | 'jobs' | 'users' | 'platform'>('summary')
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({
     start: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -61,9 +61,9 @@ export default function AnalyticsPage() {
     if (session?.user?.role === 'ADMIN') {
       fetchAnalytics()
     }
-  }, [session, selectedView, dateRange])
+  }, [session, selectedView, dateRange, fetchAnalytics])
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     setLoading(true)
     try {
       const params = new URLSearchParams({
@@ -77,17 +77,13 @@ export default function AnalyticsPage() {
 
       const result = await response.json()
       
-      if (selectedView === 'summary') {
-        setAnalyticsData(result.data)
-      } else {
-        setDetailedData(result.data)
-      }
+      setAnalyticsData(result.data)
     } catch (error) {
       console.error('Error fetching analytics:', error)
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedView, dateRange])
 
   const handleRefresh = async () => {
     setRefreshing(true)

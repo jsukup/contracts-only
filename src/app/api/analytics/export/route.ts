@@ -3,6 +3,54 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { AnalyticsEngine } from '@/lib/analytics'
 
+// Type definitions for analytics data
+interface CategoryData {
+  category: string
+  count: number
+}
+
+interface RateDistributionData {
+  range: string
+  count: number
+}
+
+interface SkillDistributionData {
+  skill: string
+  count: number
+}
+
+interface UserGrowthData {
+  date: string
+  count: number
+}
+
+interface JobAnalyticsData {
+  totalJobs: number
+  activeJobs: number
+  averageHourlyRate: number
+  applicationMetrics: {
+    totalApplications: number
+  }
+  jobsByCategory: CategoryData[]
+  rateDistribution: RateDistributionData[]
+}
+
+interface UserAnalyticsData {
+  totalUsers: number
+  contractorCount: number
+  employerCount: number
+  profileCompletionRate: number
+  activenessMetrics: {
+    dailyActiveUsers: number
+  }
+  skillDistribution: SkillDistributionData[]
+  userGrowth: UserGrowthData[]
+}
+
+interface ExecutiveSummaryData {
+  kpis?: Record<string, number | string>
+}
+
 // Export analytics data in various formats
 export async function GET(request: NextRequest) {
   try {
@@ -85,45 +133,47 @@ export async function GET(request: NextRequest) {
   }
 }
 
-function convertToCSV(data: any, type: string): string {
+function convertToCSV(data: JobAnalyticsData | UserAnalyticsData | ExecutiveSummaryData, type: string): string {
   const rows: string[] = []
 
   if (type === 'jobs') {
+    const jobData = data as JobAnalyticsData
     rows.push('Metric,Value')
-    rows.push(`Total Jobs,${data.totalJobs}`)
-    rows.push(`Active Jobs,${data.activeJobs}`)
-    rows.push(`Average Hourly Rate,${data.averageHourlyRate}`)
-    rows.push(`Total Applications,${data.applicationMetrics.totalApplications}`)
+    rows.push(`Total Jobs,${jobData.totalJobs}`)
+    rows.push(`Active Jobs,${jobData.activeJobs}`)
+    rows.push(`Average Hourly Rate,${jobData.averageHourlyRate}`)
+    rows.push(`Total Applications,${jobData.applicationMetrics.totalApplications}`)
     
     rows.push('')
     rows.push('Category,Job Count')
-    data.jobsByCategory.forEach((item: any) => {
+    jobData.jobsByCategory.forEach((item: CategoryData) => {
       rows.push(`${item.category},${item.count}`)
     })
 
     rows.push('')
     rows.push('Rate Range,Job Count')
-    data.rateDistribution.forEach((item: any) => {
+    jobData.rateDistribution.forEach((item: RateDistributionData) => {
       rows.push(`${item.range},${item.count}`)
     })
   
   } else if (type === 'users') {
+    const userData = data as UserAnalyticsData
     rows.push('Metric,Value')
-    rows.push(`Total Users,${data.totalUsers}`)
-    rows.push(`Contractors,${data.contractorCount}`)
-    rows.push(`Employers,${data.employerCount}`)
-    rows.push(`Profile Completion Rate,${data.profileCompletionRate}%`)
-    rows.push(`Daily Active Users,${data.activenessMetrics.dailyActiveUsers}`)
+    rows.push(`Total Users,${userData.totalUsers}`)
+    rows.push(`Contractors,${userData.contractorCount}`)
+    rows.push(`Employers,${userData.employerCount}`)
+    rows.push(`Profile Completion Rate,${userData.profileCompletionRate}%`)
+    rows.push(`Daily Active Users,${userData.activenessMetrics.dailyActiveUsers}`)
     
     rows.push('')
     rows.push('Skill,User Count')
-    data.skillDistribution.forEach((item: any) => {
+    userData.skillDistribution.forEach((item: SkillDistributionData) => {
       rows.push(`${item.skill},${item.count}`)
     })
 
     rows.push('')
     rows.push('Date,New Users')
-    data.userGrowth.forEach((item: any) => {
+    userData.userGrowth.forEach((item: UserGrowthData) => {
       rows.push(`${item.date},${item.count}`)
     })
   

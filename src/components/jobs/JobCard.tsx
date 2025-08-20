@@ -12,8 +12,8 @@ interface JobCardProps {
     location?: string
     isRemote: boolean
     jobType: string
-    hourlyRateMin: number
-    hourlyRateMax: number
+    hourlyRateMin: number | null
+    hourlyRateMax: number | null
     currency: string
     contractDuration?: string
     hoursPerWeek?: number
@@ -98,12 +98,14 @@ export function JobCard({ job, showActions = true }: JobCardProps) {
 
       <CardContent>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-          <div className="flex items-center gap-2">
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium" data-job-rate>
-              {formatRate(job.hourlyRateMin, job.hourlyRateMax, job.currency)}
-            </span>
-          </div>
+          {job.hourlyRateMin && job.hourlyRateMax && (
+            <div className="flex items-center gap-2">
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium" data-job-rate>
+                {formatRate(job.hourlyRateMin, job.hourlyRateMax, job.currency)}
+              </span>
+            </div>
+          )}
           
           {job.contractDuration && (
             <div className="flex items-center gap-2">

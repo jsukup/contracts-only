@@ -123,12 +123,25 @@ class ConsoleProvider implements EmailProvider {
 
 // Email service factory
 class EmailService {
-  private provider: EmailProvider
+  private provider?: EmailProvider
   private fallbackProvider?: EmailProvider
 
   constructor() {
-    this.provider = this.createProvider()
-    this.fallbackProvider = this.createFallbackProvider()
+    // Don't initialize providers in constructor - use lazy initialization
+  }
+
+  private getProvider(): EmailProvider {
+    if (!this.provider) {
+      this.provider = this.createProvider()
+    }
+    return this.provider
+  }
+
+  private getFallbackProvider(): EmailProvider | undefined {
+    if (!this.fallbackProvider) {
+      this.fallbackProvider = this.createFallbackProvider()
+    }
+    return this.fallbackProvider
   }
 
   private createProvider(): EmailProvider {
@@ -143,8 +156,8 @@ class EmailService {
       return new SendGridProvider(sendGridKey)
     }
 
-    // Fallback to console in development
-    if (process.env.NODE_ENV === 'development') {
+    // Fallback to console in development or during build
+    if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === undefined) {
       return new ConsoleProvider()
     }
 
@@ -156,12 +169,12 @@ class EmailService {
     const sendGridKey = process.env.SENDGRID_API_KEY
 
     // If primary is Resend, fallback to SendGrid
-    if (this.provider.name === 'resend' && sendGridKey) {
+    if (this.getProvider().name === 'resend' && sendGridKey) {
       return new SendGridProvider(sendGridKey)
     }
 
     // If primary is SendGrid, fallback to Resend
-    if (this.provider.name === 'sendgrid' && resendKey) {
+    if (this.getProvider().name === 'sendgrid' && resendKey) {
       return new ResendProvider(resendKey)
     }
 
@@ -170,17 +183,20 @@ class EmailService {
 
   async send(options: EmailOptions): Promise<{ messageId: string; provider: string }> {
     try {
-      const result = await this.provider.send(options)
-      return { ...result, provider: this.provider.name }
+      const provider = this.getProvider()
+      const result = await provider.send(options)
+      return { ...result, provider: provider.name }
     } catch (error) {
-      console.error(`Primary email provider (${this.provider.name}) failed:`, error)
+      const provider = this.getProvider()
+      console.error(`Primary email provider (${provider.name}) failed:`, error)
 
       // Try fallback provider if available
-      if (this.fallbackProvider) {
+      const fallbackProvider = this.getFallbackProvider()
+      if (fallbackProvider) {
         try {
-          console.log(`Attempting fallback provider: ${this.fallbackProvider.name}`)
-          const result = await this.fallbackProvider.send(options)
-          return { ...result, provider: `${this.fallbackProvider.name}_fallback` }
+          console.log(`Attempting fallback provider: ${fallbackProvider.name}`)
+          const result = await fallbackProvider.send(options)
+          return { ...result, provider: `${fallbackProvider.name}_fallback` }
         } catch (fallbackError) {
           console.error(`Fallback email provider failed:`, fallbackError)
           throw new Error(`Both email providers failed. Primary: ${error}. Fallback: ${fallbackError}`)
@@ -193,8 +209,8 @@ class EmailService {
 
   getProviderInfo() {
     return {
-      primary: this.provider.name,
-      fallback: this.fallbackProvider?.name || null
+      primary: this.getProvider().name,
+      fallback: this.getFallbackProvider()?.name || null
     }
   }
 }

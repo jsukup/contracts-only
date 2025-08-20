@@ -6,27 +6,26 @@ const mockJob = {
   title: 'Senior React Developer',
   company: 'Tech Corp',
   location: 'Remote',
-  type: 'FULL_TIME',
+  isRemote: true,
+  jobType: 'CONTRACT',
   hourlyRateMin: 80,
   hourlyRateMax: 120,
-  description: 'We are looking for a senior React developer...',
-  requirements: 'React, TypeScript, Node.js',
-  skills: [
-    { id: 'skill-1', name: 'React' },
-    { id: 'skill-2', name: 'TypeScript' }
-  ],
-  createdAt: new Date('2024-01-01'),
-  updatedAt: new Date('2024-01-01'),
-  expiresAt: new Date('2024-12-31'),
-  userId: 'user-1',
-  applicationUrl: 'https://company.com/apply',
+  currency: 'USD',
+  contractDuration: '6 months',
+  hoursPerWeek: 40,
+  createdAt: '2024-01-01T00:00:00.000Z',
+  updatedAt: '2024-01-01T00:00:00.000Z',
+  expiresAt: '2024-12-31T00:00:00.000Z',
   isActive: true,
-  user: {
+  postedBy: {
     id: 'user-1',
     name: 'Tech Corp HR',
-    email: 'hr@techcorp.com',
-    companyName: 'Tech Corp'
+    email: 'hr@techcorp.com'
   },
+  jobSkills: [
+    { skill: { id: 'skill-1', name: 'React' } },
+    { skill: { id: 'skill-2', name: 'TypeScript' } }
+  ],
   _count: {
     applications: 5
   }
@@ -39,7 +38,7 @@ describe('JobCard', () => {
     expect(screen.getByText('Senior React Developer')).toBeInTheDocument()
     expect(screen.getByText('Tech Corp')).toBeInTheDocument()
     expect(screen.getByText('Remote')).toBeInTheDocument()
-    expect(screen.getByText('$80 - $120/hr')).toBeInTheDocument()
+    expect(screen.getByText('$80-$120/hr')).toBeInTheDocument()
     expect(screen.getByText('React')).toBeInTheDocument()
     expect(screen.getByText('TypeScript')).toBeInTheDocument()
   })
@@ -47,34 +46,28 @@ describe('JobCard', () => {
   it('displays skill badges', () => {
     render(<JobCard job={mockJob} />)
     
-    const skillBadges = screen.getAllByTestId('skill-badge')
-    expect(skillBadges).toHaveLength(2)
+    expect(screen.getByText('React')).toBeInTheDocument()
+    expect(screen.getByText('TypeScript')).toBeInTheDocument()
   })
 
   it('handles view details click', () => {
-    const mockOnView = jest.fn()
-    render(<JobCard job={mockJob} onView={mockOnView} />)
+    render(<JobCard job={mockJob} />)
     
     const viewButton = screen.getByText('View Details')
-    fireEvent.click(viewButton)
-    
-    expect(mockOnView).toHaveBeenCalledWith(mockJob.id)
+    expect(viewButton.closest('a')).toHaveAttribute('href', `/jobs/${mockJob.id}`)
   })
 
   it('handles apply click', () => {
     render(<JobCard job={mockJob} />)
     
     const applyButton = screen.getByText('Apply Now')
-    fireEvent.click(applyButton)
-    
-    // Should open external application URL
-    expect(applyButton).toHaveAttribute('href', mockJob.applicationUrl)
+    expect(applyButton.closest('a')).toHaveAttribute('href', `/jobs/${mockJob.id}/apply`)
   })
 
   it('shows application count when available', () => {
     render(<JobCard job={mockJob} />)
     
-    expect(screen.getByText('5 applications')).toBeInTheDocument()
+    expect(screen.getByText('5 applicants')).toBeInTheDocument()
   })
 
   it('handles missing optional fields gracefully', () => {
@@ -89,6 +82,6 @@ describe('JobCard', () => {
     
     expect(screen.getByText('Senior React Developer')).toBeInTheDocument()
     expect(screen.queryByText(/\$/)).not.toBeInTheDocument()
-    expect(screen.queryByText('applications')).not.toBeInTheDocument()
+    expect(screen.queryByText('applicants')).not.toBeInTheDocument()
   })
 })

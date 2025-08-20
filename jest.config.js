@@ -10,7 +10,7 @@ const customJestConfig = {
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   testEnvironment: 'jest-environment-jsdom',
   testPathIgnorePatterns: ['<rootDir>/.next/', '<rootDir>/node_modules/'],
-  moduleNameMapping: {
+  moduleNameMapper: {
     // Handle module aliases (same as in your tsconfig.json paths) 
     '^@/(.*)$': '<rootDir>/src/$1',
     '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
@@ -43,7 +43,7 @@ const customJestConfig = {
     '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { presets: ['next/babel'] }],
   },
   transformIgnorePatterns: [
-    '/node_modules/',
+    '/node_modules/(?!(@auth/prisma-adapter)/)',
     '^.+\\.module\\.(css|sass|scss)$',
   ],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],

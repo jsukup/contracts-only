@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { ApplicationStatus } from '@prisma/client'
 
 export async function GET(req: NextRequest) {
   try {
@@ -21,7 +22,13 @@ export async function GET(req: NextRequest) {
     
     const { searchParams } = new URL(req.url)
     const type = searchParams.get('type') || 'sent' // 'sent' or 'received'
-    const status = searchParams.get('status')
+    const statusParam = searchParams.get('status')
+    
+    // Validate and convert status parameter
+    let status: ApplicationStatus | undefined
+    if (statusParam && Object.values(ApplicationStatus).includes(statusParam as ApplicationStatus)) {
+      status = statusParam as ApplicationStatus
+    }
     
     let applications
     

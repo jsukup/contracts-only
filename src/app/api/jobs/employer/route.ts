@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { prisma } from '@/lib/prisma'
-import { authOptions } from '@/app/api/auth/[...nextauth]/route'
+import { authOptions } from '@/lib/auth'
+import { Prisma } from '@prisma/client'
 
 export async function GET(req: NextRequest) {
   try {
@@ -16,12 +17,16 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10')
     const offset = parseInt(searchParams.get('offset') || '0')
 
-    const where: any = {
-      userId: session.user.id
+    const where: Prisma.JobWhereInput = {
+      postedById: session.user.id
     }
 
     if (status && status !== 'all') {
-      where.status = status
+      if (status === 'active') {
+        where.isActive = true
+      } else if (status === 'inactive') {
+        where.isActive = false
+      }
     }
 
     const [jobs, total] = await Promise.all([

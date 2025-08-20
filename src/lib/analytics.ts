@@ -105,14 +105,14 @@ export class AnalyticsEngine {
       prisma.job.count({
         where: {
           ...whereClause,
-          status: 'open'
+          isActive: true
         }
       })
     ])
 
-    // Jobs by category
+    // Jobs by type (since category doesn't exist)
     const jobsByCategory = await prisma.job.groupBy({
-      by: ['category'],
+      by: ['jobType'],
       where: whereClause,
       _count: {
         id: true
@@ -196,7 +196,7 @@ export class AnalyticsEngine {
       totalJobs,
       activeJobs,
       jobsByCategory: jobsByCategory.map(item => ({
-        category: item.category,
+        category: item.jobType,
         count: item._count.id
       })),
       jobsByLocation: [
