@@ -157,9 +157,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         setUserProfile(null)
       }
       
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-        setLoading(false)
-      }
+      // Set loading to false for all auth events to ensure UI updates
+      setLoading(false)
     })
 
     return () => {
