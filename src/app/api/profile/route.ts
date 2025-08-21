@@ -1,32 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { createServerSupabaseClient } from '@/lib/supabase'
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const supabase = createServerSupabaseClient()
     
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Get the authorization header from the request
+    const authHeader = req.headers.get('authorization')
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized - No token provided' }, { status: 401 })
+    }
+    
+    const token = authHeader.replace('Bearer ', '')
+    
+    // Get user from token
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized - Invalid token' }, { status: 401 })
     }
 
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email },
-      include: {
-        userSkills: {
-          include: {
-            skill: true
-          }
-        }
-      }
-    })
+    // Get user profile with skills
+    const { data: userProfile, error: profileError } = await supabase
+      .from('users')
+      .select(`
+        *,
+        user_skills (
+          skill:skill_id (
+            id, name, category
+          )
+        )
+      `)
+      .eq('id', user.id)
+      .single()
 
-    if (!user) {
+    if (profileError || !userProfile) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 
-    return NextResponse.json(user)
+    return NextResponse.json(userProfile)
   } catch (error) {
     console.error('Error fetching profile:', error)
     return NextResponse.json(
@@ -38,10 +50,21 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const supabase = createServerSupabaseClient()
     
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Get the authorization header from the request
+    const authHeader = req.headers.get('authorization')
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized - No token provided' }, { status: 401 })
+    }
+    
+    const token = authHeader.replace('Bearer ', '')
+    
+    // Get user from token
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized - Invalid token' }, { status: 401 })
     }
 
     const body = await req.json()
@@ -58,51 +81,80 @@ export async function PUT(req: NextRequest) {
       skills
     } = body
 
-    const user = await prisma.user.update({
-      where: { email: session.user.email },
-      data: {
+    // Update user profile
+    const { data: updatedUser, error: updateError } = await supabase
+      .from('users')
+      .update({
         name,
         title,
         bio,
         location,
         website,
-        linkedinUrl,
-        hourlyRateMin,
-        hourlyRateMax,
+        linkedin_url: linkedinUrl,
+        hourly_rate_min: hourlyRateMin,
+        hourly_rate_max: hourlyRateMax,
         availability
-      }
-    })
+      })
+      .eq('id', user.id)
+      .select()
+      .single()
+
+    if (updateError) {
+      console.error('Error updating user profile:', updateError)
+      throw updateError
+    }
 
     // Update skills if provided
     if (skills && Array.isArray(skills)) {
       // Remove existing skills
-      await prisma.userSkill.deleteMany({
-        where: { userId: user.id }
-      })
+      const { error: deleteError } = await supabase
+        .from('user_skills')
+        .delete()
+        .eq('user_id', user.id)
+
+      if (deleteError) {
+        console.error('Error deleting user skills:', deleteError)
+        throw deleteError
+      }
 
       // Add new skills
       if (skills.length > 0) {
-        await prisma.userSkill.createMany({
-          data: skills.map((skillId: string) => ({
-            userId: user.id,
-            skillId
-          }))
-        })
+        const { error: insertError } = await supabase
+          .from('user_skills')
+          .insert(
+            skills.map((skillId: string) => ({
+              user_id: user.id,
+              skill_id: skillId
+            }))
+          )
+
+        if (insertError) {
+          console.error('Error inserting user skills:', insertError)
+          throw insertError
+        }
       }
     }
 
-    const updatedUser = await prisma.user.findUnique({
-      where: { id: user.id },
-      include: {
-        userSkills: {
-          include: {
-            skill: true
-          }
-        }
-      }
-    })
+    // Get updated user profile with skills
+    const { data: finalUser, error: finalError } = await supabase
+      .from('users')
+      .select(`
+        *,
+        user_skills (
+          skill:skill_id (
+            id, name, category
+          )
+        )
+      `)
+      .eq('id', user.id)
+      .single()
 
-    return NextResponse.json(updatedUser)
+    if (finalError) {
+      console.error('Error fetching updated user profile:', finalError)
+      throw finalError
+    }
+
+    return NextResponse.json(finalUser)
   } catch (error) {
     console.error('Error updating profile:', error)
     return NextResponse.json(

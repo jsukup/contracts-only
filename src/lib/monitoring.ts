@@ -305,7 +305,14 @@ class PerformanceMonitor {
     }
   }
 
-  private async reportError(errorData: any) {
+  private async reportError(errorData: {
+    message: string
+    stack?: string
+    url?: string
+    timestamp?: number
+    userAgent?: string
+    userId?: string
+  }) {
     try {
       await fetch('/api/monitoring/errors', {
         method: 'POST',

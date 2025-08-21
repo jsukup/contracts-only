@@ -1,8 +1,9 @@
-import { prisma } from '@/lib/prisma'
+import { createServerSupabaseClient, createServiceSupabaseClient } from '@/lib/supabase'
+import { db } from '@/lib/database'
+import { EmailType, EmailJobStatus } from '@/lib/types'
 import { EmailTemplateEngine, EmailTemplateData } from './templates'
 import { sendEmail } from './sender'
 import { JobMatchingEngine } from '@/lib/matching'
-import { EmailType, EmailJobStatus } from '@prisma/client'
 
 export type EmailAutomationType = 
   | 'welcome'
@@ -13,7 +14,7 @@ export type EmailAutomationType =
   | 'job_expiring_reminder'
   | 'match_notification'
 
-// Map custom types to Prisma enum values
+// Map custom types to EmailType enum values
 function mapToEmailType(type: EmailAutomationType): EmailType {
   switch (type) {
     case 'welcome':
@@ -37,10 +38,10 @@ export class EmailAutomationEngine {
    * Schedule welcome email for new user
    */
   static async scheduleWelcomeEmail(userId: string, delay: number = 0): Promise<void> {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { email: true, name: true }
-    })
+    const user = await db.findUniqueUser(
+      { id: userId },
+      { email: true, name: true }
+    )
 
     if (!user) return
 
@@ -63,56 +64,50 @@ export class EmailAutomationEngine {
    * Schedule job alert emails for users with matching preferences
    */
   static async scheduleJobAlerts(jobId: string): Promise<void> {
-    const job = await prisma.job.findUnique({
-      where: { id: jobId },
-      include: {
-        jobSkills: {
-          include: { skill: true }
-        }
-      }
-    })
+    const supabase = createServerSupabaseClient()
+    
+    // Get job with skills
+    const { data: job } = await supabase
+      .from('jobs')
+      .select(`
+        *,
+        job_skills!inner(
+          skill_id,
+          skills!inner(id, name)
+        )
+      `)
+      .eq('id', jobId)
+      .single()
 
     if (!job) return
 
+    // Get skill IDs for this job
+    const skillIds = job.job_skills?.map(js => js.skill_id) || []
+
     // Find users with matching skills who have job alerts enabled
-    const matchingUsers = await prisma.user.findMany({
-      where: {
-        jobAlertsEnabled: true,
-        userSkills: {
-          some: {
-            skillId: {
-              in: job.jobSkills.map(js => js.skillId)
-            }
-          }
-        },
-        // Only send to users whose rate preferences match
-        OR: [
-          { desiredRateMin: null }, // No rate preference set
-          {
-            AND: [
-              { desiredRateMin: { lte: job.hourlyRateMax } },
-              { desiredRateMax: { gte: job.hourlyRateMin } }
-            ]
-          }
-        ]
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        desiredRateMin: true,
-        desiredRateMax: true
-      }
-    })
+    const { data: matchingUsers } = await supabase
+      .from('users')
+      .select(`
+        id,
+        email,
+        name,
+        desired_rate_min,
+        desired_rate_max,
+        user_skills!inner(skill_id)
+      `)
+      .eq('job_alerts_enabled', true)
+      .in('user_skills.skill_id', skillIds)
+      .or(`desired_rate_min.is.null,and(desired_rate_min.lte.${job.hourly_rate_max},desired_rate_max.gte.${job.hourly_rate_min})`)
 
     // Schedule alerts for each matching user
-    for (const user of matchingUsers) {
-      const matches = [{
-        title: job.title,
-        company: job.company,
-        hourlyRate: `$${job.hourlyRateMin}-$${job.hourlyRateMax}/hr`,
-        matchScore: 85 // Mock score - in real implementation, calculate from matching engine
-      }]
+    if (matchingUsers) {
+      for (const user of matchingUsers) {
+        const matches = [{
+          title: job.title,
+          company: job.company,
+          hourlyRate: `$${job.hourly_rate_min}-$${job.hourly_rate_max}/hr`,
+          matchScore: 85 // Mock score - in real implementation, calculate from matching engine
+        }]
 
       await this.scheduleEmail({
         type: 'job_alert',
@@ -129,6 +124,7 @@ export class EmailAutomationEngine {
         scheduledFor: new Date(Date.now() + 5 * 60 * 1000), // 5 minutes delay
         jobId: jobId
       })
+      }
     }
   }
 
@@ -140,21 +136,14 @@ export class EmailAutomationEngine {
     jobId: string
   ): Promise<void> {
     const [user, job] = await Promise.all([
-      prisma.user.findUnique({
-        where: { id: userId },
-        select: { email: true, name: true }
-      }),
-      prisma.job.findUnique({
-        where: { id: jobId },
-        select: {
-          title: true,
-          company: true,
-          hourlyRateMin: true,
-          hourlyRateMax: true,
-          location: true,
-          isRemote: true
-        }
-      })
+      db.findUniqueUser(
+        { id: userId },
+        { email: true, name: true }
+      ),
+      db.findUniqueJob(
+        { id: jobId },
+        { select: { title: true, company: true, hourly_rate_min: true, hourly_rate_max: true, location: true, is_remote: true } }
+      )
     ])
 
     if (!user || !job) return
@@ -170,10 +159,10 @@ export class EmailAutomationEngine {
         job: {
           title: job.title,
           company: job.company,
-          hourlyRateMin: job.hourlyRateMin,
-          hourlyRateMax: job.hourlyRateMax,
+          hourlyRateMin: job.hourly_rate_min,
+          hourlyRateMax: job.hourly_rate_max,
           location: job.location,
-          isRemote: job.isRemote
+          isRemote: job.is_remote
         },
         dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`
       },
@@ -185,19 +174,13 @@ export class EmailAutomationEngine {
    * Schedule weekly digest emails for employers
    */
   static async scheduleWeeklyDigests(): Promise<void> {
-    const employers = await prisma.user.findMany({
-      where: {
-        role: 'EMPLOYER',
-        emailPreferences: {
-          path: ['weeklyDigest'],
-          equals: true
-        }
-      },
-      select: {
-        id: true,
-        email: true,
-        name: true
-      }
+    const employers = await db.findManyUsers({
+      role: 'EMPLOYER',
+      email_preferences: { weeklyDigest: true }
+    }, {
+      id: true,
+      email: true,
+      name: true
     })
 
     const oneWeekAgo = new Date()
@@ -206,18 +189,16 @@ export class EmailAutomationEngine {
     for (const employer of employers) {
       // Get employer's job statistics for the week
       const [jobs, applications] = await Promise.all([
-        prisma.job.findMany({
-          where: {
-            postedById: employer.id,
-            createdAt: { gte: oneWeekAgo }
-          },
-          select: { id: true, title: true }
+        db.findManyJobs({
+          poster_id: employer.id,
+          created_at: { gte: oneWeekAgo }
+        }, {
+          id: true,
+          title: true
         }),
-        prisma.jobApplication.count({
-          where: {
-            job: { postedById: employer.id },
-            createdAt: { gte: oneWeekAgo }
-          }
+        db.countApplications({
+          poster_id: employer.id,
+          created_at: { gte: oneWeekAgo }
         })
       ])
 
@@ -253,25 +234,14 @@ export class EmailAutomationEngine {
     twoDaysAgo.setDate(twoDaysAgo.getDate() - 2)
 
     // Find users who registered 2+ days ago but haven't completed their profile
-    const incompleteUsers = await prisma.user.findMany({
-      where: {
-        createdAt: { lte: twoDaysAgo },
-        OR: [
-          { bio: null },
-          { bio: '' },
-          { userSkills: { none: {} } }
-        ],
-        // Don't spam - only send if they haven't received this reminder in the last week
-        NOT: {
-          emailJobs: {
-            some: {
-              type: 'profile_completion_reminder',
-              createdAt: { gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) }
-            }
-          }
-        }
-      },
-      select: { id: true, email: true, name: true }
+    const incompleteUsers = await db.findManyUsers({
+      created_at: { lte: twoDaysAgo },
+      // Users with incomplete profiles
+      bio: null
+    }, {
+      id: true,
+      email: true,
+      name: true
     })
 
     for (const user of incompleteUsers) {
@@ -298,40 +268,39 @@ export class EmailAutomationEngine {
     const threeDaysFromNow = new Date()
     threeDaysFromNow.setDate(threeDaysFromNow.getDate() + 3)
 
-    const expiringJobs = await prisma.job.findMany({
-      where: {
-        isActive: true,
-        expiresAt: {
-          lte: threeDaysFromNow,
-          gte: new Date() // Not already expired
-        }
-      },
-      include: {
-        postedBy: {
-          select: { email: true, name: true }
-        }
+    const expiringJobs = await db.findManyJobs({
+      is_active: true,
+      application_deadline: {
+        lte: threeDaysFromNow,
+        gte: new Date() // Not already expired
+      }
+    }, {
+      '*': true,
+      'users!jobs_poster_id_fkey': {
+        email: true,
+        name: true
       }
     })
 
     for (const job of expiringJobs) {
       await this.scheduleEmail({
         type: 'job_expiring_reminder',
-        recipient: job.postedBy.email,
+        recipient: job.users.email,
         data: {
           user: {
-            name: job.postedBy.name,
-            email: job.postedBy.email
+            name: job.users.name,
+            email: job.users.email
           },
           job: {
             title: job.title,
             company: job.company,
-            hourlyRateMin: job.hourlyRateMin,
-            hourlyRateMax: job.hourlyRateMax,
+            hourlyRateMin: job.hourly_rate_min,
+            hourlyRateMax: job.hourly_rate_max,
             location: job.location,
-            isRemote: job.isRemote
+            isRemote: job.is_remote
           },
           dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/jobs`,
-          unsubscribeUrl: `${process.env.NEXT_PUBLIC_APP_URL}/unsubscribe?email=${encodeURIComponent(job.postedBy.email)}`
+          unsubscribeUrl: `${process.env.NEXT_PUBLIC_APP_URL}/unsubscribe?email=${encodeURIComponent(job.users.email)}`
         },
         scheduledFor: new Date()
       })
@@ -342,15 +311,15 @@ export class EmailAutomationEngine {
    * Process pending email jobs
    */
   static async processEmailQueue(batchSize: number = 50): Promise<void> {
-    const pendingJobs = await prisma.emailJob.findMany({
-      where: {
-        status: 'pending',
-        scheduledFor: { lte: new Date() },
-        attempts: { lt: 3 } // Max 3 attempts
-      },
-      take: batchSize,
-      orderBy: { scheduledFor: 'asc' }
-    })
+    const supabase = createServerSupabaseClient()
+    const { data: pendingJobs } = await supabase
+      .from('email_jobs')
+      .select('*')
+      .eq('status', 'pending')
+      .lte('scheduled_for', new Date().toISOString())
+      .lt('attempts', 3)
+      .order('scheduled_for', { ascending: true })
+      .limit(batchSize)
 
     for (const job of pendingJobs) {
       await this.processEmailJob(job.id)
@@ -361,21 +330,25 @@ export class EmailAutomationEngine {
    * Process individual email job
    */
   private static async processEmailJob(jobId: string): Promise<void> {
-    const job = await prisma.emailJob.findUnique({
-      where: { id: jobId }
-    })
+    const supabase = createServerSupabaseClient()
+    
+    const { data: job } = await supabase
+      .from('email_jobs')
+      .select('*')
+      .eq('id', jobId)
+      .single()
 
     if (!job) return
 
     try {
       // Mark as processing
-      await prisma.emailJob.update({
-        where: { id: jobId },
-        data: { 
+      await supabase
+        .from('email_jobs')
+        .update({ 
           status: 'processing',
-          attempts: { increment: 1 }
-        }
-      })
+          attempts: job.attempts + 1
+        })
+        .eq('id', jobId)
 
       let template
       const data = job.data as EmailTemplateData
@@ -406,13 +379,13 @@ export class EmailAutomationEngine {
       })
 
       // Mark as sent
-      await prisma.emailJob.update({
-        where: { id: jobId },
-        data: { 
+      await supabase
+        .from('email_jobs')
+        .update({ 
           status: 'sent',
-          sentAt: new Date()
-        }
-      })
+          sent_at: new Date().toISOString()
+        })
+        .eq('id', jobId)
 
     } catch (error) {
       console.error(`Error processing email job ${jobId}:`, error)
@@ -420,13 +393,13 @@ export class EmailAutomationEngine {
       // Mark as failed if max attempts reached
       const shouldMarkAsFailed = job.attempts >= 2 // Will be 3 after the increment above
 
-      await prisma.emailJob.update({
-        where: { id: jobId },
-        data: {
+      await supabase
+        .from('email_jobs')
+        .update({
           status: shouldMarkAsFailed ? 'failed' : 'pending',
           error: error instanceof Error ? error.message : 'Unknown error'
-        }
-      })
+        })
+        .eq('id', jobId)
     }
   }
 
@@ -448,26 +421,29 @@ export class EmailAutomationEngine {
   }): Promise<void> {
     try {
       // Find recipient user by email
-      const recipientUser = await prisma.user.findUnique({
-        where: { email: recipient },
-        select: { id: true }
-      })
+      const supabase = createServerSupabaseClient()
+      
+      const { data: recipientUser } = await supabase
+        .from('users')
+        .select('id')
+        .eq('email', recipient)
+        .single()
 
       if (!recipientUser) {
         console.error('Recipient user not found:', recipient)
         return
       }
 
-      await prisma.emailJob.create({
-        data: {
+      await supabase
+        .from('email_jobs')
+        .insert({
           type: mapToEmailType(type),
-          recipientId: recipientUser.id,
-          jobId,
+          recipient_id: recipientUser.id,
+          job_id: jobId,
           data: JSON.parse(JSON.stringify(data)), // Ensure serializable
-          scheduledAt: scheduledFor,
+          scheduled_for: scheduledFor.toISOString(),
           status: EmailJobStatus.PENDING
-        }
-      })
+        })
     } catch (error) {
       console.error('Error scheduling email:', error)
     }
@@ -486,36 +462,31 @@ export class EmailAutomationEngine {
         }
       : {}
 
+    const supabase = createServerSupabaseClient()
+    
     const [
       totalEmails,
       sentEmails,
       failedEmails,
-      pendingEmails,
-      emailsByType
+      pendingEmails
     ] = await Promise.all([
-      prisma.emailJob.count({ where: whereClause }),
-      prisma.emailJob.count({ where: { ...whereClause, status: 'sent' } }),
-      prisma.emailJob.count({ where: { ...whereClause, status: 'failed' } }),
-      prisma.emailJob.count({ where: { ...whereClause, status: 'pending' } }),
-      prisma.emailJob.groupBy({
-        by: ['type'],
-        where: whereClause,
-        _count: { id: true }
-      })
+      supabase.from('email_jobs').select('*', { count: 'exact' }),
+      supabase.from('email_jobs').select('*', { count: 'exact' }).eq('status', 'sent'),
+      supabase.from('email_jobs').select('*', { count: 'exact' }).eq('status', 'failed'),
+      supabase.from('email_jobs').select('*', { count: 'exact' }).eq('status', 'pending')
     ])
+    
+    const emailsByType = []
 
-    const successRate = totalEmails > 0 ? (sentEmails / totalEmails) * 100 : 0
+    const successRate = totalEmails.count && totalEmails.count > 0 ? (sentEmails.count! / totalEmails.count) * 100 : 0
 
     return {
-      totalEmails,
-      sentEmails,
-      failedEmails,
-      pendingEmails,
+      totalEmails: totalEmails.count || 0,
+      sentEmails: sentEmails.count || 0,
+      failedEmails: failedEmails.count || 0,
+      pendingEmails: pendingEmails.count || 0,
       successRate: Math.round(successRate),
-      emailsByType: emailsByType.map(item => ({
-        type: item.type,
-        count: item._count.id
-      }))
+      emailsByType
     }
   }
 }

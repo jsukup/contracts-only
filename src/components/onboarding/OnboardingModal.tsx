@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@/contexts/AuthContext'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { 
@@ -20,7 +20,7 @@ interface OnboardingModalProps {
 }
 
 export function OnboardingModal({ isOpen, onClose }: OnboardingModalProps) {
-  const { data: session } = useSession()
+  const { user } = useAuth()
   const [selectedRole, setSelectedRole] = useState<'contractor' | 'employer' | null>(null)
 
   useEffect(() => {

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@/contexts/AuthContext'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -38,7 +38,7 @@ interface Skill {
 }
 
 export default function UserProfileForm() {
-  const { data: session, update } = useSession()
+  const { user } = useAuth()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -59,7 +59,7 @@ export default function UserProfileForm() {
   })
 
   useEffect(() => {
-    if (!session?.user?.email) return
+    if (!user?.email) return
 
     const fetchProfile = async () => {
       try {
@@ -106,7 +106,7 @@ export default function UserProfileForm() {
 
     fetchProfile()
     fetchSkills()
-  }, [session])
+  }, [user])
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
@@ -146,7 +146,7 @@ export default function UserProfileForm() {
   }
 
   const handleSave = async () => {
-    if (!session?.user?.email) return
+    if (!user?.email) return
 
     try {
       setSaving(true)
@@ -166,10 +166,7 @@ export default function UserProfileForm() {
 
       if (!response.ok) throw new Error('Failed to update profile')
 
-      // Update session if name changed
-      if (formData.name !== session.user.name) {
-        await update({ name: formData.name })
-      }
+      // Note: Session update handled by Supabase auth context
 
       toast.success('Profile updated successfully')
     } catch (err) {

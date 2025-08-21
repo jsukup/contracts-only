@@ -21,7 +21,7 @@ npx create-next-app@latest contracts-only --typescript --tailwind --app --src-di
 cd contracts-only
 
 # 2. Install core dependencies
-npm install prisma @prisma/client next-auth @auth/prisma-adapter
+npm install @supabase/supabase-js next-auth
 npm install zod react-hook-form @hookform/resolvers
 npm install zustand lucide-react date-fns
 npm install @sendgrid/mail
@@ -31,8 +31,9 @@ npm install -D @types/node @typescript-eslint/parser @typescript-eslint/eslint-p
 npm install -D prettier eslint-config-prettier
 npm install -D jest @testing-library/react @testing-library/jest-dom
 
-# 4. Initialize Prisma
-npx prisma init
+# 4. Initialize Supabase
+# Set up Supabase project at https://supabase.com
+# Configure environment variables
 
 # 5. Set up Git
 git init
@@ -51,11 +52,11 @@ git commit -m "Initial commit"
 2. **Database Development**
    ```bash
    # After schema changes
-   npx prisma migrate dev --name feature_name
-   npx prisma generate
+   # Database managed through Supabase Dashboard
+   # Schema changes applied directly in Supabase
    
    # View data
-   npx prisma studio
+   # Use Supabase Dashboard table editor
    ```
 
 3. **Testing**
@@ -112,209 +113,12 @@ src/
 
 ### Database Schema Implementation
 
-```prisma
-// prisma/schema.prisma
-generator client {
-  provider = "prisma-client-js"
-}
+```sql
+-- Database schema managed in Supabase Dashboard
+-- See database/schema.sql for the complete Supabase schema
+-- Tables use snake_case naming convention with Row Level Security policies
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
 
-model User {
-  id              String    @id @default(cuid())
-  email           String    @unique
-  emailVerified   DateTime?
-  name            String?
-  image           String?
-  type            UserType  @default(CONTRACTOR)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  
-  accounts        Account[]
-  sessions        Session[]
-  contractorProfile ContractorProfile?
-  company         Company?
-  jobsPosted      Job[]
-  reviewsGiven    Review[]  @relation("ReviewsGiven")
-  reviewsReceived Review[]  @relation("ReviewsReceived")
-}
-
-model ContractorProfile {
-  id                String              @id @default(cuid())
-  userId            String              @unique
-  user              User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  hourlyRateMin     Int?
-  hourlyRateMax     Int?
-  skills            String[]
-  bio               String?
-  portfolioUrl      String?
-  location          String?
-  remotePreference  RemotePreference    @default(HYBRID)
-  availabilityStatus AvailabilityStatus @default(AVAILABLE_NOW)
-  availableDate     DateTime?
-  contractTypes     ContractType[]
-  
-  createdAt         DateTime            @default(now())
-  updatedAt         DateTime            @updatedAt
-  
-  jobMatches        JobMatch[]
-}
-
-model Company {
-  id              String      @id @default(cuid())
-  userId          String      @unique
-  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  name            String
-  website         String?
-  description     String?
-  size            CompanySize?
-  industry        String?
-  type            CompanyType @default(DIRECT)
-  paymentTerms    String?
-  verified        Boolean     @default(false)
-  
-  jobs            Job[]
-  
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-}
-
-model Job {
-  id                String          @id @default(cuid())
-  companyId         String
-  company           Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  
-  title             String
-  description       String
-  hourlyRateMin     Int
-  hourlyRateMax     Int
-  contractDuration  ContractDuration
-  contractType      ContractType
-  skillsRequired    String[]
-  location          String?
-  remoteType        RemoteType      @default(HYBRID)
-  applicationUrl    String
-  urgent            Boolean         @default(false)
-  
-  status            JobStatus       @default(ACTIVE)
-  postedAt          DateTime        @default(now())
-  expiresAt         DateTime
-  
-  matches           JobMatch[]
-  reviews           Review[]
-  
-  @@index([status, expiresAt])
-  @@index([skillsRequired])
-  @@index([hourlyRateMin, hourlyRateMax])
-}
-
-model JobMatch {
-  id            String            @id @default(cuid())
-  jobId         String
-  job           Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  contractorId  String
-  contractor    ContractorProfile @relation(fields: [contractorId], references: [id], onDelete: Cascade)
-  
-  matchScore    Float
-  notifiedAt    DateTime?
-  
-  createdAt     DateTime          @default(now())
-  
-  @@unique([jobId, contractorId])
-}
-
-model Review {
-  id            String   @id @default(cuid())
-  reviewerId    String
-  reviewer      User     @relation("ReviewsGiven", fields: [reviewerId], references: [id])
-  revieweeId    String
-  reviewee      User     @relation("ReviewsReceived", fields: [revieweeId], references: [id])
-  jobId         String?
-  job           Job?     @relation(fields: [jobId], references: [id])
-  
-  rating        Int      // 1-5
-  reviewText    String?
-  
-  createdAt     DateTime @default(now())
-  
-  @@unique([reviewerId, revieweeId, jobId])
-}
-
-// Enums
-enum UserType {
-  CONTRACTOR
-  EMPLOYER
-  AGENCY
-}
-
-enum AvailabilityStatus {
-  AVAILABLE_NOW
-  AVAILABLE_DATE
-  NOT_LOOKING
-}
-
-enum RemotePreference {
-  REMOTE
-  HYBRID
-  ONSITE
-}
-
-enum ContractType {
-  W2
-  CONTRACTOR_1099
-  CORP_TO_CORP
-}
-
-enum ContractDuration {
-  SHORT_TERM    // < 3 months
-  MEDIUM_TERM   // 3-6 months
-  LONG_TERM     // 6-12 months
-  ONGOING       // 12+ months
-}
-
-enum RemoteType {
-  REMOTE
-  HYBRID
-  ONSITE
-}
-
-enum CompanySize {
-  STARTUP
-  SMALL
-  MEDIUM
-  LARGE
-  ENTERPRISE
-}
-
-enum CompanyType {
-  DIRECT
-  AGENCY
-}
-
-enum JobStatus {
-  ACTIVE
-  EXPIRED
-  FILLED
-  DRAFT
-}
-
-// NextAuth models
-model Account {
-  // ... NextAuth account schema
-}
-
-model Session {
-  // ... NextAuth session schema
-}
-
-model VerificationToken {
-  // ... NextAuth verification schema
-}
 ```
 
 ## API Design
@@ -547,7 +351,7 @@ export { Button, buttonVariants }
 
 ```typescript
 // components/job/JobCard.tsx
-import { Job, Company } from '@prisma/client'
+import { Job, Company } from '@/lib/types'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -708,10 +512,11 @@ vercel env add NEXTAUTH_SECRET production
 
 ```bash
 # Generate migration
-npx prisma migrate deploy
+# Deploy database changes
+# Apply schema changes via Supabase Dashboard
 
 # Seed production data
-npx prisma db seed -- --env=production
+# Use Supabase SQL editor or custom seeding scripts
 ```
 
 ## Performance Monitoring
@@ -768,7 +573,7 @@ export { Sentry }
 
 ### Security Validation
 - [ ] All forms use CSRF protection
-- [ ] SQL injection prevented by Prisma
+- [ ] SQL injection prevented by Supabase RLS policies
 - [ ] XSS protection via React escaping
 - [ ] Rate limiting on API endpoints
 - [ ] Secure session management

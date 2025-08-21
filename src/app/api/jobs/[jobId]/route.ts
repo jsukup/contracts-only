@@ -1,40 +1,31 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { createServerSupabaseClient } from '@/lib/supabase'
 
 export async function GET(
   req: NextRequest,
   { params }: { params: { jobId: string } }
 ) {
   try {
-    const job = await prisma.job.findUnique({
-      where: { id: params.jobId },
-      include: {
-        postedBy: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
-            title: true,
-            bio: true
-          }
-        },
-        jobSkills: {
-          include: {
-            skill: true
-          }
-        },
-        _count: {
-          select: {
-            applications: true
-          }
-        }
-      }
-    })
+    const supabase = createServerSupabaseClient()
     
-    if (!job) {
+    const { data: job, error } = await supabase
+      .from('jobs')
+      .select(`
+        *,
+        poster:poster_id (
+          id, name, email, image, title, bio
+        ),
+        job_skills (
+          skill:skill_id (
+            id, name, category
+          )
+        ),
+        applications:job_applications (count)
+      `)
+      .eq('id', params.jobId)
+      .single()
+    
+    if (error || !job) {
       return NextResponse.json({ error: 'Job not found' }, { status: 404 })
     }
     
@@ -53,30 +44,35 @@ export async function PUT(
   { params }: { params: { jobId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const supabase = createServerSupabaseClient()
     
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Get the authorization header from the request
+    const authHeader = req.headers.get('authorization')
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized - No token provided' }, { status: 401 })
     }
     
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
-    })
+    const token = authHeader.replace('Bearer ', '')
     
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    // Get user from token
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized - Invalid token' }, { status: 401 })
     }
     
     // Check if user owns the job
-    const existingJob = await prisma.job.findUnique({
-      where: { id: params.jobId }
-    })
+    const { data: existingJob, error: jobError } = await supabase
+      .from('jobs')
+      .select('poster_id')
+      .eq('id', params.jobId)
+      .single()
     
-    if (!existingJob) {
+    if (jobError || !existingJob) {
       return NextResponse.json({ error: 'Job not found' }, { status: 404 })
     }
     
-    if (existingJob.postedById !== user.id) {
+    if (existingJob.poster_id !== user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
     
@@ -101,76 +97,96 @@ export async function PUT(
     } = body
     
     // Update job
-    const job = await prisma.job.update({
-      where: { id: params.jobId },
-      data: {
+    const { data: job, error: updateError } = await supabase
+      .from('jobs')
+      .update({
         title,
         description,
         company,
         location,
-        isRemote,
-        jobType,
-        hourlyRateMin,
-        hourlyRateMax,
+        is_remote: isRemote,
+        job_type: jobType,
+        hourly_rate_min: hourlyRateMin,
+        hourly_rate_max: hourlyRateMax,
         currency,
-        contractDuration,
-        hoursPerWeek,
-        startDate: startDate ? new Date(startDate) : null,
-        applicationUrl,
-        applicationEmail,
-        isActive
-      },
-      include: {
-        postedBy: {
-          select: {
-            id: true,
-            name: true,
-            image: true
-          }
-        },
-        jobSkills: {
-          include: {
-            skill: true
-          }
-        }
-      }
-    })
+        contract_duration: contractDuration,
+        hours_per_week: hoursPerWeek,
+        start_date: startDate ? new Date(startDate).toISOString() : null,
+        application_url: applicationUrl,
+        application_email: applicationEmail,
+        is_active: isActive
+      })
+      .eq('id', params.jobId)
+      .select(`
+        *,
+        poster:poster_id (
+          id, name, image
+        ),
+        job_skills (
+          skill:skill_id (
+            id, name, category
+          )
+        )
+      `)
+      .single()
+    
+    if (updateError) {
+      console.error('Error updating job:', updateError)
+      throw updateError
+    }
     
     // Update skills if provided
     if (skills && Array.isArray(skills)) {
       // Remove existing skills
-      await prisma.jobSkill.deleteMany({
-        where: { jobId: params.jobId }
-      })
+      const { error: deleteError } = await supabase
+        .from('job_skills')
+        .delete()
+        .eq('job_id', params.jobId)
+      
+      if (deleteError) {
+        console.error('Error deleting job skills:', deleteError)
+        throw deleteError
+      }
       
       // Add new skills
       if (skills.length > 0) {
-        await prisma.jobSkill.createMany({
-          data: skills.map((skillId: string) => ({
-            jobId: params.jobId,
-            skillId
-          }))
-        })
+        const { error: insertError } = await supabase
+          .from('job_skills')
+          .insert(
+            skills.map((skillId: string) => ({
+              job_id: params.jobId,
+              skill_id: skillId
+            }))
+          )
+        
+        if (insertError) {
+          console.error('Error inserting job skills:', insertError)
+          throw insertError
+        }
       }
     }
     
-    const updatedJob = await prisma.job.findUnique({
-      where: { id: params.jobId },
-      include: {
-        postedBy: {
-          select: {
-            id: true,
-            name: true,
-            image: true
-          }
-        },
-        jobSkills: {
-          include: {
-            skill: true
-          }
-        }
-      }
-    })
+    // Get updated job with relationships
+    const { data: updatedJob, error: finalError } = await supabase
+      .from('jobs')
+      .select(`
+        *,
+        poster:poster_id (
+          id, name, image
+        ),
+        job_skills (
+          skill:skill_id (
+            id, name, category
+          )
+        )
+      `)
+      .eq('id', params.jobId)
+      .single()
+    
+    if (finalError) {
+      console.error('Error fetching updated job:', finalError)
+      throw finalError
+    }
     
     return NextResponse.json(updatedJob)
   } catch (error) {
@@ -187,38 +203,48 @@ export async function DELETE(
   { params }: { params: { jobId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const supabase = createServerSupabaseClient()
     
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Get the authorization header from the request
+    const authHeader = req.headers.get('authorization')
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized - No token provided' }, { status: 401 })
     }
     
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
-    })
+    const token = authHeader.replace('Bearer ', '')
     
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    // Get user from token
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized - Invalid token' }, { status: 401 })
     }
     
     // Check if user owns the job
-    const job = await prisma.job.findUnique({
-      where: { id: params.jobId }
-    })
+    const { data: job, error: jobError } = await supabase
+      .from('jobs')
+      .select('poster_id')
+      .eq('id', params.jobId)
+      .single()
     
-    if (!job) {
+    if (jobError || !job) {
       return NextResponse.json({ error: 'Job not found' }, { status: 404 })
     }
     
-    if (job.postedById !== user.id) {
+    if (job.poster_id !== user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
     
-    // Soft delete by setting isActive to false
-    await prisma.job.update({
-      where: { id: params.jobId },
-      data: { isActive: false }
-    })
+    // Soft delete by setting is_active to false
+    const { error: deleteError } = await supabase
+      .from('jobs')
+      .update({ is_active: false })
+      .eq('id', params.jobId)
+    
+    if (deleteError) {
+      console.error('Error deleting job:', deleteError)
+      throw deleteError
+    }
     
     return NextResponse.json({ message: 'Job deleted successfully' })
   } catch (error) {

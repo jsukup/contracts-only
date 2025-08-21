@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useSession, signOut } from 'next-auth/react'
+import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/Button'
 import { 
   User, 
@@ -19,7 +19,7 @@ import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 
 export function Navigation() {
-  const { data: session, status } = useSession()
+  const { user, userProfile, loading, signOut } = useAuth()
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
@@ -33,7 +33,7 @@ export function Navigation() {
   const navigationItems = [
     { name: 'Home', href: '/', icon: Home, public: true },
     { name: 'Browse Jobs', href: '/jobs', icon: Briefcase, public: true },
-    ...(session ? [
+    ...(user ? [
       { name: 'Dashboard', href: '/dashboard', icon: User, public: false },
       { name: 'Post Job', href: '/jobs/post', icon: Plus, public: false },
     ] : [])
@@ -76,9 +76,9 @@ export function Navigation() {
 
           {/* Desktop Auth Section */}
           <div className="hidden md:flex items-center space-x-4">
-            {status === 'loading' ? (
+            {loading ? (
               <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse" />
-            ) : session ? (
+            ) : user ? (
               <div className="flex items-center space-x-2">
                 {/* Notifications */}
                 <Button variant="ghost" size="sm" asChild>
@@ -91,7 +91,7 @@ export function Navigation() {
                 <div className="relative group">
                   <Button variant="ghost" size="sm" className="flex items-center space-x-2">
                     <User className="h-4 w-4" />
-                    <span className="hidden lg:block">{session.user?.name}</span>
+                    <span className="hidden lg:block">{userProfile?.name || user?.user_metadata?.full_name}</span>
                   </Button>
                   
                   {/* Dropdown Menu */}
@@ -105,7 +105,7 @@ export function Navigation() {
                         Settings
                       </Link>
                       <button
-                        onClick={() => signOut({ callbackUrl: '/' })}
+                        onClick={() => signOut()}
                         className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
                       >
                         <LogOut className="h-4 w-4 mr-2" />
@@ -169,12 +169,12 @@ export function Navigation() {
               
               {/* Mobile Auth Section */}
               <div className="pt-4 mt-4 border-t">
-                {session ? (
+                {user ? (
                   <div className="space-y-2">
                     <div className="px-3 py-2">
                       <div className="flex items-center space-x-2">
                         <User className="h-4 w-4" />
-                        <span className="text-sm font-medium">{session.user?.name}</span>
+                        <span className="text-sm font-medium">{userProfile?.name || user?.user_metadata?.full_name}</span>
                       </div>
                     </div>
                     <Link
@@ -188,7 +188,7 @@ export function Navigation() {
                     <button
                       onClick={() => {
                         setMobileMenuOpen(false)
-                        signOut({ callbackUrl: '/' })
+                        signOut()
                       }}
                       className="flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 transition-colors w-full text-left"
                     >

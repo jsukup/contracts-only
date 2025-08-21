@@ -18,7 +18,7 @@ ContractsOnly connects businesses with contractors for short-term projects, feat
 
 - **Frontend**: Next.js 15 with React and TypeScript
 - **Styling**: Tailwind CSS with Radix UI components
-- **Database**: Supabase PostgreSQL with Prisma ORM
+- **Database**: Supabase PostgreSQL with Supabase SDK
 - **Authentication**: NextAuth.js with Google and LinkedIn OAuth
 - **Payments**: Stripe (feature-flagged for October 2025)
 - **Analytics**: Google Analytics 4 with privacy compliance
@@ -48,8 +48,8 @@ ContractsOnly connects businesses with contractors for short-term projects, feat
 
 4. Set up the database:
    ```bash
-   npx prisma migrate dev
-   npx prisma generate
+   # Database schema managed in Supabase Dashboard
+   # Types generated automatically by Supabase CLI
    ```
 
 5. Run the development server:
@@ -67,7 +67,7 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 │   ├── components/       # Reusable UI components
 │   ├── lib/             # Utilities and configurations
 │   └── types/           # TypeScript type definitions
-├── prisma/              # Database schema and migrations
+├── database/            # Supabase types and migrations
 ├── public/              # Static assets
 ├── PRD.md              # Product Requirements Document
 ├── IMPLEMENTATION.md    # Task breakdown and implementation guide

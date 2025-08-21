@@ -13,8 +13,17 @@ import {
   SelectValue,
 } from '@/components/ui/Select'
 
+interface JobFilters {
+  search?: string
+  jobType?: string
+  isRemote?: string
+  minRate?: number
+  maxRate?: number
+  skills?: string
+}
+
 interface JobFiltersProps {
-  onFiltersChange: (filters: any) => void
+  onFiltersChange: (filters: JobFilters) => void
   skills?: Array<{ id: string; name: string; category?: string }>
 }
 
@@ -30,7 +39,7 @@ export function JobFilters({ onFiltersChange, skills = [] }: JobFiltersProps) {
   const handleSubmit = (e?: React.FormEvent) => {
     e?.preventDefault()
     
-    const filters: any = {}
+    const filters: JobFilters = {}
     if (search) filters.search = search
     if (jobType) filters.jobType = jobType
     if (isRemote !== '') filters.isRemote = isRemote

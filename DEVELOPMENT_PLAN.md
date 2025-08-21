@@ -21,7 +21,7 @@ npx create-next-app@latest contracts-only --typescript --tailwind --app --src-di
 cd contracts-only
 
 # 2. Install core dependencies
-npm install prisma @prisma/client next-auth @auth/prisma-adapter
+npm install @supabase/supabase-js next-auth
 npm install zod react-hook-form @hookform/resolvers
 npm install zustand lucide-react date-fns
 npm install @sendgrid/mail
@@ -31,8 +31,9 @@ npm install -D @types/node @typescript-eslint/parser @typescript-eslint/eslint-p
 npm install -D prettier eslint-config-prettier
 npm install -D jest @testing-library/react @testing-library/jest-dom
 
-# 4. Initialize Prisma
-npx prisma init
+# 4. Initialize Supabase
+# Set up Supabase project at https://supabase.com
+# Configure environment variables
 
 # 5. Set up Git
 git init
@@ -50,12 +51,11 @@ git commit -m "Initial commit"
 
 2. **Database Development**
    ```bash
-   # After schema changes
-   npx prisma migrate dev --name feature_name
-   npx prisma generate
+   # Database managed through Supabase Dashboard
+   # Schema changes applied directly in Supabase
    
    # View data
-   npx prisma studio
+   # Use Supabase Dashboard table editor
    ```
 
 3. **Testing**
@@ -112,11 +112,9 @@ src/
 
 ### Database Schema Implementation
 
-```prisma
-// prisma/schema.prisma
-generator client {
-  provider = "prisma-client-js"
-}
+```sql
+-- Database schema managed in Supabase Dashboard
+-- Tables created using Supabase SQL editor
 
 datasource db {
   provider = "postgresql"
@@ -547,7 +545,7 @@ export { Button, buttonVariants }
 
 ```typescript
 // components/job/JobCard.tsx
-import { Job, Company } from '@prisma/client'
+import { Job, Company } from '@/lib/types'
 import { Card, CardContent, CardHeader } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -707,11 +705,11 @@ vercel env add NEXTAUTH_SECRET production
 ### Database Migration for Production
 
 ```bash
-# Generate migration
-npx prisma migrate deploy
+# Deploy database changes
+# Apply schema changes via Supabase Dashboard
 
 # Seed production data
-npx prisma db seed -- --env=production
+# Use Supabase SQL editor or custom seeding scripts
 ```
 
 ## Performance Monitoring
@@ -768,7 +766,7 @@ export { Sentry }
 
 ### Security Validation
 - [ ] All forms use CSRF protection
-- [ ] SQL injection prevented by Prisma
+- [ ] SQL injection prevented by Supabase RLS policies
 - [ ] XSS protection via React escaping
 - [ ] Rate limiting on API endpoints
 - [ ] Secure session management

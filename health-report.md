@@ -125,7 +125,7 @@ npm audit fix --force
 1. **TypeScript Type Safety** (Impact: High, Effort: 4-6 hours)
    - 56 'any' violations need proper typing
    - Focus on API routes and component props
-   - Use Prisma types for database operations
+   - Use Supabase types for database operations
 
 2. **Test Coverage** (Impact: High, Effort: 8-12 hours)  
    - Current: 4.8% file coverage (5/105 files)

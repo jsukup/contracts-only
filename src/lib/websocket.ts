@@ -184,7 +184,7 @@ export class WebSocketClient {
     }
   }
 
-  private triggerEvent(type: string, data: any): void {
+  private triggerEvent(type: string, data: Record<string, unknown>): void {
     const listeners = this.listeners.get(type)
     if (listeners) {
       listeners.forEach(callback => callback(data))

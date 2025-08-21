@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@/contexts/AuthContext'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -33,22 +33,22 @@ interface UserStats {
 }
 
 export default function DashboardPage() {
-  const { data: session, status } = useSession()
+  const { user } = useAuth()
   const [applications, setApplications] = useState<Application[]>([])
   const [stats, setStats] = useState<UserStats | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (!user) {
       redirect('/auth/signin')
     }
-  }, [status])
+  }, [user])
 
   useEffect(() => {
-    if (session?.user?.id) {
+    if (user?.id) {
       fetchDashboardData()
     }
-  }, [session])
+  }, [user])
 
   const fetchDashboardData = async () => {
     setLoading(true)
@@ -56,7 +56,7 @@ export default function DashboardPage() {
       // Fetch user applications
       const applicationsResponse = await fetch('/api/applications', {
         headers: {
-          'Authorization': `Bearer ${session?.accessToken}`
+          'Authorization': `Bearer ${user?.id}`
         }
       })
       
@@ -66,7 +66,7 @@ export default function DashboardPage() {
       }
 
       // Fetch user stats
-      const statsResponse = await fetch(`/api/profile/${session?.user?.id}/stats`)
+      const statsResponse = await fetch(`/api/profile/${user?.id}/stats`)
       if (statsResponse.ok) {
         const statsData = await statsResponse.json()
         setStats(statsData)
@@ -97,7 +97,7 @@ export default function DashboardPage() {
     }
   }
 
-  if (status === 'loading' || loading) {
+  if (!user || loading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-center items-center min-h-[400px]">
@@ -107,7 +107,7 @@ export default function DashboardPage() {
     )
   }
 
-  if (!session) {
+  if (!user) {
     return null
   }
 
@@ -116,7 +116,7 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Welcome back, {session.user?.name}</h1>
+          <h1 className="text-3xl font-bold">Welcome back, {user?.name}</h1>
           <p className="text-muted-foreground mt-2">
             Manage your applications and track your contract opportunities
           </p>

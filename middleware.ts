@@ -1,27 +1,31 @@
-import { withAuth } from "next-auth/middleware"
 import { NextResponse } from "next/server"
+import type { NextRequest } from "next/server"
+import { createServerSupabaseClient } from "@/lib/supabase"
 
-export default withAuth(
-  function middleware(req) {
-    // Add custom logic here if needed
-    return NextResponse.next()
-  },
-  {
-    callbacks: {
-      authorized({ req, token }) {
-        // Protected paths
-        const protectedPaths = ["/dashboard", "/jobs/new", "/profile"]
-        const pathname = req.nextUrl.pathname
-        
-        // Check if the current path is protected
-        const isProtected = protectedPaths.some(path => pathname.startsWith(path))
-        
-        // Allow access if not protected or if user is authenticated
-        return !isProtected || !!token
-      },
-    },
+export async function middleware(request: NextRequest) {
+  const supabase = createServerSupabaseClient()
+  
+  // Protected paths
+  const protectedPaths = ["/dashboard", "/jobs/new", "/profile"]
+  const pathname = request.nextUrl.pathname
+  
+  // Check if the current path is protected
+  const isProtected = protectedPaths.some(path => pathname.startsWith(path))
+  
+  if (isProtected) {
+    // Check for authentication
+    const { data: { user }, error } = await supabase.auth.getUser()
+    
+    if (error || !user) {
+      // Redirect to signin page
+      const redirectUrl = new URL('/auth/signin', request.url)
+      redirectUrl.searchParams.set('redirectTo', request.url)
+      return NextResponse.redirect(redirectUrl)
+    }
   }
-)
+
+  return NextResponse.next()
+}
 
 export const config = {
   matcher: [

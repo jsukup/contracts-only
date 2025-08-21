@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@/contexts/AuthContext'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -40,13 +40,13 @@ export default function ApplicationsList({
   status, 
   limit = 10 
 }: ApplicationsListProps) {
-  const { data: session } = useSession()
+  const { user } = useAuth()
   const [applications, setApplications] = useState<JobApplication[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!session?.user?.email) return
+    if (!user?.email) return
 
     const fetchApplications = async () => {
       try {
@@ -72,7 +72,7 @@ export default function ApplicationsList({
     }
 
     fetchApplications()
-  }, [session, type, status, limit])
+  }, [user, type, status, limit])
 
   const getStatusBadgeVariant = (status: JobApplication['status']) => {
     switch (status) {

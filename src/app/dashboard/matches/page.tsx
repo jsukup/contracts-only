@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@/contexts/AuthContext'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -46,7 +46,7 @@ interface MatchScore {
 }
 
 export default function MatchesPage() {
-  const { data: session } = useSession()
+  const { user } = useAuth()
   const [matches, setMatches] = useState<MatchScore[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -54,18 +54,18 @@ export default function MatchesPage() {
   const [minScore, setMinScore] = useState(50)
 
   useEffect(() => {
-    if (session?.user?.id) {
+    if (user?.id) {
       fetchMatches()
     }
-  }, [session, minScore])
+  }, [user, minScore])
 
   const fetchMatches = async () => {
-    if (!session?.user?.id) return
+    if (!user?.id) return
 
     setLoading(true)
     try {
       const response = await fetch(
-        `/api/matching/user/${session.user.id}?minScore=${minScore}&limit=20`
+        `/api/matching/user/${user.id}?minScore=${minScore}&limit=20`
       )
       
       if (!response.ok) throw new Error('Failed to fetch matches')

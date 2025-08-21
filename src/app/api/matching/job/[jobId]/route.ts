@@ -1,31 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/lib/auth'
+import { getServerSession } from '@/lib/auth'
+
 import { JobMatchingEngine } from '@/lib/matching'
-import { prisma } from '@/lib/prisma'
+import { createServerSupabaseClient } from '@/lib/supabase'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { jobId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession()
     
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
+    const supabase = createServerSupabaseClient()
+    
     // Check if user owns this job or is admin
-    const job = await prisma.job.findUnique({
-      where: { id: params.jobId },
-      include: { postedBy: true }
-    })
+    const { data: job, error: jobError } = await supabase
+      .from('jobs')
+      .select(`
+        *,
+        users!jobs_poster_id_fkey(id, name, role)
+      `)
+      .eq('id', params.jobId)
+      .single()
 
-    if (!job) {
+    if (jobError || !job) {
       return NextResponse.json({ error: 'Job not found' }, { status: 404 })
     }
 
-    if (job.postedBy.id !== session.user.id && session.user.role !== 'ADMIN') {
+    if (job.users?.id !== session.user.id && session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -92,23 +98,29 @@ export async function POST(
   { params }: { params: { jobId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession()
     
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     // Check if user owns this job
-    const job = await prisma.job.findUnique({
-      where: { id: params.jobId },
-      include: { postedBy: true }
-    })
+    const supabase = createServerSupabaseClient()
+    
+    const { data: job, error: jobError } = await supabase
+      .from('jobs')
+      .select(`
+        *,
+        users!jobs_poster_id_fkey(id, name)
+      `)
+      .eq('id', params.jobId)
+      .single()
 
-    if (!job) {
+    if (jobError || !job) {
       return NextResponse.json({ error: 'Job not found' }, { status: 404 })
     }
 
-    if (job.postedBy.id !== session.user.id) {
+    if (job.users?.id !== session.user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 

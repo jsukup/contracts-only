@@ -2,8 +2,6 @@ const path = require('path')
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Server external packages (moved from experimental)
-  serverExternalPackages: ['@prisma/client'],
   
   // Enable experimental features for better performance
   experimental: {

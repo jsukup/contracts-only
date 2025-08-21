@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@/contexts/AuthContext'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -10,12 +10,12 @@ import Link from 'next/link'
 import { PRICING_PLANS, JOB_POSTING_PRICE, formatPrice, isPaymentsEnabled, createPaymentSession } from '@/lib/stripe'
 
 export default function PricingPage() {
-  const { data: session } = useSession()
+  const { user } = useAuth()
   const [loading, setLoading] = useState<string | null>(null)
   const [billingInterval, setBillingInterval] = useState<'month' | 'year'>('month')
 
   const handleSubscribe = async (planId: string) => {
-    if (!session) {
+    if (!user) {
       window.location.href = '/auth/signin?callbackUrl=/pricing'
       return
     }
@@ -29,7 +29,7 @@ export default function PricingPage() {
     try {
       const { url } = await createPaymentSession({
         planId,
-        userId: session.user.id,
+        userId: user.id,
         successUrl: `${window.location.origin}/dashboard?payment=success`,
         cancelUrl: `${window.location.origin}/pricing?payment=cancelled`
       })

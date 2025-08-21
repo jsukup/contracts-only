@@ -1,21 +1,26 @@
 // Admin middleware for protecting admin routes
 import { NextRequest, NextResponse } from 'next/server'
-import { getToken } from 'next-auth/jwt'
+import { createServerSupabaseClient } from '@/lib/supabase'
 
 export async function adminMiddleware(request: NextRequest) {
-  const token = await getToken({ 
-    req: request as any, 
-    secret: process.env.NEXTAUTH_SECRET 
-  })
-
+  const supabase = createServerSupabaseClient()
+  
   // Check if user is authenticated
-  if (!token) {
+  const { data: { user }, error } = await supabase.auth.getUser()
+  
+  if (error || !user) {
     return NextResponse.redirect(new URL('/auth/signin', request.url))
   }
 
   // Check if user has admin role
-  // You'll need to add a 'role' field to your User model in Prisma
-  if (token.role !== 'ADMIN' && token.role !== 'SUPER_ADMIN') {
+  // Query the users table to check role
+  const { data: userData } = await supabase
+    .from('users')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+  
+  if (!userData || (userData.role !== 'ADMIN' && userData.role !== 'SUPER_ADMIN')) {
     return NextResponse.redirect(new URL('/unauthorized', request.url))
   }
 

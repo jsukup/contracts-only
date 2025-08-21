@@ -152,7 +152,7 @@ A modern web application built with Next.js 15 that provides:
 #### Backend
 - **API**: Next.js Route Handlers
 - **Database**: PostgreSQL
-- **ORM**: Prisma
+- **ORM**: Supabase SDK
 - **Authentication**: NextAuth.js
 - **File Storage**: AWS S3 (portfolios, resumes)
 - **Email Service**: SendGrid or AWS SES
@@ -210,7 +210,7 @@ JobMatch {
 
 ### Security Requirements
 - HTTPS everywhere
-- SQL injection prevention (Prisma)
+- SQL injection prevention (Supabase RLS policies)
 - XSS protection (React escaping)
 - CSRF tokens for forms
 - Rate limiting on API endpoints

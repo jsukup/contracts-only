@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@/contexts/AuthContext'
 
 interface OnboardingState {
   hasCompletedOnboarding: boolean
@@ -12,7 +12,7 @@ interface OnboardingState {
 }
 
 export function useOnboarding() {
-  const { data: session, status } = useSession()
+  const { user, loading } = useAuth()
   const [onboardingState, setOnboardingState] = useState<OnboardingState>({
     hasCompletedOnboarding: false,
     hasSeenModal: false,
@@ -22,8 +22,8 @@ export function useOnboarding() {
   })
 
   useEffect(() => {
-    // Only run after session is loaded
-    if (status === 'loading') return
+    // Only run after auth is loaded
+    if (loading) return
 
     const checkOnboardingStatus = () => {
       const completedOnboarding = localStorage.getItem('onboarding_completed') === 'true'
@@ -32,19 +32,19 @@ export function useOnboarding() {
       const dismissedAllTips = localStorage.getItem('tips_dismissed_all') === 'true'
 
       // Show modal if user is logged in, hasn't seen it, and hasn't completed onboarding
-      const shouldShow = session && !seenModal && !completedOnboarding
+      const shouldShow = user && !seenModal && !completedOnboarding
 
       setOnboardingState({
         hasCompletedOnboarding: completedOnboarding,
         hasSeenModal: seenModal,
         userRole: storedRole,
         shouldShowModal: Boolean(shouldShow),
-        shouldShowTips: session && completedOnboarding && !dismissedAllTips
+        shouldShowTips: user && completedOnboarding && !dismissedAllTips
       })
     }
 
     checkOnboardingStatus()
-  }, [session, status])
+  }, [user, loading])
 
   const completeOnboarding = (role?: 'contractor' | 'employer') => {
     localStorage.setItem('onboarding_completed', 'true')
@@ -94,7 +94,7 @@ export function useOnboarding() {
       hasCompletedOnboarding: false,
       hasSeenModal: false,
       userRole: null,
-      shouldShowModal: Boolean(session),
+      shouldShowModal: Boolean(user),
       shouldShowTips: false
     })
   }
@@ -105,7 +105,7 @@ export function useOnboarding() {
     dismissModal,
     setUserRole,
     resetOnboarding,
-    isNewUser: session && !onboardingState.hasSeenModal
+    isNewUser: user && !onboardingState.hasSeenModal
   }
 }
 

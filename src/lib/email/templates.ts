@@ -1,4 +1,4 @@
-import { Job, User } from '@prisma/client'
+import { SupabaseJob, SupabaseUser } from '../supabase'
 
 export interface EmailTemplate {
   subject: string

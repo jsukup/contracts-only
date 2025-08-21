@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -39,7 +39,7 @@ interface UserRole {
 }
 
 export default function OnboardingPage() {
-  const { data: session } = useSession()
+  const { user } = useAuth()
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(0)
   const [selectedRole, setSelectedRole] = useState<'contractor' | 'employer' | null>(null)
@@ -139,10 +139,10 @@ export default function OnboardingPage() {
   useEffect(() => {
     // Check if user has already completed onboarding
     const hasCompletedOnboarding = localStorage.getItem('onboarding_completed')
-    if (hasCompletedOnboarding && session) {
+    if (hasCompletedOnboarding && user) {
       router.push('/dashboard')
     }
-  }, [session, router])
+  }, [user, router])
 
   const handleRoleSelection = (role: 'contractor' | 'employer') => {
     setSelectedRole(role)

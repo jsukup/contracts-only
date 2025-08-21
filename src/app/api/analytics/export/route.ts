@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/lib/auth'
+import { getServerSession } from '@/lib/auth'
 import { AnalyticsEngine } from '@/lib/analytics'
 
 // Type definitions for analytics data
@@ -54,7 +53,7 @@ interface ExecutiveSummaryData {
 // Export analytics data in various formats
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession()
     
     if (!session || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

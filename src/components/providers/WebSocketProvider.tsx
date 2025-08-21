@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, ReactNode } from 'react'
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@/contexts/AuthContext'
 import { useWebSocket } from '@/lib/websocket'
 import { toast } from 'react-hot-toast'
 
@@ -18,11 +18,11 @@ interface WebSocketProviderProps {
 }
 
 export function WebSocketProvider({ children }: WebSocketProviderProps) {
-  const { data: session } = useSession()
-  const ws = useWebSocket(session?.user?.id)
+  const { user } = useAuth()
+  const ws = useWebSocket(user?.id)
 
   useEffect(() => {
-    if (session?.user?.id) {
+    if (user?.id) {
       // Connect to WebSocket when user is authenticated
       ws.connect()
 
@@ -35,8 +35,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
       })
 
       const unsubscribeApplicationUpdates = ws.subscribeToApplicationUpdates((update) => {
-        toast.info(`Application Update`, {
-          description: `Your application for "${update.jobTitle}" has been ${update.status}`,
+        toast(`Application Update: Your application for "${update.jobTitle}" has been ${update.status}`, {
           duration: 5000
         })
       })
@@ -50,7 +49,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
         }
       })
 
-      // Cleanup on unmount or session change
+      // Cleanup on unmount or user change
       return () => {
         unsubscribeNotifications()
         unsubscribeApplicationUpdates()
@@ -58,7 +57,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
         ws.disconnect()
       }
     }
-  }, [session?.user?.id, ws])
+  }, [user?.id, ws])
 
   const contextValue: WebSocketContextType = {
     isConnected: ws.isConnected,

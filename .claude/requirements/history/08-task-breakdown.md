@@ -25,20 +25,19 @@
   ```
 
 ### 1.2 Database Setup [AUTONOMOUS]
-- [ ] Install and configure Prisma
+- [ ] Install and configure Supabase
   ```bash
-  npm install prisma @prisma/client
-  npx prisma init
+  npm install @supabase/supabase-js
   ```
-- [ ] Define database schema (schema.prisma)
-- [ ] Set up PostgreSQL database (Supabase/Railway)
-- [ ] Create initial migrations
+- [ ] Define database schema in Supabase Dashboard
+- [ ] Set up PostgreSQL database (Supabase)
+- [ ] Configure Row Level Security policies
 - [ ] Seed database with sample data
 
 ### 1.3 Authentication System [AUTONOMOUS]
 - [ ] Install and configure NextAuth.js
   ```bash
-  npm install next-auth @auth/prisma-adapter
+  npm install next-auth
   ```
 - [ ] Set up authentication providers (Email, Google, LinkedIn)
 - [ ] Create auth API routes
@@ -197,9 +196,9 @@ cd contracts-only
 npm install
 
 # 2. Database setup
-npx prisma generate
-npx prisma migrate dev --name init
-npx prisma db seed
+# Configure Supabase project and environment variables
+# Set up database schema in Supabase Dashboard
+# Configure RLS policies
 
 # 3. Environment setup
 cp .env.example .env.local
@@ -224,14 +223,11 @@ vercel --prod
 
 ### Database Management
 ```bash
-# Create migration
-npx prisma migrate dev --name add_feature
+# Database managed through Supabase Dashboard
+# Schema changes applied via SQL editor
 
-# Reset database
-npx prisma migrate reset
-
-# Open Prisma Studio
-npx prisma studio
+# View and manage data
+# Use Supabase Dashboard table editor
 ```
 
 ## Task Dependencies

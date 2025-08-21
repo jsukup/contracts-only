@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@/contexts/AuthContext'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -62,7 +62,7 @@ interface Job {
 export default function JobDetailsPage() {
   const params = useParams()
   const router = useRouter()
-  const { data: session } = useSession()
+  const { user } = useAuth()
   const [job, setJob] = useState<Job | null>(null)
   const [loading, setLoading] = useState(true)
   const [applying, setApplying] = useState(false)
@@ -84,7 +84,7 @@ export default function JobDetailsPage() {
   }
 
   const handleApply = async () => {
-    if (!session) {
+    if (!user) {
       router.push('/auth/signin')
       return
     }
@@ -109,9 +109,9 @@ export default function JobDetailsPage() {
       }
 
       alert(result.message || 'Application submitted successfully!')
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error applying:', error)
-      alert(error.message || 'Failed to submit application')
+      alert(error instanceof Error ? error.message : 'Failed to submit application')
     } finally {
       setApplying(false)
     }
@@ -177,9 +177,9 @@ export default function JobDetailsPage() {
     })
   }
 
-  const isOwner = session?.user?.email === job.postedBy.email
+  const isOwner = user?.email === job.postedBy.email
   const isExpired = new Date(job.expiresAt) < new Date()
-  const canApply = session && !isOwner && !hasApplied && !isExpired && job.isActive
+  const canApply = user && !isOwner && !hasApplied && !isExpired && job.isActive
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -340,7 +340,7 @@ export default function JobDetailsPage() {
               </div>
             )}
 
-            {!session && (
+            {!user && (
               <Button asChild className="w-full">
                 <Link href="/auth/signin">Sign in to Apply</Link>
               </Button>

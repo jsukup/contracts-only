@@ -1,38 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { createServerSupabaseClient } from '@/lib/supabase'
 
 export async function GET(
   req: NextRequest,
   { params }: { params: { userId: string } }
 ) {
   try {
-    const user = await prisma.user.findUnique({
-      where: { id: params.userId },
-      select: {
-        id: true,
-        name: true,
-        title: true,
-        bio: true,
-        location: true,
-        website: true,
-        linkedinUrl: true,
-        hourlyRateMin: true,
-        hourlyRateMax: true,
-        availability: true,
-        image: true,
-        createdAt: true,
-        userSkills: {
-          include: {
-            skill: true
-          }
-        },
-        // Don't include sensitive data
-        email: false,
-        role: false
-      }
-    })
+    const supabase = createServerSupabaseClient()
+    
+    const { data: user, error } = await supabase
+      .from('users')
+      .select(`
+        id,
+        name,
+        title,
+        bio,
+        location,
+        website,
+        linkedin_url,
+        hourly_rate_min,
+        hourly_rate_max,
+        availability,
+        image,
+        created_at,
+        user_skills (
+          skill:skill_id (
+            id, name, category
+          )
+        )
+      `)
+      .eq('id', params.userId)
+      .single()
 
-    if (!user) {
+    if (error || !user) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 })
     }
 

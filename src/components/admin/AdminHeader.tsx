@@ -15,11 +15,11 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
-import { useSession, signOut } from 'next-auth/react'
+import { useAuth } from '@/contexts/AuthContext'
 import Link from 'next/link'
 
 export function AdminHeader() {
-  const { data: session } = useSession()
+  const { user, signOut } = useAuth()
   const [showNotifications, setShowNotifications] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
@@ -174,12 +174,12 @@ export function AdminHeader() {
               >
                 <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
                   <span className="text-sm font-medium text-white">
-                    {session?.user?.name?.charAt(0) || 'A'}
+                    {user?.email?.charAt(0)?.toUpperCase() || 'A'}
                   </span>
                 </div>
                 <div className="hidden md:block text-left">
                   <p className="text-sm font-medium text-gray-900">
-                    {session?.user?.name || 'Admin User'}
+                    {user?.email?.split('@')[0] || 'Admin User'}
                   </p>
                   <p className="text-xs text-gray-500">Administrator</p>
                 </div>
@@ -190,10 +190,10 @@ export function AdminHeader() {
                 <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
                   <div className="p-4 border-b border-gray-200">
                     <p className="text-sm font-medium text-gray-900">
-                      {session?.user?.name || 'Admin User'}
+                      {user?.email?.split('@')[0] || 'Admin User'}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
-                      {session?.user?.email || 'admin@contractsonly.com'}
+                      {user?.email || 'admin@contractsonly.com'}
                     </p>
                   </div>
                   <div className="p-2">
@@ -220,7 +220,7 @@ export function AdminHeader() {
                     </Link>
                     <hr className="my-2" />
                     <button
-                      onClick={() => signOut({ callbackUrl: '/' })}
+                      onClick={() => signOut()}
                       className="flex items-center space-x-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-md w-full text-left"
                     >
                       <LogOut className="h-4 w-4" />

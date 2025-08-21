@@ -238,7 +238,7 @@ Frontend (Next.js) -> API Routes -> Database (PostgreSQL)
 ### 6.2 Technology Stack
 - **Frontend:** Next.js 15 with App Router, React 18, TypeScript
 - **Styling:** Tailwind CSS with custom design system
-- **Backend:** Next.js API Routes with Prisma ORM
+- **Backend:** Next.js API Routes with Supabase SDK
 - **Database:** PostgreSQL 14+ (Supabase Free tier)
 - **Authentication:** NextAuth.js with Google/LinkedIn OAuth
 - **Email:** SendGrid/Resend for transactional emails
@@ -285,7 +285,7 @@ User -> ContractorProfile | Company
    
 2. Database & Authentication [AUTONOMOUS]
    2.1 Set up PostgreSQL database
-   2.2 Configure Prisma ORM and schema
+   2.2 Configure Supabase schema and RLS policies
    2.3 Implement NextAuth.js authentication
    2.4 Create user registration and login flows
 ```
@@ -517,7 +517,7 @@ User -> ContractorProfile | Company
 ### B. References
 1. 4dayweek.io - Example platform architecture and UX patterns
 2. Next.js 15 Documentation - Technical implementation reference
-3. Prisma ORM Documentation - Database modeling and queries
+3. Supabase Documentation - Database management and RLS policies
 4. Vercel Deployment Guide - Infrastructure and hosting setup
 
 ### C. Change Log

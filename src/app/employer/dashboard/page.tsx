@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@/contexts/AuthContext'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -44,23 +44,23 @@ interface DashboardStats {
 }
 
 export default function EmployerDashboardPage() {
-  const { data: session, status } = useSession()
+  const { user } = useAuth()
   const [jobs, setJobs] = useState<JobPosting[]>([])
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'active' | 'draft' | 'closed'>('all')
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (!user) {
       redirect('/auth/signin?callbackUrl=/employer/dashboard')
     }
-  }, [status])
+  }, [user])
 
   useEffect(() => {
-    if (session?.user?.id) {
+    if (user?.id) {
       fetchDashboardData()
     }
-  }, [session, filter])
+  }, [user, filter])
 
   const fetchDashboardData = async () => {
     setLoading(true)
@@ -154,7 +154,7 @@ export default function EmployerDashboardPage() {
 
   const filteredJobs = jobs.filter(job => filter === 'all' || job.status === filter)
 
-  if (status === 'loading' || loading) {
+  if (!user || loading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-center items-center min-h-[400px]">

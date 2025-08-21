@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
+import { useState, useEffect, useCallback } from 'react'
+import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
@@ -11,8 +11,6 @@ import {
   Download,
   UserPlus,
   Edit,
-  Trash2,
-  Shield,
   Ban,
   CheckCircle,
   XCircle,
@@ -21,7 +19,6 @@ import {
   Calendar,
   Activity
 } from 'lucide-react'
-import Link from 'next/link'
 
 interface User {
   id: string
@@ -55,9 +52,9 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     fetchUsers()
-  }, [currentPage, filterRole, filterStatus])
+  }, [currentPage, filterRole, filterStatus, fetchUsers])
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     setLoading(true)
     try {
       const params = new URLSearchParams({
@@ -82,7 +79,7 @@ export default function AdminUsersPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [currentPage, filterRole, filterStatus, searchQuery])
 
   const getMockUsers = (): User[] => [
     {
@@ -182,15 +179,6 @@ export default function AdminUsersPage() {
     }
   }
 
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {

@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
-import { Prisma } from '@prisma/client'
+import { createServerSupabaseClient } from '@/lib/supabase'
 
 export async function GET(req: NextRequest) {
   try {
+    const supabase = createServerSupabaseClient()
     const { searchParams } = new URL(req.url)
     
     // Pagination
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '20')
-    const skip = (page - 1) * limit
+    const from = (page - 1) * limit
+    const to = from + limit - 1
     
     // Filters
     const search = searchParams.get('search')
@@ -22,87 +21,60 @@ export async function GET(req: NextRequest) {
     const skills = searchParams.get('skills')?.split(',').filter(Boolean)
     
     // Sorting
-    const sortBy = searchParams.get('sortBy') || 'createdAt'
+    const sortBy = searchParams.get('sortBy') || 'created_at'
     const sortOrder = searchParams.get('sortOrder') || 'desc'
     
-    // Build where clause
-    const where: Prisma.JobWhereInput = {
-      isActive: true,
-      expiresAt: {
-        gte: new Date()
-      }
-    }
+    // Build query
+    let query = supabase
+      .from('jobs')
+      .select(`
+        *,
+        poster:poster_id (id, name, image),
+        applications:job_applications (count)
+      `)
+      .eq('is_active', true)
+      .or(`application_deadline.is.null,application_deadline.gte.${new Date().toISOString()}`)
     
+    // Apply filters
     if (search) {
-      where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { company: { contains: search, mode: 'insensitive' } },
-        { location: { contains: search, mode: 'insensitive' } }
-      ]
+      query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%,company.ilike.%${search}%,location.ilike.%${search}%`)
     }
     
     if (jobType) {
-      where.jobType = jobType
+      query = query.eq('job_type', jobType)
     }
     
     if (isRemote !== null) {
-      where.isRemote = isRemote === 'true'
+      query = query.eq('is_remote', isRemote === 'true')
     }
     
     if (minRate) {
-      where.hourlyRateMax = { gte: parseInt(minRate) }
+      query = query.gte('hourly_rate_max', parseInt(minRate))
     }
     
     if (maxRate) {
-      where.hourlyRateMin = { lte: parseInt(maxRate) }
+      query = query.lte('hourly_rate_min', parseInt(maxRate))
     }
     
-    if (skills && skills.length > 0) {
-      where.jobSkills = {
-        some: {
-          skillId: { in: skills }
-        }
-      }
-    }
+    // Apply sorting and pagination
+    query = query
+      .order(sortBy, { ascending: sortOrder === 'asc' })
+      .range(from, to)
     
-    // Execute query
-    const [jobs, total] = await Promise.all([
-      prisma.job.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { [sortBy]: sortOrder },
-        include: {
-          postedBy: {
-            select: {
-              id: true,
-              name: true,
-              image: true
-            }
-          },
-          jobSkills: {
-            include: {
-              skill: true
-            }
-          },
-          _count: {
-            select: {
-              applications: true
-            }
-          }
-        }
-      }),
-      prisma.job.count({ where })
-    ])
+    const { data: jobs, error, count } = await query
+    
+    if (error) {
+      console.error('Error fetching jobs:', error)
+      throw error
+    }
     
     return NextResponse.json({
-      jobs,
+      jobs: jobs || [],
       pagination: {
         page,
         limit,
-        total,
-        totalPages: Math.ceil(total / limit)
+        total: count || 0,
+        totalPages: Math.ceil((count || 0) / limit)
       }
     })
   } catch (error) {
@@ -116,18 +88,33 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    // Create Supabase client with request context
+    const supabase = createServerSupabaseClient()
     
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Get the authorization header from the request
+    const authHeader = req.headers.get('authorization')
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized - No token provided' }, { status: 401 })
     }
     
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
-    })
+    const token = authHeader.replace('Bearer ', '')
     
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    // Get user from token
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized - Invalid token' }, { status: 401 })
+    }
+    
+    // Get user profile from our users table
+    const { data: userProfile, error: userError } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', user.id)
+      .single()
+    
+    if (userError || !userProfile) {
+      return NextResponse.json({ error: 'User profile not found' }, { status: 404 })
     }
     
     const body = await req.json()
@@ -172,44 +159,36 @@ export async function POST(req: NextRequest) {
     }
     
     // Create job
-    const job = await prisma.job.create({
-      data: {
+    const { data: job, error: jobError } = await supabase
+      .from('jobs')
+      .insert({
         title,
         description,
         company,
         location,
-        isRemote: isRemote || false,
-        jobType: jobType || 'CONTRACT',
-        hourlyRateMin,
-        hourlyRateMax,
+        is_remote: isRemote || false,
+        job_type: jobType || 'CONTRACT',
+        hourly_rate_min: hourlyRateMin,
+        hourly_rate_max: hourlyRateMax,
         currency: currency || 'USD',
-        contractDuration,
-        hoursPerWeek,
-        startDate: startDate ? new Date(startDate) : null,
-        applicationUrl,
-        applicationEmail,
-        postedById: user.id,
-        jobSkills: {
-          create: skills?.map((skillId: string) => ({
-            skillId
-          })) || []
-        }
-      },
-      include: {
-        postedBy: {
-          select: {
-            id: true,
-            name: true,
-            image: true
-          }
-        },
-        jobSkills: {
-          include: {
-            skill: true
-          }
-        }
-      }
-    })
+        contract_duration: contractDuration,
+        hours_per_week: hoursPerWeek,
+        start_date: startDate ? new Date(startDate).toISOString() : null,
+        poster_id: user.id,
+        is_active: true,
+        view_count: 0,
+        experience_level: 'MID' // Default value, can be made configurable
+      })
+      .select(`
+        *,
+        poster:poster_id (id, name, image)
+      `)
+      .single()
+    
+    if (jobError) {
+      console.error('Error creating job:', jobError)
+      throw jobError
+    }
     
     return NextResponse.json(job, { status: 201 })
   } catch (error) {

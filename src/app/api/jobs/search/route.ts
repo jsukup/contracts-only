@@ -1,31 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
-import type { Prisma } from '@prisma/client'
-
-type JobWithIncludes = Prisma.JobGetPayload<{
-  include: {
-    jobSkills: {
-      include: {
-        skill: {
-          select: {
-            name: true
-          }
-        }
-      }
-    },
-    postedBy: {
-      select: {
-        id: true,
-        name: true
-      }
-    },
-    _count: {
-      select: {
-        applications: true
-      }
-    }
-  }
-}>
+import { createServerSupabaseClient } from '@/lib/supabase'
+import { JobWhereInput, JobOrderByInput } from '@/lib/database'
+import { JobWithIncludes } from '@/lib/types'
 
 export async function GET(req: NextRequest) {
   try {
@@ -50,10 +26,10 @@ export async function GET(req: NextRequest) {
     const postedWithin = searchParams.get('postedWithin')
     const rating = searchParams.get('rating')
     const sortBy = searchParams.get('sortBy') || 'createdAt'
-    const sortOrder = (searchParams.get('sortOrder') || 'desc') as Prisma.SortOrder
+    const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc'
 
     // Build where clause
-    const where: Prisma.JobWhereInput = {
+    const where: JobWhereInput = {
       isActive: true
     }
 
@@ -106,7 +82,7 @@ export async function GET(req: NextRequest) {
 
     // Hours per week filter (approximation)
     if (hoursPerWeek.length > 0) {
-      const hoursRanges: any[] = []
+      const hoursRanges: Array<{ hoursPerWeek: { lt?: number; gt?: number; gte?: number; lte?: number } }> = []
       
       hoursPerWeek.forEach(range => {
         switch (range) {
@@ -150,7 +126,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Build orderBy clause
-    const orderBy: Prisma.JobOrderByWithRelationInput = {}
+    const orderBy: JobOrderByInput = {}
     switch (sortBy) {
       case 'rate':
         orderBy.hourlyRateMax = sortOrder
@@ -165,57 +141,147 @@ export async function GET(req: NextRequest) {
         orderBy.createdAt = sortOrder
     }
 
-    // Execute query
-    const [jobs, total, totalActive]: [JobWithIncludes[], number, number] = await Promise.all([
-      prisma.job.findMany({
-        where,
-        include: {
-          jobSkills: {
-            include: {
-              skill: {
-                select: {
-                  name: true
-                }
-              }
-            }
-          },
-          postedBy: {
-            select: {
-              id: true,
-              name: true
-            }
-          },
-          _count: {
-            select: {
-              applications: true
-            }
-          }
-        },
-        orderBy,
-        take: limit,
-        skip: offset
-      }),
-      prisma.job.count({ where }),
-      prisma.job.count({ where: { isActive: true } })
-    ])
+    const supabase = createServerSupabaseClient()
+
+    // Build the main jobs query with complex filtering
+    let jobsQuery = supabase
+      .from('jobs')
+      .select(`
+        *,
+        users!jobs_poster_id_fkey(id, name),
+        job_skills!inner(
+          skill_id,
+          skills!inner(id, name)
+        )
+      `)
+
+    // Apply filters to the query
+    jobsQuery = jobsQuery.eq('is_active', true)
+
+    // Text search filters
+    if (search) {
+      jobsQuery = jobsQuery.or(`title.ilike.%${search}%,company.ilike.%${search}%,description.ilike.%${search}%,requirements.ilike.%${search}%`)
+    }
+
+    // Location and remote filters
+    if (location) {
+      if (isRemote === 'true') {
+        jobsQuery = jobsQuery.or(`is_remote.eq.true,location.ilike.%${location}%`)
+      } else {
+        jobsQuery = jobsQuery.ilike('location', `%${location}%`)
+      }
+    } else if (isRemote === 'true') {
+      jobsQuery = jobsQuery.eq('is_remote', true)
+    } else if (isRemote === 'false') {
+      jobsQuery = jobsQuery.eq('is_remote', false)
+    }
+
+    // Rate filters
+    if (minRate || maxRate) {
+      jobsQuery = jobsQuery.eq('currency', currency)
+      if (minRate) {
+        jobsQuery = jobsQuery.gte('hourly_rate_min', parseInt(minRate))
+      }
+      if (maxRate) {
+        jobsQuery = jobsQuery.lte('hourly_rate_max', parseInt(maxRate))
+      }
+    }
+
+    // Job type filter
+    if (jobTypes.length > 0) {
+      jobsQuery = jobsQuery.in('job_type', jobTypes)
+    }
+
+    // Posted within filter
+    if (postedWithin && postedWithin !== 'all') {
+      const days = parseInt(postedWithin)
+      const dateThreshold = new Date()
+      dateThreshold.setDate(dateThreshold.getDate() - days)
+      jobsQuery = jobsQuery.gte('created_at', dateThreshold.toISOString())
+    }
+
+    // Skills filter (complex join filtering)
+    if (skills.length > 0) {
+      jobsQuery = jobsQuery.in('job_skills.skills.name', skills)
+    }
+
+    // Apply ordering
+    switch (sortBy) {
+      case 'rate':
+        jobsQuery = jobsQuery.order('hourly_rate_max', { ascending: sortOrder === 'asc' })
+        break
+      case 'company':
+        jobsQuery = jobsQuery.order('company', { ascending: sortOrder === 'asc' })
+        break
+      case 'title':
+        jobsQuery = jobsQuery.order('title', { ascending: sortOrder === 'asc' })
+        break
+      default:
+        jobsQuery = jobsQuery.order('created_at', { ascending: sortOrder === 'asc' })
+    }
+
+    // Apply pagination
+    jobsQuery = jobsQuery.range(offset, offset + limit - 1)
+
+    // Execute the main query
+    const { data: jobsData, error: jobsError } = await jobsQuery
+
+    if (jobsError) {
+      throw new Error(`Jobs query error: ${jobsError.message}`)
+    }
+
+    // Count total jobs with same filters (without pagination)
+    let countQuery = supabase
+      .from('jobs')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_active', true)
+
+    // Apply the same filters for count
+    if (search) {
+      countQuery = countQuery.or(`title.ilike.%${search}%,company.ilike.%${search}%,description.ilike.%${search}%,requirements.ilike.%${search}%`)
+    }
+    if (location) {
+      if (isRemote === 'true') {
+        countQuery = countQuery.or(`is_remote.eq.true,location.ilike.%${location}%`)
+      } else {
+        countQuery = countQuery.ilike('location', `%${location}%`)
+      }
+    } else if (isRemote === 'true') {
+      countQuery = countQuery.eq('is_remote', true)
+    } else if (isRemote === 'false') {
+      countQuery = countQuery.eq('is_remote', false)
+    }
+
+    const { count: total } = await countQuery
+
+    // Count total active jobs
+    const { count: totalActive } = await supabase
+      .from('jobs')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_active', true)
 
     // Get popular skills for suggestions
-    const popularSkills = await prisma.skill.findMany({
-      take: 20,
-      orderBy: {
-        jobSkills: {
-          _count: 'desc'
-        }
-      },
-      select: {
-        name: true,
-        _count: {
-          select: {
-            jobSkills: true
-          }
-        }
+    const { data: skillsData } = await supabase
+      .from('skills')
+      .select(`
+        name,
+        job_skills(count)
+      `)
+      .order('job_skills.count', { ascending: false })
+      .limit(20)
+
+    // Process the jobs data to match expected format
+    const jobs: JobWithIncludes[] = jobsData?.map(job => ({
+      ...job,
+      user: job.users,
+      skills: job.job_skills?.map(js => ({
+        id: js.skills.id,
+        name: js.skills.name
+      })) || [],
+      _count: {
+        applications: 0 // We'll need to implement this separately if needed
       }
-    })
+    })) || []
 
     return NextResponse.json({
       jobs: jobs.map(job => ({
@@ -223,17 +289,17 @@ export async function GET(req: NextRequest) {
         title: job.title,
         company: job.company,
         location: job.location,
-        isRemote: job.isRemote,
-        jobType: job.jobType,
-        hourlyRateMin: job.hourlyRateMin,
-        hourlyRateMax: job.hourlyRateMax,
+        isRemote: job.is_remote,
+        jobType: job.job_type,
+        hourlyRateMin: job.hourly_rate_min,
+        hourlyRateMax: job.hourly_rate_max,
         currency: job.currency,
-        contractDuration: job.contractDuration,
-        hoursPerWeek: job.hoursPerWeek,
+        contractDuration: job.contract_duration,
+        hoursPerWeek: job.hours_per_week,
         description: job.description?.substring(0, 200) + '...',
-        createdAt: job.createdAt,
-        skills: job.jobSkills.map((js) => js.skill.name),
-        employer: job.postedBy.name,
+        createdAt: job.created_at,
+        skills: job.skills?.map(skill => skill.name) || [],
+        employer: job.user?.name || '',
         applicationCount: job._count.applications
       })),
       pagination: {
@@ -259,7 +325,7 @@ export async function GET(req: NextRequest) {
         }
       },
       suggestions: {
-        skills: popularSkills.map(skill => skill.name)
+        skills: skillsData?.map(skill => skill.name) || []
       }
     })
   } catch (error) {

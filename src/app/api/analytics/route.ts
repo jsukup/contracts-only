@@ -1,12 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/lib/auth'
+import { getServerSession } from '@/lib/auth'
 import { AnalyticsEngine } from '@/lib/analytics'
 
 // Get platform analytics (admin only)
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession()
     
     // Require admin access for analytics
     if (!session || session.user.role !== 'ADMIN') {

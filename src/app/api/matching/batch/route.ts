@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/lib/auth'
+import { getServerSession } from '@/lib/auth'
+
 import { JobMatchingEngine } from '@/lib/matching'
-import { prisma } from '@/lib/prisma'
+import { createServerSupabaseClient } from '@/lib/supabase'
 
 // Batch job matching for daily notifications
 export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession()
     
     // Only admins can trigger batch matching
     if (!session || session.user.role !== 'ADMIN') {
@@ -27,16 +27,17 @@ export async function POST(request: NextRequest) {
     if (userIds && Array.isArray(userIds)) {
       targetUserIds = userIds
     } else {
+      const supabase = createServerSupabaseClient()
+      
       // Get all active users if no specific IDs provided
-      const activeUsers = await prisma.user.findMany({
-        where: {
-          availability: 'available',
-          emailVerified: true
-        },
-        select: { id: true },
-        take: 1000 // Limit batch size
-      })
-      targetUserIds = activeUsers.map(u => u.id)
+      const { data: activeUsers } = await supabase
+        .from('users')
+        .select('id')
+        .eq('availability', 'AVAILABLE')
+        .not('email_verified', 'is', null)
+        .limit(1000) // Limit batch size
+
+      targetUserIds = activeUsers?.map(u => u.id) || []
     }
 
     if (targetUserIds.length === 0) {
@@ -93,7 +94,7 @@ export async function POST(request: NextRequest) {
 // Get batch matching status and history
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession()
     
     if (!session || session.user.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

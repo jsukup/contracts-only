@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { prisma } from '@/lib/prisma'
-import { authOptions } from '@/lib/auth'
+import { createServerSupabaseClient } from '@/lib/supabase'
 
 export async function GET(req: NextRequest) {
   try {
+    const supabase = createServerSupabaseClient()
     const { searchParams } = new URL(req.url)
     const userId = searchParams.get('userId')
     const jobId = searchParams.get('jobId')
@@ -12,67 +11,92 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10')
     const offset = parseInt(searchParams.get('offset') || '0')
 
-    const where: any = {}
+    // Build reviews query
+    let reviewsQuery = supabase
+      .from('reviews')
+      .select(`
+        *,
+        contractor:contractor_id (
+          id, name, email
+        ),
+        employer:employer_id (
+          id, name, email
+        ),
+        job:job_id (
+          id, title, company
+        )
+      `)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
 
+    // Apply filters
     if (userId) {
       if (type === 'contractor') {
-        where.contractorId = userId
+        reviewsQuery = reviewsQuery.eq('contractor_id', userId)
       } else if (type === 'employer') {
-        where.employerId = userId
+        reviewsQuery = reviewsQuery.eq('employer_id', userId)
       }
     }
 
     if (jobId) {
-      where.jobId = jobId
+      reviewsQuery = reviewsQuery.eq('job_id', jobId)
     }
 
-    const [reviews, total] = await Promise.all([
-      prisma.review.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        take: limit,
-        skip: offset,
-        include: {
-          contractor: {
-            select: {
-              id: true,
-              name: true,
-              email: true
-            }
-          },
-          employer: {
-            select: {
-              id: true,
-              name: true,
-              email: true
-            }
-          },
-          job: {
-            select: {
-              id: true,
-              title: true,
-              company: true
-            }
-          }
-        }
-      }),
-      prisma.review.count({ where })
+    // Build count query with same filters
+    let countQuery = supabase
+      .from('reviews')
+      .select('*', { count: 'exact', head: true })
+
+    if (userId) {
+      if (type === 'contractor') {
+        countQuery = countQuery.eq('contractor_id', userId)
+      } else if (type === 'employer') {
+        countQuery = countQuery.eq('employer_id', userId)
+      }
+    }
+
+    if (jobId) {
+      countQuery = countQuery.eq('job_id', jobId)
+    }
+
+    // Execute queries in parallel
+    const [reviewsResult, countResult] = await Promise.all([
+      reviewsQuery,
+      countQuery
     ])
+
+    if (reviewsResult.error) {
+      console.error('Error fetching reviews:', reviewsResult.error)
+      throw reviewsResult.error
+    }
+
+    if (countResult.error) {
+      console.error('Error counting reviews:', countResult.error)
+      throw countResult.error
+    }
+
+    const reviews = reviewsResult.data || []
+    const total = countResult.count || 0
 
     // Calculate average rating if userId is provided
     let averageRating = null
     if (userId) {
-      const ratingWhere = type === 'contractor' 
-        ? { contractorId: userId }
-        : { employerId: userId }
+      let avgQuery = supabase
+        .from('reviews')
+        .select('rating')
       
-      const avgResult = await prisma.review.aggregate({
-        where: ratingWhere,
-        _avg: {
-          rating: true
-        }
-      })
-      averageRating = avgResult._avg.rating
+      if (type === 'contractor') {
+        avgQuery = avgQuery.eq('contractor_id', userId)
+      } else if (type === 'employer') {
+        avgQuery = avgQuery.eq('employer_id', userId)
+      }
+      
+      const { data: ratingData, error: avgError } = await avgQuery
+      
+      if (!avgError && ratingData && ratingData.length > 0) {
+        const sum = ratingData.reduce((acc, review) => acc + review.rating, 0)
+        averageRating = sum / ratingData.length
+      }
     }
 
     return NextResponse.json({
@@ -92,10 +116,21 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const supabase = createServerSupabaseClient()
     
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Get the authorization header from the request
+    const authHeader = req.headers.get('authorization')
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized - No token provided' }, { status: 401 })
+    }
+    
+    const token = authHeader.replace('Bearer ', '')
+    
+    // Get user from token
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized - Invalid token' }, { status: 401 })
     }
 
     const body = await req.json()
@@ -132,18 +167,24 @@ export async function POST(req: NextRequest) {
 
     // Check if the user has permission to leave this review
     // They should have been involved in the job application/contract
-    const application = await prisma.application.findFirst({
-      where: {
-        jobId: jobId,
-        OR: [
-          { userId: session.user.id },
-          { job: { userId: session.user.id } }
-        ]
-      },
-      include: { job: true }
-    })
+    const { data: userApplication, error: appError } = await supabase
+      .from('job_applications')
+      .select(`
+        *,
+        job:job_id (*)
+      `)
+      .eq('job_id', jobId)
+      .eq('applicant_id', user.id)
+      .single()
 
-    if (!application) {
+    const { data: jobOwnership, error: jobError } = await supabase
+      .from('jobs')
+      .select('poster_id')
+      .eq('id', jobId)
+      .eq('poster_id', user.id)
+      .single()
+
+    if (!userApplication && !jobOwnership) {
       return NextResponse.json(
         { error: 'You can only review jobs you were involved in' },
         { status: 403 }
@@ -151,16 +192,19 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if review already exists
-    const existingReview = await prisma.review.findFirst({
-      where: {
-        jobId,
-        reviewerId: session.user.id,
-        ...(type === 'for_contractor' 
-          ? { contractorId } 
-          : { employerId }
-        )
-      }
-    })
+    let existingReviewQuery = supabase
+      .from('reviews')
+      .select('id')
+      .eq('job_id', jobId)
+      .eq('reviewer_id', user.id)
+
+    if (type === 'for_contractor') {
+      existingReviewQuery = existingReviewQuery.eq('contractor_id', contractorId)
+    } else {
+      existingReviewQuery = existingReviewQuery.eq('employer_id', employerId)
+    }
+
+    const { data: existingReview } = await existingReviewQuery.single()
 
     if (existingReview) {
       return NextResponse.json(
@@ -169,41 +213,47 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const review = await prisma.review.create({
-      data: {
-        rating,
-        comment: comment.trim(),
-        reviewerId: session.user.id,
-        jobId,
-        ...(type === 'for_contractor' 
-          ? { contractorId } 
-          : { employerId }
+    // Create review data
+    const reviewData: {
+      rating: number
+      comment: string
+      reviewer_id: string
+      job_id: string
+      reviewee_id?: string
+    } = {
+      rating,
+      comment: comment.trim(),
+      reviewer_id: user.id,
+      job_id: jobId
+    }
+
+    if (type === 'for_contractor') {
+      reviewData.contractor_id = contractorId
+    } else {
+      reviewData.employer_id = employerId
+    }
+
+    const { data: review, error: createError } = await supabase
+      .from('reviews')
+      .insert(reviewData)
+      .select(`
+        *,
+        contractor:contractor_id (
+          id, name, email
+        ),
+        employer:employer_id (
+          id, name, email
+        ),
+        job:job_id (
+          id, title, company
         )
-      },
-      include: {
-        contractor: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        },
-        employer: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        },
-        job: {
-          select: {
-            id: true,
-            title: true,
-            company: true
-          }
-        }
-      }
-    })
+      `)
+      .single()
+
+    if (createError) {
+      console.error('Error creating review:', createError)
+      throw createError
+    }
 
     return NextResponse.json(review, { status: 201 })
   } catch (error) {

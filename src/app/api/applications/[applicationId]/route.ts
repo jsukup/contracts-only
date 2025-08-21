@@ -1,31 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { prisma } from '@/lib/prisma'
+import { createServerSupabaseClient } from '@/lib/supabase'
 
 export async function PUT(
   req: NextRequest,
   { params }: { params: { applicationId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const supabase = createServerSupabaseClient()
     
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Get the authorization header from the request
+    const authHeader = req.headers.get('authorization')
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized - No token provided' }, { status: 401 })
     }
     
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
-    })
+    const token = authHeader.replace('Bearer ', '')
     
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    // Get user from token
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized - Invalid token' }, { status: 401 })
     }
     
     const body = await req.json()
     const { status } = body
     
-    if (!['PENDING', 'VIEWED', 'ACCEPTED', 'REJECTED'].includes(status)) {
+    if (!['PENDING', 'REVIEWED', 'INTERVIEW', 'ACCEPTED', 'REJECTED'].includes(status)) {
       return NextResponse.json(
         { error: 'Invalid status' },
         { status: 400 }
@@ -33,21 +34,25 @@ export async function PUT(
     }
     
     // Check if user owns the job for this application
-    const application = await prisma.jobApplication.findUnique({
-      where: { id: params.applicationId },
-      include: {
-        job: true
-      }
-    })
+    const { data: application, error: appError } = await supabase
+      .from('job_applications')
+      .select(`
+        *,
+        job:job_id (
+          poster_id
+        )
+      `)
+      .eq('id', params.applicationId)
+      .single()
     
-    if (!application) {
+    if (appError || !application) {
       return NextResponse.json(
         { error: 'Application not found' },
         { status: 404 }
       )
     }
     
-    if (application.job.postedById !== user.id) {
+    if (application.job.poster_id !== user.id) {
       return NextResponse.json(
         { error: 'Forbidden' },
         { status: 403 }
@@ -55,31 +60,26 @@ export async function PUT(
     }
     
     // Update application status
-    const updatedApplication = await prisma.jobApplication.update({
-      where: { id: params.applicationId },
-      data: { status },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-            image: true,
-            title: true,
-            bio: true,
-            hourlyRateMin: true,
-            hourlyRateMax: true
-          }
-        },
-        job: {
-          select: {
-            id: true,
-            title: true,
-            company: true
-          }
-        }
-      }
-    })
+    const { data: updatedApplication, error: updateError } = await supabase
+      .from('job_applications')
+      .update({ status })
+      .eq('id', params.applicationId)
+      .select(`
+        *,
+        applicant:applicant_id (
+          id, name, email, image, title, bio,
+          hourly_rate_min, hourly_rate_max
+        ),
+        job:job_id (
+          id, title, company
+        )
+      `)
+      .single()
+    
+    if (updateError) {
+      console.error('Error updating application:', updateError)
+      throw updateError
+    }
     
     return NextResponse.json(updatedApplication)
   } catch (error) {
@@ -96,33 +96,38 @@ export async function DELETE(
   { params }: { params: { applicationId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const supabase = createServerSupabaseClient()
     
-    if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Get the authorization header from the request
+    const authHeader = req.headers.get('authorization')
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized - No token provided' }, { status: 401 })
     }
     
-    const user = await prisma.user.findUnique({
-      where: { email: session.user.email }
-    })
+    const token = authHeader.replace('Bearer ', '')
     
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    // Get user from token
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized - Invalid token' }, { status: 401 })
     }
     
     // Check if user owns the application
-    const application = await prisma.jobApplication.findUnique({
-      where: { id: params.applicationId }
-    })
+    const { data: application, error: appError } = await supabase
+      .from('job_applications')
+      .select('*')
+      .eq('id', params.applicationId)
+      .single()
     
-    if (!application) {
+    if (appError || !application) {
       return NextResponse.json(
         { error: 'Application not found' },
         { status: 404 }
       )
     }
     
-    if (application.userId !== user.id) {
+    if (application.applicant_id !== user.id) {
       return NextResponse.json(
         { error: 'Forbidden' },
         { status: 403 }
@@ -130,9 +135,15 @@ export async function DELETE(
     }
     
     // Delete application
-    await prisma.jobApplication.delete({
-      where: { id: params.applicationId }
-    })
+    const { error: deleteError } = await supabase
+      .from('job_applications')
+      .delete()
+      .eq('id', params.applicationId)
+    
+    if (deleteError) {
+      console.error('Error deleting application:', deleteError)
+      throw deleteError
+    }
     
     return NextResponse.json({ message: 'Application withdrawn successfully' })
   } catch (error) {

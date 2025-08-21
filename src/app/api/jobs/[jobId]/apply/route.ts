@@ -1,42 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { prisma } from '@/lib/prisma'
+import { createServerSupabaseClient } from '@/lib/supabase'
 import { EmailService } from '@/lib/email'
-import { authOptions } from '@/lib/auth'
 
 export async function POST(
   req: NextRequest,
   { params }: { params: { jobId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const supabase = createServerSupabaseClient()
     
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Get the authorization header from the request
+    const authHeader = req.headers.get('authorization')
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized - No token provided' }, { status: 401 })
+    }
+    
+    const token = authHeader.replace('Bearer ', '')
+    
+    // Get user from token
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized - Invalid token' }, { status: 401 })
     }
 
     const { jobId } = params
     const body = await req.json()
-    const { coverLetter, expectedRate, availableStartDate } = body
+    const { coverLetter: _coverLetter, expectedRate: _expectedRate, availableStartDate } = body
 
     // Check if job exists and is active
-    const job = await prisma.job.findUnique({
-      where: { id: jobId },
-      include: { postedBy: true }
-    })
+    const { data: job, error: jobError } = await supabase
+      .from('jobs')
+      .select(`
+        *,
+        poster:poster_id (
+          id, name, email
+        )
+      `)
+      .eq('id', jobId)
+      .single()
 
-    if (!job) {
+    if (jobError || !job) {
       return NextResponse.json({ error: 'Job not found' }, { status: 404 })
     }
 
-    if (!job.isActive) {
+    if (!job.is_active) {
       return NextResponse.json(
         { error: 'This job is no longer accepting applications' },
         { status: 400 }
       )
     }
 
-    if (job.postedById === session.user.id) {
+    if (job.poster_id === user.id) {
       return NextResponse.json(
         { error: 'You cannot apply to your own job posting' },
         { status: 400 }
@@ -44,12 +59,12 @@ export async function POST(
     }
 
     // Check if user already applied
-    const existingApplication = await prisma.jobApplication.findFirst({
-      where: {
-        jobId,
-        userId: session.user.id
-      }
-    })
+    const { data: existingApplication, error: appCheckError } = await supabase
+      .from('job_applications')
+      .select('id')
+      .eq('job_id', jobId)
+      .eq('applicant_id', user.id)
+      .single()
 
     if (existingApplication) {
       return NextResponse.json(
@@ -59,44 +74,42 @@ export async function POST(
     }
 
     // Create application
-    const application = await prisma.jobApplication.create({
-      data: {
-        jobId,
-        userId: session.user.id,
+    const { data: application, error: createError } = await supabase
+      .from('job_applications')
+      .insert({
+        job_id: jobId,
+        applicant_id: user.id,
         status: 'PENDING'
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true
-          }
-        },
-        job: {
-          include: {
-            postedBy: {
-              select: {
-                id: true,
-                name: true,
-                email: true
-              }
-            }
-          }
-        }
-      }
-    })
+      })
+      .select(`
+        *,
+        applicant:applicant_id (
+          id, name, email
+        ),
+        job:job_id (
+          *,
+          poster:poster_id (
+            id, name, email
+          )
+        )
+      `)
+      .single()
+
+    if (createError) {
+      console.error('Error creating application:', createError)
+      throw createError
+    }
 
     // Send email notifications
     const emailService = EmailService.getInstance()
 
     // Notify employer of new application
-    if (application.job.user.email) {
+    if (application.job.poster.email) {
       try {
         await emailService.sendApplicationNotification(
-          application.job.user.email,
+          application.job.poster.email,
           {
-            applicantName: application.user.name || 'Unknown',
+            applicantName: application.applicant.name || 'Unknown',
             jobTitle: application.job.title,
             company: application.job.company,
             jobId: application.job.id,
@@ -109,12 +122,12 @@ export async function POST(
     }
 
     // Send confirmation to applicant
-    if (application.user.email) {
+    if (application.applicant.email) {
       try {
         await emailService.sendApplicationConfirmation(
-          application.user.email,
+          application.applicant.email,
           {
-            applicantName: application.user.name || 'Unknown',
+            applicantName: application.applicant.name || 'Unknown',
             jobTitle: application.job.title,
             company: application.job.company,
             jobId: application.job.id,
@@ -128,16 +141,20 @@ export async function POST(
 
     // Create notification record for the employer
     try {
-      await prisma.notification.create({
-        data: {
-          userId: application.job.userId,
+      const { error: notificationError } = await supabase
+        .from('notifications')
+        .insert({
+          user_id: application.job.poster_id,
           type: 'application_update',
           title: 'New Job Application',
-          message: `${application.user.name} applied for "${application.job.title}"`,
-          relatedJobId: application.job.id,
-          relatedApplicationId: application.id
-        }
-      })
+          message: `${application.applicant.name} applied for "${application.job.title}"`,
+          related_job_id: application.job.id,
+          related_application_id: application.id
+        })
+      
+      if (notificationError) {
+        console.error('Failed to create notification:', notificationError)
+      }
     } catch (error) {
       console.error('Failed to create notification:', error)
     }
@@ -145,7 +162,7 @@ export async function POST(
     return NextResponse.json({
       id: application.id,
       status: application.status,
-      appliedAt: application.createdAt,
+      appliedAt: application.created_at,
       message: 'Application submitted successfully'
     }, { status: 201 })
 

@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
+import { useState, useEffect, useCallback } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { 
   BarChart, 
@@ -24,9 +24,7 @@ import {
   Users, 
   Briefcase, 
   DollarSign, 
-  Eye, 
   MessageSquare,
-  Calendar,
   Activity,
   Filter
 } from 'lucide-react'
@@ -70,24 +68,18 @@ interface AnalyticsData {
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8']
 
 export default function AnalyticsPage() {
-  const { data: session, status } = useSession()
+  const { user } = useAuth()
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
   const [timeRange, setTimeRange] = useState('7d')
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (!user) {
       redirect('/auth/signin')
     }
-  }, [status])
+  }, [user])
 
-  useEffect(() => {
-    if (session?.user?.id) {
-      fetchAnalytics()
-    }
-  }, [session, timeRange])
-
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     setLoading(true)
     try {
       const response = await fetch(`/api/analytics?timeRange=${timeRange}`)
@@ -100,7 +92,13 @@ export default function AnalyticsPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [timeRange])
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchAnalytics()
+    }
+  }, [user, fetchAnalytics])
 
   const formatNumber = (num: number) => {
     if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'

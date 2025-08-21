@@ -73,7 +73,7 @@ function initializeJobBoardMonitoring() {
   }
 
   // Track user interactions with enhanced job-specific data
-  const trackUserInteraction = (eventName: string, element?: string, metadata?: any) => {
+  const trackUserInteraction = (eventName: string, element?: string, metadata?: Record<string, unknown>) => {
     performanceMonitor.recordMetric({
       id: `user-interaction-${Date.now()}`,
       name: `USER_${eventName.toUpperCase()}`,

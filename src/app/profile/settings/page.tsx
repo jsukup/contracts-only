@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@/contexts/AuthContext'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
@@ -37,7 +37,7 @@ interface ProfileData {
 }
 
 export default function ProfileSettingsPage() {
-  const { data: session, status } = useSession()
+  const { user } = useAuth()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [profile, setProfile] = useState<ProfileData>({
@@ -50,26 +50,26 @@ export default function ProfileSettingsPage() {
   const [newSkill, setNewSkill] = useState('')
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (!user) {
       redirect('/auth/signin')
     }
-  }, [status])
+  }, [user])
 
   useEffect(() => {
-    if (session?.user) {
+    if (user) {
       fetchProfile()
     }
-  }, [session])
+  }, [user])
 
   const fetchProfile = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`/api/profile/${session?.user?.id}`)
+      const response = await fetch(`/api/profile/${user?.id}`)
       if (response.ok) {
         const data = await response.json()
         setProfile({
-          name: data.name || session?.user?.name || '',
-          email: data.email || session?.user?.email || '',
+          name: data.name || user?.name || '',
+          email: data.email || user?.email || '',
           phone: data.phone || '',
           location: data.location || '',
           bio: data.bio || '',
@@ -92,7 +92,7 @@ export default function ProfileSettingsPage() {
   const handleSave = async () => {
     setSaving(true)
     try {
-      const response = await fetch(`/api/profile/${session?.user?.id}`, {
+      const response = await fetch(`/api/profile/${user?.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(profile)
@@ -111,7 +111,7 @@ export default function ProfileSettingsPage() {
     }
   }
 
-  const handleInputChange = (field: keyof ProfileData, value: any) => {
+  const handleInputChange = (field: keyof ProfileData, value: string | number | string[]) => {
     setProfile(prev => ({ ...prev, [field]: value }))
   }
 
@@ -132,7 +132,7 @@ export default function ProfileSettingsPage() {
     }))
   }
 
-  if (status === 'loading' || loading) {
+  if (!user || loading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-center items-center min-h-[400px]">

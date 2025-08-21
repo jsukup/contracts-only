@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { prisma } from '@/lib/prisma'
+import { createServerSupabaseClient } from '@/lib/supabase'
 
 export async function GET() {
   try {
@@ -7,30 +7,21 @@ export async function GET() {
     
     // Get public user profiles for sitemap
     // Note: Only include profiles that users have explicitly made public
-    const users = await prisma.user.findMany({
-      where: {
-        // Add a public profile field to your schema if you want this feature
-        // isPublic: true
-        name: {
-          not: null // Only include users with names (basic public info)
-        }
-      },
-      select: {
-        id: true,
-        updatedAt: true,
-      },
-      take: 10000, // Limit to prevent too large sitemap
-      orderBy: {
-        updatedAt: 'desc'
-      }
-    })
+    const supabase = createServerSupabaseClient()
+    
+    const { data: users } = await supabase
+      .from('users')
+      .select('id, updated_at')
+      .not('name', 'is', null) // Only include users with names (basic public info)
+      .order('updated_at', { ascending: false })
+      .limit(10000) // Limit to prevent too large sitemap
 
     // Generate XML sitemap for public profiles
     const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 ${users.map(user => `  <url>
     <loc>${baseUrl}/profile/${user.id}</loc>
-    <lastmod>${user.updatedAt.toISOString().split('T')[0]}</lastmod>
+    <lastmod>${new Date(user.updated_at).toISOString().split('T')[0]}</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>`).join('\n')}

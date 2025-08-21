@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@/contexts/AuthContext'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -39,7 +39,7 @@ interface JobFormData {
 }
 
 export default function PostJobPage() {
-  const { data: session, status } = useSession()
+  const { user } = useAuth()
   const router = useRouter()
   const [submitting, setSubmitting] = useState(false)
   const [newSkill, setNewSkill] = useState('')
@@ -63,11 +63,11 @@ export default function PostJobPage() {
     applicationDeadline: ''
   })
 
-  if (status === 'unauthenticated') {
+  if (!user) {
     redirect('/auth/signin?callbackUrl=/jobs/post')
   }
 
-  const handleInputChange = (field: keyof JobFormData, value: any) => {
+  const handleInputChange = (field: keyof JobFormData, value: string | number | boolean | string[]) => {
     setFormData(prev => ({ ...prev, [field]: value }))
     // Clear error for this field when user starts typing
     if (errors[field]) {
@@ -154,7 +154,7 @@ export default function PostJobPage() {
     }
   }
 
-  if (status === 'loading') {
+  if (!user) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-center items-center min-h-[400px]">

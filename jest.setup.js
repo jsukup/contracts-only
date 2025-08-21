@@ -34,103 +34,128 @@ jest.mock('next/navigation', () => ({
   usePathname: () => '/',
 }))
 
-// Mock NextAuth
-jest.mock('next-auth/react', () => ({
-  useSession: () => ({
-    data: {
-      user: {
-        id: 'test-user-id',
-        name: 'Test User',
-        email: 'test@example.com',
-        role: 'USER',
-      },
+// Mock AuthContext (Supabase)
+jest.mock('@/contexts/AuthContext', () => ({
+  useAuth: () => ({
+    user: {
+      id: 'test-user-id',
+      name: 'Test User',
+      email: 'test@example.com',
+      role: 'USER',
     },
-    status: 'authenticated',
+    loading: false,
+    signIn: jest.fn(),
+    signOut: jest.fn(),
+    signUp: jest.fn(),
   }),
-  signIn: jest.fn(),
-  signOut: jest.fn(),
-  SessionProvider: ({ children }) => children,
+  AuthProvider: ({ children }) => children,
 }))
 
-// Mock Prisma client - note: specific tests can override this mock
-const mockPrisma = {
-  job: {
-    findMany: jest.fn(),
-    findUnique: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-    count: jest.fn(),
-    groupBy: jest.fn(),
-    aggregate: jest.fn(),
+// Mock Supabase client - note: specific tests can override this mock
+const mockSupabaseQuery = {
+  select: jest.fn().mockReturnThis(),
+  from: jest.fn().mockReturnThis(),
+  eq: jest.fn().mockReturnThis(),
+  neq: jest.fn().mockReturnThis(),
+  gt: jest.fn().mockReturnThis(),
+  gte: jest.fn().mockReturnThis(),
+  lt: jest.fn().mockReturnThis(),
+  lte: jest.fn().mockReturnThis(),
+  like: jest.fn().mockReturnThis(),
+  ilike: jest.fn().mockReturnThis(),
+  is: jest.fn().mockReturnThis(),
+  in: jest.fn().mockReturnThis(),
+  contains: jest.fn().mockReturnThis(),
+  containedBy: jest.fn().mockReturnThis(),
+  rangeGt: jest.fn().mockReturnThis(),
+  rangeGte: jest.fn().mockReturnThis(),
+  rangeLt: jest.fn().mockReturnThis(),
+  rangeLte: jest.fn().mockReturnThis(),
+  rangeAdjacent: jest.fn().mockReturnThis(),
+  overlaps: jest.fn().mockReturnThis(),
+  strictlyLeft: jest.fn().mockReturnThis(),
+  strictlyRight: jest.fn().mockReturnThis(),
+  notExtendRight: jest.fn().mockReturnThis(),
+  notExtendLeft: jest.fn().mockReturnThis(),
+  adjacent: jest.fn().mockReturnThis(),
+  not: jest.fn().mockReturnThis(),
+  or: jest.fn().mockReturnThis(),
+  filter: jest.fn().mockReturnThis(),
+  match: jest.fn().mockReturnThis(),
+  textSearch: jest.fn().mockReturnThis(),
+  range: jest.fn().mockReturnThis(),
+  order: jest.fn().mockReturnThis(),
+  limit: jest.fn().mockReturnThis(),
+  single: jest.fn().mockResolvedValue({ data: null, error: null }),
+  maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }),
+  insert: jest.fn().mockReturnThis(),
+  update: jest.fn().mockReturnThis(),
+  upsert: jest.fn().mockReturnThis(),
+  delete: jest.fn().mockReturnThis(),
+  rpc: jest.fn().mockResolvedValue({ data: null, error: null }),
+  count: jest.fn().mockResolvedValue({ count: 0, error: null }),
+  then: jest.fn().mockResolvedValue({ data: [], error: null }),
+}
+
+const mockSupabase = {
+  from: jest.fn(() => mockSupabaseQuery),
+  rpc: jest.fn().mockResolvedValue({ data: null, error: null }),
+  auth: {
+    getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
+    getSession: jest.fn().mockResolvedValue({ data: { session: null }, error: null }),
+    signInWithPassword: jest.fn().mockResolvedValue({ data: null, error: null }),
+    signOut: jest.fn().mockResolvedValue({ error: null }),
   },
-  user: {
-    findMany: jest.fn(),
-    findUnique: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-    count: jest.fn(),
-  },
-  jobApplication: {
-    findMany: jest.fn(),
-    findUnique: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-    count: jest.fn(),
-  },
-  skill: {
-    findMany: jest.fn(),
-    findUnique: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-  },
-  review: {
-    findMany: jest.fn(),
-    findUnique: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-  },
-  userSkill: {
-    findMany: jest.fn(),
-    create: jest.fn(),
-    delete: jest.fn(),
-    count: jest.fn(),
-    groupBy: jest.fn(),
-  },
-  emailJob: {
-    findMany: jest.fn(),
-    findUnique: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-    count: jest.fn(),
-  },
-  application: {
-    findMany: jest.fn(),
-    findUnique: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-    count: jest.fn(),
-    groupBy: jest.fn(),
-    aggregate: jest.fn(),
-  },
-  notification: {
-    findMany: jest.fn(),
-    findUnique: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-    count: jest.fn(),
+  storage: {
+    from: jest.fn(() => ({
+      upload: jest.fn().mockResolvedValue({ data: null, error: null }),
+      download: jest.fn().mockResolvedValue({ data: null, error: null }),
+      remove: jest.fn().mockResolvedValue({ data: null, error: null }),
+      list: jest.fn().mockResolvedValue({ data: [], error: null }),
+      getPublicUrl: jest.fn().mockReturnValue({ data: { publicUrl: '' } }),
+    })),
   },
 }
 
-// Global mock for prisma
-global.__mockPrisma = mockPrisma
+// Global mock for Supabase
+global.__mockSupabase = mockSupabase
+
+// Mock @supabase/supabase-js
+jest.mock('@supabase/supabase-js', () => ({
+  createClient: jest.fn(() => mockSupabase),
+}))
+
+// Mock our auth lib
+jest.mock('@/lib/auth', () => ({
+  getServerSession: jest.fn().mockResolvedValue({
+    user: {
+      id: 'test-user-id',
+      name: 'Test User',
+      email: 'test@example.com', 
+      role: 'USER',
+    },
+  }),
+  authOptions: {},
+}))
+
+// Mock our Supabase client file
+jest.mock('@/lib/supabase', () => ({
+  supabase: mockSupabase,
+  createServerSupabaseClient: jest.fn(() => mockSupabase),
+  createServiceSupabaseClient: jest.fn(() => mockSupabase),
+  getCurrentUser: jest.fn().mockResolvedValue({
+    id: 'test-user-id',
+    name: 'Test User', 
+    email: 'test@example.com',
+    role: 'USER',
+  }),
+  signOut: jest.fn().mockResolvedValue(undefined),
+  signInWithGoogle: jest.fn().mockResolvedValue({ data: null, error: null }),
+  createOrUpdateUser: jest.fn().mockResolvedValue({ 
+    data: { id: 'test-user-id', email: 'test@example.com' }, 
+    isNewUser: false 
+  }),
+}))
 
 // Mock fetch for API calls
 global.fetch = jest.fn()

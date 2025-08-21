@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@/contexts/AuthContext'
 import { useParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -46,7 +46,7 @@ interface ApplicationDetails {
 }
 
 export default function ApplicationDetailsPage() {
-  const { data: session } = useSession()
+  const { user } = useAuth()
   const params = useParams()
   const router = useRouter()
   const applicationId = params.applicationId as string
@@ -56,10 +56,10 @@ export default function ApplicationDetailsPage() {
   const [withdrawing, setWithdrawing] = useState(false)
 
   useEffect(() => {
-    if (applicationId && session) {
+    if (applicationId && user) {
       fetchApplicationDetails()
     }
-  }, [applicationId, session])
+  }, [applicationId, user])
 
   const fetchApplicationDetails = async () => {
     setLoading(true)

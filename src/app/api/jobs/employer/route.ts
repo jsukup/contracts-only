@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { prisma } from '@/lib/prisma'
-import { authOptions } from '@/lib/auth'
-import { Prisma } from '@prisma/client'
+import { getServerSession } from '@/lib/auth'
+import { createServerSupabaseClient } from '@/lib/supabase'
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession()
     
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -17,39 +15,59 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10')
     const offset = parseInt(searchParams.get('offset') || '0')
 
-    const where: Prisma.JobWhereInput = {
-      postedById: session.user.id
-    }
+    const supabase = createServerSupabaseClient()
+    
+    // Build the query
+    let jobsQuery = supabase
+      .from('jobs')
+      .select(`
+        *,
+        job_skills!inner(
+          skill_id,
+          skills!inner(id, name)
+        )
+      `)
+      .eq('poster_id', session.user.id)
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1)
 
     if (status && status !== 'all') {
       if (status === 'active') {
-        where.isActive = true
+        jobsQuery = jobsQuery.eq('is_active', true)
       } else if (status === 'inactive') {
-        where.isActive = false
+        jobsQuery = jobsQuery.eq('is_active', false)
       }
     }
 
-    const [jobs, total] = await Promise.all([
-      prisma.job.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        take: limit,
-        skip: offset,
-        include: {
-          _count: {
-            select: {
-              applications: true
-            }
-          },
-          jobSkills: {
-            include: {
-              skill: true
-            }
-          }
-        }
-      }),
-      prisma.job.count({ where })
+    // Count query
+    let countQuery = supabase
+      .from('jobs')
+      .select('*', { count: 'exact', head: true })
+      .eq('poster_id', session.user.id)
+
+    if (status && status !== 'all') {
+      if (status === 'active') {
+        countQuery = countQuery.eq('is_active', true)
+      } else if (status === 'inactive') {
+        countQuery = countQuery.eq('is_active', false)
+      }
+    }
+
+    const [jobsResult, countResult] = await Promise.all([
+      jobsQuery,
+      countQuery
     ])
+
+    if (jobsResult.error) {
+      throw new Error(`Jobs query error: ${jobsResult.error.message}`)
+    }
+
+    if (countResult.error) {
+      throw new Error(`Count query error: ${countResult.error.message}`)
+    }
+
+    const jobs = jobsResult.data || []
+    const total = countResult.count || 0
 
     return NextResponse.json({
       jobs,

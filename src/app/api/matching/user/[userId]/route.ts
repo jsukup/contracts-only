@@ -1,23 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '@/lib/auth'
+import { createServerSupabaseClient } from '@/lib/supabase'
 import { JobMatchingEngine } from '@/lib/matching'
-import { prisma } from '@/lib/prisma'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { userId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const supabase = createServerSupabaseClient()
     
-    // Check if user is authenticated
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Get the authorization header from the request
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized - No token provided' }, { status: 401 })
+    }
+    
+    const token = authHeader.replace('Bearer ', '')
+    
+    // Get user from token
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized - Invalid token' }, { status: 401 })
     }
 
+    // Get user profile to check role
+    const { data: userProfile, error: profileError } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
     // Check if user can access this data (own profile or admin)
-    if (session.user.id !== params.userId && session.user.role !== 'ADMIN') {
+    if (user.id !== params.userId && userProfile?.role !== 'ADMIN') {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
@@ -80,10 +95,25 @@ export async function PUT(
   { params }: { params: { userId: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions)
+    const supabase = createServerSupabaseClient()
     
-    if (!session || session.user.id !== params.userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    // Get the authorization header from the request
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader?.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized - No token provided' }, { status: 401 })
+    }
+    
+    const token = authHeader.replace('Bearer ', '')
+    
+    // Get user from token
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
+    
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized - Invalid token' }, { status: 401 })
+    }
+
+    if (user.id !== params.userId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     const body = await request.json()
@@ -97,28 +127,34 @@ export async function PUT(
     } = body
 
     // Update user preferences in database
-    const updatedUser = await prisma.user.update({
-      where: { id: params.userId },
-      data: {
-        // These fields would need to be added to your User model
-        preferredJobTypes,
-        preferredContractDuration,
-        hourlyRateMin,
-        hourlyRateMax,
-        isRemoteOnly,
+    const { data: updatedUser, error: updateError } = await supabase
+      .from('users')
+      .update({
+        preferred_job_types: preferredJobTypes,
+        preferred_contract_duration: preferredContractDuration,
+        hourly_rate_min: hourlyRateMin,
+        hourly_rate_max: hourlyRateMax,
+        is_remote_only: isRemoteOnly,
         availability,
-        updatedAt: new Date()
-      }
-    })
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', params.userId)
+      .select()
+      .single()
+
+    if (updateError) {
+      console.error('Error updating user preferences:', updateError)
+      throw updateError
+    }
 
     return NextResponse.json({
       message: 'Matching preferences updated successfully',
       preferences: {
-        preferredJobTypes: updatedUser.preferredJobTypes,
-        preferredContractDuration: updatedUser.preferredContractDuration,
-        hourlyRateMin: updatedUser.hourlyRateMin,
-        hourlyRateMax: updatedUser.hourlyRateMax,
-        isRemoteOnly: updatedUser.isRemoteOnly,
+        preferredJobTypes: updatedUser.preferred_job_types,
+        preferredContractDuration: updatedUser.preferred_contract_duration,
+        hourlyRateMin: updatedUser.hourly_rate_min,
+        hourlyRateMax: updatedUser.hourly_rate_max,
+        isRemoteOnly: updatedUser.is_remote_only,
         availability: updatedUser.availability
       }
     })

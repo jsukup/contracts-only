@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
+import { useAuth } from '@/contexts/AuthContext'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -34,14 +34,14 @@ export default function NotificationCenter({
   limit = 10,
   onNotificationClick 
 }: NotificationCenterProps) {
-  const { data: session } = useSession()
+  const { user } = useAuth()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
-    if (!session?.user?.email) return
+    if (!user?.email) return
 
     const fetchNotifications = async () => {
       try {
@@ -67,7 +67,7 @@ export default function NotificationCenter({
     }
 
     fetchNotifications()
-  }, [session, showAll, limit])
+  }, [user, showAll, limit])
 
   const markAsRead = async (notificationId: string) => {
     try {

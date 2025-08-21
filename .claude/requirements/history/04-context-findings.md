@@ -18,7 +18,7 @@
 - **API**: Next.js Route Handlers (app/api)
   - RESTful endpoints for job operations
   - Server-side data fetching
-- **Database**: PostgreSQL with Prisma ORM
+- **Database**: PostgreSQL with Supabase SDK
   - Structured data for jobs, companies, contractors
   - Full-text search capabilities
   - Efficient filtering and pagination
@@ -149,7 +149,7 @@ export default async function JobsPage({
 ### Platform Security
 - Two-factor authentication option
 - Rate limiting on authentication endpoints
-- SQL injection prevention (Prisma ORM)
+- SQL injection prevention (Supabase RLS policies)
 - XSS protection (React's built-in escaping)
 - CSRF tokens for form submissions
 

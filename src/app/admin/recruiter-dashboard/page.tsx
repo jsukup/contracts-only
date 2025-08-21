@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
+import { useState, useEffect, useCallback } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -35,16 +35,12 @@ interface RecruiterDashboardData extends RecruiterAnalytics {
 }
 
 export default function RecruiterDashboard() {
-  const { data: session } = useSession()
+  useAuth() // Hook required for auth context
   const [data, setData] = useState<RecruiterDashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [dateRange, setDateRange] = useState<string>('30days')
 
-  useEffect(() => {
-    fetchAnalytics()
-  }, [dateRange])
-
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     try {
       setLoading(true)
       
@@ -68,7 +64,11 @@ export default function RecruiterDashboard() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [dateRange])
+
+  useEffect(() => {
+    fetchAnalytics()
+  }, [fetchAnalytics])
 
   const exportCSV = async () => {
     try {

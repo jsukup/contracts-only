@@ -1,29 +1,14 @@
 // NextRequest and NextResponse are mocked globally in jest.setup.js
 
-// Mock all auth-related modules first to avoid ESM issues
-jest.mock('../../../../lib/auth', () => ({
-  authOptions: {}
-}))
+// Note: Auth and Supabase are mocked globally in jest.setup.js
 
-jest.mock('next-auth', () => ({
-  getServerSession: jest.fn()
-}))
-
-jest.mock('@auth/prisma-adapter', () => ({
-  PrismaAdapter: jest.fn()
-}))
-
-// Mock the prisma client
-jest.mock('../../../lib/prisma', () => ({
-  prisma: (global as any).__mockPrisma
-}))
-
-const mockPrisma = (global as any).__mockPrisma
+const mockSupabase = (global as { __mockSupabase: unknown }).__mockSupabase
 
 // Import after mocking to avoid ESM issues
 import { GET, POST } from '../jobs/route'
+import { getServerSession } from '@/lib/auth'
 
-const mockGetServerSession = require('next-auth').getServerSession
+const mockGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>
 
 describe('/api/jobs', () => {
   beforeEach(() => {
@@ -38,34 +23,40 @@ describe('/api/jobs', () => {
         company: 'Tech Corp',
         location: 'Remote',
         type: 'FULL_TIME',
-        hourlyRateMin: 80,
-        hourlyRateMax: 120,
+        hourly_rate_min: 80,
+        hourly_rate_max: 120,
         description: 'React development role',
         requirements: 'React, TypeScript',
-        applicationUrl: 'https://company.com/apply',
-        isActive: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
-        userId: 'user-1',
-        user: {
+        application_url: 'https://company.com/apply',
+        is_active: true,
+        created_at: new Date(),
+        updated_at: new Date(),
+        application_deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+        poster_id: 'user-1',
+        users: {
           id: 'user-1',
           name: 'Tech Corp HR',
           email: 'hr@techcorp.com',
-          companyName: 'Tech Corp'
+          company_name: 'Tech Corp'
         },
-        skills: [
-          { id: 'skill-1', name: 'React' },
-          { id: 'skill-2', name: 'TypeScript' }
+        job_skills: [
+          { skills: { id: 'skill-1', name: 'React' } },
+          { skills: { id: 'skill-2', name: 'TypeScript' } }
         ],
-        _count: {
-          applications: 5
-        }
+        applications_count: 5
       }
     ]
 
     it('should return all jobs when no filters applied', async () => {
-      mockPrisma.job.findMany.mockResolvedValue(mockJobs)
+      const mockFrom = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        range: jest.fn().mockResolvedValue({ data: mockJobs })
+      }
+      
+      mockSupabase.from = jest.fn().mockReturnValue(mockFrom)
       
       const request = new NextRequest('http://localhost:3000/api/jobs')
       const response = await GET(request)
@@ -77,95 +68,94 @@ describe('/api/jobs', () => {
     })
 
     it('should filter jobs by search query', async () => {
-      mockPrisma.job.findMany.mockResolvedValue(mockJobs)
+      const mockFrom = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        or: jest.fn().mockReturnThis(),
+        ilike: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        range: jest.fn().mockResolvedValue({ data: mockJobs })
+      }
+      
+      mockSupabase.from = jest.fn().mockReturnValue(mockFrom)
       
       const request = new NextRequest('http://localhost:3000/api/jobs?search=React')
       const response = await GET(request)
 
-      expect(mockPrisma.job.findMany).toHaveBeenCalledWith({
-        where: {
-          isActive: true,
-          OR: [
-            { title: { contains: 'React', mode: 'insensitive' } },
-            { description: { contains: 'React', mode: 'insensitive' } },
-            { requirements: { contains: 'React', mode: 'insensitive' } },
-            { company: { contains: 'React', mode: 'insensitive' } }
-          ]
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              companyName: true
-            }
-          },
-          skills: {
-            select: {
-              id: true,
-              name: true
-            }
-          },
-          _count: {
-            select: {
-              applications: true
-            }
-          }
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 50,
-        skip: 0
-      })
+      expect(mockSupabase.from).toHaveBeenCalledWith('jobs')
+      expect(mockFrom.select).toHaveBeenCalled()
+      expect(mockFrom.eq).toHaveBeenCalledWith('is_active', true)
     })
 
     it('should filter jobs by location', async () => {
-      mockPrisma.job.findMany.mockResolvedValue(mockJobs)
+      const mockFrom = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        ilike: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        range: jest.fn().mockResolvedValue({ data: mockJobs })
+      }
+      
+      mockSupabase.from = jest.fn().mockReturnValue(mockFrom)
       
       const request = new NextRequest('http://localhost:3000/api/jobs?location=Remote')
       await GET(request)
 
-      expect(mockPrisma.job.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            location: { contains: 'Remote', mode: 'insensitive' }
-          })
-        })
-      )
+      expect(mockSupabase.from).toHaveBeenCalledWith('jobs')
+      expect(mockFrom.ilike).toHaveBeenCalledWith('location', '%Remote%')
     })
 
     it('should filter jobs by salary range', async () => {
-      mockPrisma.job.findMany.mockResolvedValue(mockJobs)
+      const mockFrom = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        gte: jest.fn().mockReturnThis(),
+        lte: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        range: jest.fn().mockResolvedValue({ data: mockJobs })
+      }
+      
+      mockSupabase.from = jest.fn().mockReturnValue(mockFrom)
       
       const request = new NextRequest('http://localhost:3000/api/jobs?minRate=80&maxRate=150')
       await GET(request)
 
-      expect(mockPrisma.job.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            hourlyRateMin: { gte: 80 },
-            hourlyRateMax: { lte: 150 }
-          })
-        })
-      )
+      expect(mockSupabase.from).toHaveBeenCalledWith('jobs')
+      expect(mockFrom.gte).toHaveBeenCalledWith('hourly_rate_min', 80)
+      expect(mockFrom.lte).toHaveBeenCalledWith('hourly_rate_max', 150)
     })
 
     it('should handle pagination', async () => {
-      mockPrisma.job.findMany.mockResolvedValue(mockJobs)
+      const mockFrom = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        range: jest.fn().mockResolvedValue({ data: mockJobs })
+      }
+      
+      mockSupabase.from = jest.fn().mockReturnValue(mockFrom)
       
       const request = new NextRequest('http://localhost:3000/api/jobs?page=2&limit=10')
       await GET(request)
 
-      expect(mockPrisma.job.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          take: 10,
-          skip: 10 // (page 2 - 1) * limit 10
-        })
-      )
+      expect(mockSupabase.from).toHaveBeenCalledWith('jobs')
+      expect(mockFrom.range).toHaveBeenCalledWith(10, 19) // (page 2 - 1) * limit 10, limit 10 + 9
     })
 
     it('should handle database errors gracefully', async () => {
-      mockPrisma.job.findMany.mockRejectedValue(new Error('Database error'))
+      const mockFrom = {
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        order: jest.fn().mockReturnThis(),
+        limit: jest.fn().mockReturnThis(),
+        range: jest.fn().mockRejectedValue(new Error('Database error'))
+      }
+      
+      mockSupabase.from = jest.fn().mockReturnValue(mockFrom)
       
       const request = new NextRequest('http://localhost:3000/api/jobs')
       const response = await GET(request)
@@ -182,13 +172,13 @@ describe('/api/jobs', () => {
       company: 'Tech Solutions Inc',
       location: 'Remote',
       type: 'FULL_TIME',
-      hourlyRateMin: 90,
-      hourlyRateMax: 130,
+      hourly_rate_min: 90,
+      hourly_rate_max: 130,
       description: 'We are looking for a senior React developer...',
       requirements: 'React, TypeScript, 5+ years experience',
-      applicationUrl: 'https://techsolutions.com/careers/react-dev',
-      skillIds: ['skill-1', 'skill-2'],
-      expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
+      application_url: 'https://techsolutions.com/careers/react-dev',
+      skill_ids: ['skill-1', 'skill-2'],
+      application_deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days from now
     }
 
     const mockUser = {
@@ -203,13 +193,18 @@ describe('/api/jobs', () => {
       const mockCreatedJob = {
         id: 'job-1',
         ...validJobData,
-        userId: mockUser.id,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        isActive: true
+        poster_id: mockUser.id,
+        created_at: new Date(),
+        updated_at: new Date(),
+        is_active: true
       }
       
-      mockPrisma.job.create.mockResolvedValue(mockCreatedJob)
+      const mockFrom = {
+        insert: jest.fn().mockReturnThis(),
+        select: jest.fn().mockResolvedValue({ data: [mockCreatedJob] })
+      }
+      
+      mockSupabase.from = jest.fn().mockReturnValue(mockFrom)
 
       const request = new NextRequest('http://localhost:3000/api/jobs', {
         method: 'POST',
@@ -282,7 +277,13 @@ describe('/api/jobs', () => {
 
     it('should handle database errors gracefully', async () => {
       mockGetServerSession.mockResolvedValue({ user: mockUser })
-      mockPrisma.job.create.mockRejectedValue(new Error('Database constraint violation'))
+      
+      const mockFrom = {
+        insert: jest.fn().mockReturnThis(),
+        select: jest.fn().mockRejectedValue(new Error('Database constraint violation'))
+      }
+      
+      mockSupabase.from = jest.fn().mockReturnValue(mockFrom)
 
       const request = new NextRequest('http://localhost:3000/api/jobs', {
         method: 'POST',

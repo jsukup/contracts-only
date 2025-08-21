@@ -38,11 +38,20 @@ interface Skill {
   category?: string
 }
 
+interface JobFilters {
+  search?: string
+  jobType?: string
+  isRemote?: string
+  minRate?: number
+  maxRate?: number
+  skills?: string
+}
+
 export default function JobsPage() {
   const [jobs, setJobs] = useState<Job[]>([])
   const [skills, setSkills] = useState<Skill[]>([])
   const [loading, setLoading] = useState(true)
-  const [filters, setFilters] = useState<any>({})
+  const [filters, setFilters] = useState<JobFilters>({})
   const [pagination, setPagination] = useState({
     page: 1,
     limit: 20,
@@ -95,7 +104,7 @@ export default function JobsPage() {
     fetchJobs(filters, 1)
   }, [filters, sortBy, sortOrder])
 
-  const handleFiltersChange = (newFilters: any) => {
+  const handleFiltersChange = (newFilters: JobFilters) => {
     setFilters(newFilters)
     setPagination(prev => ({ ...prev, page: 1 }))
   }

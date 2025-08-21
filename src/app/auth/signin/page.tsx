@@ -1,27 +1,51 @@
 'use client'
 
-import { signIn } from "next-auth/react"
-import { useState } from "react"
-import { useSearchParams } from "next/navigation"
+import { useEffect, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useAuth } from "@/contexts/AuthContext"
 import { Button } from "@/components/ui/Button"
 import { Card, CardContent } from "@/components/ui/Card"
 import { Loader2, Chrome } from "lucide-react"
 import Link from "next/link"
 
 export default function SignInPage() {
+  const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const searchParams = useSearchParams()
+  const { user, loading, error, signInWithGoogle } = useAuth()
+  
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard"
-  const error = searchParams.get("error")
+  const errorParam = searchParams.get("error")
+
+  // Redirect if already signed in
+  useEffect(() => {
+    if (user && !loading) {
+      router.push(callbackUrl)
+    }
+  }, [user, loading, router, callbackUrl])
 
   const handleGoogleSignIn = async () => {
     setIsLoading(true)
     try {
-      await signIn("google", { callbackUrl })
+      await signInWithGoogle(callbackUrl)
     } catch (error) {
       console.error("Sign in error:", error)
       setIsLoading(false)
     }
+  }
+
+  // Show loading state while checking authentication
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      </div>
+    )
+  }
+
+  // Don't show signin page if already authenticated
+  if (user) {
+    return null
   }
 
   return (
@@ -39,14 +63,14 @@ export default function SignInPage() {
           
           <Card className="bg-white border border-gray-200 shadow-lg">
             <CardContent className="p-6">
-              {error && (
+              {(errorParam || error) && (
                 <div className="mb-4 p-3 rounded-md bg-red-50 border border-red-200">
                   <p className="text-sm text-red-600">
-                    {error === "OAuthAccountNotLinked"
+                    {errorParam === "OAuthAccountNotLinked"
                       ? "This email is already associated with another account."
-                      : error === "AccessDenied"
+                      : errorParam === "AccessDenied"
                       ? "Access was denied. Please try again."
-                      : "An error occurred during sign in. Please try again."}
+                      : error?.message || "An error occurred during sign in. Please try again."}
                   </p>
                 </div>
               )}

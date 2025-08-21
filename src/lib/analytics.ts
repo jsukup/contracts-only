@@ -1,4 +1,5 @@
-import { prisma } from './prisma'
+import { createDatabaseClient, db } from './database'
+import { createServerSupabaseClient } from './supabase'
 
 export interface JobAnalytics {
   totalJobs: number
@@ -90,6 +91,8 @@ export class AnalyticsEngine {
   static async getJobAnalytics(
     dateRange?: { start: Date; end: Date }
   ): Promise<JobAnalytics> {
+    const supabase = createServerSupabaseClient()
+    
     const whereClause = dateRange
       ? {
           createdAt: {
@@ -101,73 +104,70 @@ export class AnalyticsEngine {
 
     // Get basic job counts
     const [totalJobs, activeJobs] = await Promise.all([
-      prisma.job.count({ where: whereClause }),
-      prisma.job.count({
-        where: {
-          ...whereClause,
-          isActive: true
-        }
+      db.countJobs(whereClause),
+      db.countJobs({
+        ...whereClause,
+        isActive: true
       })
     ])
 
-    // Jobs by type (since category doesn't exist)
-    const jobsByCategory = await prisma.job.groupBy({
-      by: ['jobType'],
-      where: whereClause,
-      _count: {
-        id: true
-      },
-      orderBy: {
-        _count: {
-          id: 'desc'
-        }
-      }
-    })
+    // Jobs by type using direct Supabase query for grouping
+    let jobsByTypeQuery = supabase
+      .from('jobs')
+      .select('job_type, count(*)', { count: 'exact' })
+
+    if (dateRange) {
+      jobsByTypeQuery = jobsByTypeQuery
+        .gte('created_at', dateRange.start.toISOString())
+        .lte('created_at', dateRange.end.toISOString())
+    }
+
+    const { data: jobsByTypeData } = await jobsByTypeQuery
+    const jobsByCategory = jobsByTypeData?.map(item => ({
+      category: item.job_type,
+      count: item.count || 0
+    })) || []
 
     // Jobs by location (top remote vs on-site)
     const [remoteJobs, onSiteJobs] = await Promise.all([
-      prisma.job.count({
-        where: {
-          ...whereClause,
-          isRemote: true
-        }
+      db.countJobs({
+        ...whereClause,
+        isRemote: true
       }),
-      prisma.job.count({
-        where: {
-          ...whereClause,
-          isRemote: false
-        }
+      db.countJobs({
+        ...whereClause,
+        isRemote: false
       })
     ])
 
-    // Calculate average hourly rate
-    const rateAggregation = await prisma.job.aggregate({
-      where: whereClause,
-      _avg: {
-        hourlyRateMin: true,
-        hourlyRateMax: true
-      }
-    })
+    // Calculate average hourly rate using direct query
+    let avgQuery = supabase
+      .from('jobs')
+      .select('hourly_rate_min, hourly_rate_max')
 
-    const averageHourlyRate = Math.round(
-      ((rateAggregation._avg.hourlyRateMin || 0) + 
-       (rateAggregation._avg.hourlyRateMax || 0)) / 2
-    )
+    if (dateRange) {
+      avgQuery = avgQuery
+        .gte('created_at', dateRange.start.toISOString())
+        .lte('created_at', dateRange.end.toISOString())
+    }
+
+    const { data: rateData } = await avgQuery
+    const avgMin = rateData?.reduce((sum, job) => sum + (job.hourly_rate_min || 0), 0) / (rateData?.length || 1) || 0
+    const avgMax = rateData?.reduce((sum, job) => sum + (job.hourly_rate_max || 0), 0) / (rateData?.length || 1) || 0
+
+    const averageHourlyRate = Math.round((avgMin + avgMax) / 2)
 
     // Rate distribution
-    const jobs = await prisma.job.findMany({
-      where: whereClause,
-      select: {
-        hourlyRateMin: true,
-        hourlyRateMax: true
-      }
-    })
+    const jobs = rateData?.map(job => ({
+      hourlyRateMin: job.hourly_rate_min,
+      hourlyRateMax: job.hourly_rate_max
+    })) || []
 
     const rateDistribution = this.calculateRateDistribution(jobs)
 
     // Application metrics
-    const totalApplications = await prisma.application.count({
-      where: dateRange
+    const totalApplications = await db.countApplications(
+      dateRange
         ? {
             createdAt: {
               gte: dateRange.start,
@@ -175,7 +175,7 @@ export class AnalyticsEngine {
             }
           }
         : {}
-    })
+    )
 
     const averageApplicationsPerJob = totalJobs > 0 ? Math.round(totalApplications / totalJobs) : 0
     
@@ -223,6 +223,8 @@ export class AnalyticsEngine {
   static async getUserAnalytics(
     dateRange?: { start: Date; end: Date }
   ): Promise<UserAnalytics> {
+    const supabase = createServerSupabaseClient()
+    
     const whereClause = dateRange
       ? {
           createdAt: {
@@ -234,18 +236,14 @@ export class AnalyticsEngine {
 
     // Basic user counts
     const [totalUsers, contractorCount, employerCount] = await Promise.all([
-      prisma.user.count({ where: whereClause }),
-      prisma.user.count({
-        where: {
-          ...whereClause,
-          role: 'USER' // Contractors
-        }
+      db.countUsers(whereClause),
+      db.countUsers({
+        ...whereClause,
+        role: 'USER' // Contractors
       }),
-      prisma.user.count({
-        where: {
-          ...whereClause,
-          role: 'EMPLOYER'
-        }
+      db.countUsers({
+        ...whereClause,
+        role: 'RECRUITER' // Updated to match schema
       })
     ])
 
@@ -255,17 +253,22 @@ export class AnalyticsEngine {
 
     const userGrowth = await this.getUserGrowthData(thirtyDaysAgo, new Date())
 
-    // Profile completion rate (mock calculation)
-    const usersWithProfiles = await prisma.user.count({
-      where: {
-        ...whereClause,
-        bio: { not: null }, // Assuming bio indicates completed profile
-        skills: { some: {} } // Has associated skills
-      }
-    })
+    // Profile completion rate - users with bio and skills
+    let profileQuery = supabase
+      .from('users')
+      .select('id', { count: 'exact', head: true })
+      .not('bio', 'is', null)
+
+    if (dateRange) {
+      profileQuery = profileQuery
+        .gte('created_at', dateRange.start.toISOString())
+        .lte('created_at', dateRange.end.toISOString())
+    }
+
+    const { count: usersWithProfiles } = await profileQuery
 
     const profileCompletionRate = totalUsers > 0 
-      ? Math.round((usersWithProfiles / totalUsers) * 100) 
+      ? Math.round(((usersWithProfiles || 0) / totalUsers) * 100) 
       : 0
 
     // Activity metrics (mock data - in real implementation, track user sessions)
@@ -275,28 +278,26 @@ export class AnalyticsEngine {
       monthlyActiveUsers: Math.floor(totalUsers * 0.65)
     }
 
-    // Skill distribution
-    const skillDistribution = await prisma.userSkill.groupBy({
-      by: ['skillId'],
-      _count: {
-        skillId: true
-      },
-      orderBy: {
-        _count: {
-          skillId: 'desc'
-        }
-      },
-      take: 10
-    })
+    // Skill distribution using JOIN query
+    const { data: skillDistributionData } = await supabase
+      .from('user_skills')
+      .select(`
+        skill_id,
+        skills!inner(id, name)
+      `)
+      .limit(10)
 
-    // Get skill names
-    const skillIds = skillDistribution.map(s => s.skillId)
-    const skills = await prisma.skill.findMany({
-      where: { id: { in: skillIds } },
-      select: { id: true, name: true }
-    })
+    // Group by skill and count
+    const skillCounts = skillDistributionData?.reduce((acc, item) => {
+      const skillName = item.skills?.name || 'Unknown'
+      acc[skillName] = (acc[skillName] || 0) + 1
+      return acc
+    }, {} as Record<string, number>) || {}
 
-    const skillMap = new Map(skills.map(s => [s.id, s.name]))
+    const skillDistribution = Object.entries(skillCounts)
+      .map(([skill, count]) => ({ skill, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 10)
 
     return {
       totalUsers,
@@ -305,10 +306,7 @@ export class AnalyticsEngine {
       userGrowth,
       profileCompletionRate,
       activenessMetrics,
-      skillDistribution: skillDistribution.map(item => ({
-        skill: skillMap.get(item.skillId) || 'Unknown',
-        count: item._count.skillId
-      }))
+      skillDistribution
     }
   }
 
@@ -385,6 +383,7 @@ export class AnalyticsEngine {
    * Get user growth data over time period
    */
   private static async getUserGrowthData(startDate: Date, endDate: Date) {
+    const supabase = createServerSupabaseClient()
     const days = []
     const currentDate = new Date(startDate)
     
@@ -393,18 +392,15 @@ export class AnalyticsEngine {
       const dayEnd = new Date(currentDate)
       dayEnd.setHours(23, 59, 59, 999)
 
-      const count = await prisma.user.count({
-        where: {
-          createdAt: {
-            gte: dayStart,
-            lte: dayEnd
-          }
-        }
-      })
+      const { count } = await supabase
+        .from('users')
+        .select('*', { count: 'exact', head: true })
+        .gte('created_at', dayStart.toISOString())
+        .lte('created_at', dayEnd.toISOString())
 
       days.push({
         date: dayStart.toISOString().split('T')[0],
-        count
+        count: count || 0
       })
 
       currentDate.setDate(currentDate.getDate() + 1)

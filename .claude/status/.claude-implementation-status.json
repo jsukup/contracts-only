@@ -20,7 +20,7 @@
     "dependencies-installation",
     "environment-configuration",
     "database-schema-complete",
-    "prisma-client-generated",
+    "supabase-client-setup",
     "seed-data-created",
     "component-library-implemented",
     "user-profile-api-routes",

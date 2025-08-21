@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth/next'
+import { getServerSession } from '@/lib/auth'
 import { AnalyticsEngine, RecruiterAnalytics } from '@/lib/analytics'
-import { authOptions } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession()
     
     // Allow access for admins or employers
     if (!session?.user || (session.user.role !== 'ADMIN' && session.user.role !== 'EMPLOYER')) {
