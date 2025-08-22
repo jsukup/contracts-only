@@ -1,0 +1,9 @@
+{
+  "deploymentDate": "2025-08-21T08:45:00Z",
+  "productionUrl": "https://contracts-only.vercel.app",
+  "previewUrl": "https://contracts-only-n5uxooshv-jsukups-projects.vercel.app",
+  "status": "deployed",
+  "platform": "vercel",
+  "healthCheck": "passed",
+  "deployer": "claude-code-deploy-vercel"
+}

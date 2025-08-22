@@ -27,15 +27,30 @@ const customJestConfig = {
   ],
   coverageThreshold: {
     global: {
-      branches: 70,
-      functions: 70,
-      lines: 70,
-      statements: 70,
+      branches: 80,
+      functions: 80,
+      lines: 80,
+      statements: 80,
     },
   },
+  // Enhanced coverage reporting
+  coverageReporters: [
+    'text',
+    'text-summary',
+    'html',
+    'lcov',
+    'json-summary',
+    'clover'
+  ],
+  coverageDirectory: 'coverage',
+  // Performance optimizations
+  maxWorkers: '50%',
+  testTimeout: 10000,
+  // Enhanced test matching  
   testMatch: [
     '<rootDir>/src/**/__tests__/**/*.{js,jsx,ts,tsx}',
     '<rootDir>/src/**/*.{test,spec}.{js,jsx,ts,tsx}',
+    '<rootDir>/tests/**/*.{test,spec}.{js,jsx,ts,tsx}',
   ],
   transform: {
     // Use babel-jest to transpile tests with the next/babel preset
@@ -47,6 +62,20 @@ const customJestConfig = {
     '^.+\\.module\\.(css|sass|scss)$',
   ],
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+  // Enhanced watch mode
+  watchman: true,
+  watchPathIgnorePatterns: [
+    '<rootDir>/node_modules/',
+    '<rootDir>/.next/',
+    '<rootDir>/coverage/',
+  ],
+  // Error handling and debugging
+  verbose: false,
+  errorOnDeprecated: true,
+  clearMocks: true,
+  restoreMocks: true,
+  // Keep existing setup file (custom matchers will be added separately)
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
 }
 
 // createJestConfig is exported this way to ensure that next/jest can load the Next.js config which is async

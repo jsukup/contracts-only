@@ -268,3 +268,6 @@ afterAll(() => {
   console.warn = originalConsoleWarn
   console.error = originalConsoleError
 })
+
+// Import custom matchers
+require('./tests/setup/custom-matchers')

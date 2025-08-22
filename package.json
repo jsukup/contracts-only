@@ -13,7 +13,19 @@
     "lighthouse": "lhci autorun",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "test:coverage:report": "jest --coverage && open coverage/lcov-report/index.html",
+    "test:unit": "jest --testPathPattern=src/",
+    "test:integration": "jest --testPathPattern=tests/integration/",
+    "test:ci": "jest --ci --coverage --watchAll=false",
+    "test:debug": "node --inspect-brk node_modules/.bin/jest --runInBand",
+    "test:update-snapshots": "jest --updateSnapshot",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report",
+    "test:e2e:install": "playwright install"
   },
   "dependencies": {
     "@next/bundle-analyzer": "^15.4.7",
@@ -40,6 +52,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.55.0",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.7.0",
     "@testing-library/react": "^16.3.0",
@@ -54,6 +67,7 @@
     "eslint-config-next": "15.4.6",
     "jest": "^30.0.5",
     "jest-environment-jsdom": "^30.0.5",
+    "playwright": "^1.55.0",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
     "typescript": "^5"

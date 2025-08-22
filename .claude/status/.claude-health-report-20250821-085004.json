@@ -1,0 +1,31 @@
+{
+  "timestamp": "2025-08-21T08:50:04Z",
+  "url": "https://contracts-only.vercel.app",
+  "httpStatus": "200",
+  "responseTime": "0.070175",
+  "basicConnectivity": true,
+  "overallStatus": "healthy",
+  "pageTests": {
+    "/": "200",
+    "/auth/signin": "200", 
+    "/dashboard": "200",
+    "/jobs": "200",
+    "/pricing": "200"
+  },
+  "apiTests": {
+    "/api/jobs": "200",
+    "/api/health": "404",
+    "/api/auth/session": "404"
+  },
+  "performance": {
+    "loadTime": "0.070175s",
+    "dnsLookup": "0.015468s", 
+    "connection": "0.027403s",
+    "ttfb": "0.070120s"
+  },
+  "ssl": {
+    "valid": true,
+    "expiresIn": "31 days",
+    "issuer": "Let's Encrypt"
+  }
+}
