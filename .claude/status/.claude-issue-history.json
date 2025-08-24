@@ -1,0 +1,448 @@
+{
+  "timestamp": "2025-08-24T09:40:00Z",
+  "scan_version": "1.0.0",
+  "project_name": "contracts-only",
+  "summary": {
+    "total_issues": 15,
+    "critical": 2,
+    "major": 4,
+    "minor": 6,
+    "warning": 3
+  },
+  "issues": [
+    {
+      "id": "NODE_VERSION_DEPRECATION",
+      "category": "Runtime Environment",
+      "severity": "critical",
+      "title": "Node.js Version Deprecated by Supabase",
+      "description": "Node.js 18 is deprecated by Supabase and will no longer be supported",
+      "impact": "Future Supabase SDK updates may break the application",
+      "location": "global",
+      "details": {
+        "current_version": "18.19.1",
+        "required_version": "20+",
+        "warnings_count": 12
+      },
+      "fix_estimate": "1 hour",
+      "generated_task": {
+        "title": "Upgrade Node.js to version 20+",
+        "description": "Update Node.js runtime to version 20 or later to maintain compatibility with Supabase SDK",
+        "steps": [
+          "Update Node.js to version 20+",
+          "Update package.json engines field",
+          "Test build and runtime compatibility",
+          "Update deployment configuration if needed"
+        ]
+      }
+    },
+    {
+      "id": "TYPESCRIPT_SYNTAX_ERROR",
+      "category": "Build & Compilation",
+      "severity": "critical",
+      "title": "TypeScript Compilation Errors",
+      "description": "Syntax errors in test-generators.ts preventing successful type checking",
+      "impact": "Blocks TypeScript compilation and type checking",
+      "location": "tests/utils/test-generators.ts:364",
+      "details": {
+        "error_count": 2,
+        "line_364": "Invalid character in template literal",
+        "line_404": "Unterminated template literal"
+      },
+      "fix_estimate": "30 minutes",
+      "generated_task": {
+        "title": "Fix TypeScript syntax errors in test-generators.ts",
+        "description": "Repair template literal syntax errors that are preventing TypeScript compilation",
+        "steps": [
+          "Fix invalid character on line 364",
+          "Close unterminated template literal on line 404", 
+          "Run typecheck to verify fixes",
+          "Test affected test generation functionality"
+        ]
+      }
+    },
+    {
+      "id": "SUPABASE_SERVICE_KEY_MISSING",
+      "category": "Authentication & Authorization",
+      "severity": "major",
+      "title": "Missing Supabase Service Role Key",
+      "description": "SUPABASE_SERVICE_ROLE_KEY is not configured, falling back to anon key for admin operations",
+      "impact": "Admin operations and RLS bypassing functionality may not work correctly",
+      "location": ".env",
+      "details": {
+        "warning_occurrences": 8,
+        "affected_operations": ["user creation", "admin operations", "RLS bypass"]
+      },
+      "fix_estimate": "15 minutes",
+      "generated_task": {
+        "title": "Configure Supabase Service Role Key",
+        "description": "Add SUPABASE_SERVICE_ROLE_KEY to environment configuration for admin operations",
+        "steps": [
+          "Obtain service role key from Supabase dashboard",
+          "Add SUPABASE_SERVICE_ROLE_KEY to .env file",
+          "Uncomment the key in .env file",
+          "Test admin operations functionality"
+        ]
+      }
+    },
+    {
+      "id": "ESLINT_CODE_QUALITY",
+      "category": "Code Quality",
+      "severity": "major",
+      "title": "Multiple ESLint Rule Violations",
+      "description": "108 ESLint errors including unused variables, unescaped entities, and explicit any types",
+      "impact": "Code quality issues that may lead to runtime errors and maintainability problems",
+      "location": "multiple files",
+      "details": {
+        "total_errors": 108,
+        "main_issues": {
+          "unused_variables": 23,
+          "unescaped_entities": 15,
+          "explicit_any": 45,
+          "missing_dependencies": 8,
+          "react_hooks_exhaustive_deps": 17
+        }
+      },
+      "fix_estimate": "4 hours",
+      "generated_task": {
+        "title": "Resolve ESLint code quality violations",
+        "description": "Fix ESLint errors to improve code quality and maintainability",
+        "steps": [
+          "Fix unused variable declarations",
+          "Escape HTML entities in React components",
+          "Replace explicit 'any' types with proper TypeScript types",
+          "Fix React hooks dependency arrays",
+          "Run eslint with --fix for auto-fixable issues"
+        ]
+      }
+    },
+    {
+      "id": "REACT_HOOKS_DEPENDENCIES",
+      "category": "React Best Practices",
+      "severity": "major",
+      "title": "Missing React Hook Dependencies",
+      "description": "Multiple useEffect hooks missing required dependencies in their dependency arrays",
+      "impact": "Potential stale closure bugs and incorrect component behavior",
+      "location": "multiple components",
+      "details": {
+        "affected_files": [
+          "src/app/applications/[applicationId]/page.tsx",
+          "src/app/dashboard/matches/page.tsx",
+          "src/app/dashboard/page.tsx",
+          "src/app/employer/dashboard/page.tsx",
+          "src/app/jobs/[jobId]/page.tsx",
+          "src/app/jobs/page.tsx",
+          "src/app/notifications/page.tsx"
+        ]
+      },
+      "fix_estimate": "2 hours",
+      "generated_task": {
+        "title": "Fix React hooks dependency arrays",
+        "description": "Add missing dependencies to useEffect hooks to prevent stale closure bugs",
+        "steps": [
+          "Review each useEffect hook with missing dependencies",
+          "Add missing function dependencies",
+          "Consider useCallback for function dependencies",
+          "Test affected components for correct behavior"
+        ]
+      }
+    },
+    {
+      "id": "UNESCAPED_HTML_ENTITIES",
+      "category": "React Best Practices", 
+      "severity": "major",
+      "title": "Unescaped HTML Entities in JSX",
+      "description": "Multiple React components contain unescaped apostrophes and quotes",
+      "impact": "Potential rendering issues and JSX parsing problems",
+      "location": "multiple components",
+      "details": {
+        "affected_files": [
+          "src/app/applications/[applicationId]/page.tsx",
+          "src/app/onboarding/page.tsx"
+        ],
+        "entity_count": 15
+      },
+      "fix_estimate": "1 hour",
+      "generated_task": {
+        "title": "Escape HTML entities in React components",
+        "description": "Replace unescaped apostrophes and quotes with proper HTML entities",
+        "steps": [
+          "Replace ' with &apos; or &#39;",
+          "Replace \" with &quot; or &#34;",
+          "Verify JSX rendering after changes",
+          "Run lint check to confirm fixes"
+        ]
+      }
+    },
+    {
+      "id": "EXPLICIT_ANY_TYPES",
+      "category": "TypeScript Quality",
+      "severity": "minor",
+      "title": "Excessive Use of 'any' Types",
+      "description": "45 instances of explicit 'any' type usage reducing type safety",
+      "impact": "Reduced type safety and IntelliSense support",
+      "location": "multiple files",
+      "details": {
+        "count": 45,
+        "main_files": [
+          "src/lib/database.ts",
+          "src/lib/email/automation.ts", 
+          "src/lib/gtag.ts",
+          "src/lib/monitoring.ts",
+          "src/lib/performance.tsx",
+          "src/lib/seo.ts",
+          "src/lib/websocket.ts"
+        ]
+      },
+      "fix_estimate": "6 hours",
+      "generated_task": {
+        "title": "Replace explicit 'any' types with proper TypeScript types",
+        "description": "Improve type safety by replacing 'any' types with specific type definitions",
+        "steps": [
+          "Identify all instances of explicit 'any' usage",
+          "Create proper type definitions for each case",
+          "Update function signatures and variable declarations",
+          "Test type checking after changes"
+        ]
+      }
+    },
+    {
+      "id": "UNUSED_VARIABLES",
+      "category": "Code Quality",
+      "severity": "minor",
+      "title": "Unused Variable Declarations",
+      "description": "23 unused variable declarations across multiple files",
+      "impact": "Code bloat and potential confusion",
+      "location": "multiple files", 
+      "details": {
+        "count": 23,
+        "main_patterns": [
+          "Unused destructured variables",
+          "Unused imported components",
+          "Unused function parameters"
+        ]
+      },
+      "fix_estimate": "1 hour",
+      "generated_task": {
+        "title": "Remove unused variable declarations",
+        "description": "Clean up codebase by removing unused variables and imports",
+        "steps": [
+          "Remove unused destructured variables",
+          "Remove unused imports",
+          "Prefix unused parameters with underscore if needed",
+          "Run lint check to verify cleanup"
+        ]
+      }
+    },
+    {
+      "id": "GOOGLE_ANALYTICS_PLACEHOLDER",
+      "category": "Configuration",
+      "severity": "minor",
+      "title": "Google Analytics ID Not Configured",
+      "description": "GA ID is set to placeholder value 'G-XXXXXXXXXX'",
+      "impact": "Analytics tracking not functional",
+      "location": ".env",
+      "details": {
+        "current_value": "G-XXXXXXXXXX",
+        "required": "Valid GA4 measurement ID"
+      },
+      "fix_estimate": "15 minutes",
+      "generated_task": {
+        "title": "Configure Google Analytics tracking ID",
+        "description": "Replace placeholder GA ID with actual Google Analytics 4 measurement ID",
+        "steps": [
+          "Create GA4 property if needed",
+          "Obtain measurement ID from GA dashboard",
+          "Update NEXT_PUBLIC_GA_ID in .env file",
+          "Test analytics tracking"
+        ]
+      }
+    },
+    {
+      "id": "AUTH_MIDDLEWARE_LIMITED_PATHS",
+      "category": "Authentication & Authorization",
+      "severity": "minor",
+      "title": "Limited Protected Paths in Middleware",
+      "description": "Middleware only protects basic paths, missing comprehensive route protection",
+      "impact": "Potential unauthorized access to unprotected routes",
+      "location": "middleware.ts",
+      "details": {
+        "protected_paths": ["/dashboard", "/jobs/new", "/profile"],
+        "missing_paths": ["/admin", "/employer/dashboard", "/applications"]
+      },
+      "fix_estimate": "30 minutes",
+      "generated_task": {
+        "title": "Expand middleware protected paths",
+        "description": "Add comprehensive route protection to middleware configuration",
+        "steps": [
+          "Add /admin/* to protected paths",
+          "Add /employer/* to protected paths", 
+          "Add /applications/* to protected paths",
+          "Update matcher configuration",
+          "Test route protection"
+        ]
+      }
+    },
+    {
+      "id": "RLS_POLICIES_INCOMPLETE",
+      "category": "Security",
+      "severity": "minor",
+      "title": "Incomplete RLS Policy Coverage",
+      "description": "Some tables lack comprehensive RLS policies for all operations",
+      "impact": "Potential security gaps in data access control",
+      "location": "database/schema.sql",
+      "details": {
+        "missing_policies": {
+          "job_skills": "No RLS policies defined",
+          "email_jobs": "No RLS policies defined"
+        }
+      },
+      "fix_estimate": "1 hour",
+      "generated_task": {
+        "title": "Implement missing RLS policies",
+        "description": "Add comprehensive RLS policies for job_skills and email_jobs tables",
+        "steps": [
+          "Create RLS policies for job_skills table",
+          "Create RLS policies for email_jobs table", 
+          "Test policy enforcement",
+          "Document security model"
+        ]
+      }
+    },
+    {
+      "id": "ENVIRONMENT_VARIABLES_INCOMPLETE",
+      "category": "Configuration",
+      "severity": "minor",
+      "title": "Missing Optional Environment Variables",
+      "description": "Several optional environment variables not configured",
+      "impact": "Some features may not function or use fallback values",
+      "location": ".env",
+      "details": {
+        "missing_vars": [
+          "STRIPE_PUBLISHABLE_KEY",
+          "STRIPE_SECRET_KEY", 
+          "SENDGRID_API_KEY",
+          "RESEND_API_KEY"
+        ]
+      },
+      "fix_estimate": "30 minutes",
+      "generated_task": {
+        "title": "Configure optional environment variables",
+        "description": "Set up remaining environment variables for full feature support",
+        "steps": [
+          "Determine which features are needed",
+          "Obtain API keys for required services",
+          "Add keys to environment configuration",
+          "Test affected functionality"
+        ]
+      }
+    },
+    {
+      "id": "BUILD_SUCCESS_WITH_WARNINGS", 
+      "category": "Build & Compilation",
+      "severity": "warning",
+      "title": "Build Succeeds with Multiple Warnings",
+      "description": "Build process completes successfully but generates multiple warnings",
+      "impact": "No immediate impact but indicates potential future issues",
+      "location": "build process",
+      "details": {
+        "warning_types": [
+          "Node.js deprecation warnings (12 occurrences)",
+          "Missing service role key warnings (6 occurrences)"
+        ]
+      },
+      "fix_estimate": "Covered by other tasks",
+      "generated_task": {
+        "title": "Address build warnings",
+        "description": "Resolve build warnings by fixing Node.js version and service key issues",
+        "steps": [
+          "Addressed by NODE_VERSION_DEPRECATION task",
+          "Addressed by SUPABASE_SERVICE_KEY_MISSING task"
+        ]
+      }
+    },
+    {
+      "id": "DEV_SERVER_PERFORMANCE",
+      "category": "Development Experience",
+      "severity": "warning",
+      "title": "Development Server Slow Startup",
+      "description": "Development server takes longer than expected to start up",
+      "impact": "Reduced development productivity",
+      "location": "npm run dev",
+      "details": {
+        "timeout_occurred": true,
+        "expected_startup": "<30 seconds",
+        "actual_startup": ">2 minutes"
+      },
+      "fix_estimate": "1 hour",
+      "generated_task": {
+        "title": "Optimize development server startup",
+        "description": "Investigate and fix slow development server startup times",
+        "steps": [
+          "Profile build process for bottlenecks",
+          "Check for circular dependencies",
+          "Optimize webpack configuration",
+          "Consider excluding heavy dependencies from dev build"
+        ]
+      }
+    },
+    {
+      "id": "TESTING_FRAMEWORK_READY",
+      "category": "Testing",
+      "severity": "warning",
+      "title": "Comprehensive Testing Framework Available",
+      "description": "Testing infrastructure is in place but needs systematic test coverage",
+      "impact": "No immediate impact, but missing test coverage for confidence",
+      "location": "tests/",
+      "details": {
+        "frameworks_available": [
+          "Jest for unit testing",
+          "React Testing Library",
+          "Playwright for e2e testing", 
+          "Performance testing setup"
+        ],
+        "test_files_exist": 8
+      },
+      "fix_estimate": "Ongoing",
+      "generated_task": {
+        "title": "Expand test coverage systematically",
+        "description": "Increase test coverage across critical application areas",
+        "steps": [
+          "Run existing tests to establish baseline",
+          "Identify critical paths needing coverage",
+          "Write tests for authentication flows",
+          "Add integration tests for job posting flow"
+        ]
+      }
+    }
+  ],
+  "generated_tasks_summary": {
+    "total_tasks": 15,
+    "estimated_effort": "22.25 hours",
+    "priority_order": [
+      "TYPESCRIPT_SYNTAX_ERROR",
+      "NODE_VERSION_DEPRECATION", 
+      "SUPABASE_SERVICE_KEY_MISSING",
+      "ESLINT_CODE_QUALITY",
+      "REACT_HOOKS_DEPENDENCIES",
+      "UNESCAPED_HTML_ENTITIES",
+      "AUTH_MIDDLEWARE_LIMITED_PATHS",
+      "RLS_POLICIES_INCOMPLETE",
+      "EXPLICIT_ANY_TYPES",
+      "UNUSED_VARIABLES",
+      "DEV_SERVER_PERFORMANCE",
+      "GOOGLE_ANALYTICS_PLACEHOLDER",
+      "ENVIRONMENT_VARIABLES_INCOMPLETE",
+      "TESTING_FRAMEWORK_READY",
+      "BUILD_SUCCESS_WITH_WARNINGS"
+    ]
+  },
+  "health_score": 72,
+  "health_assessment": "Good - Project has solid foundation with several code quality issues to address",
+  "recommendations": [
+    "Fix critical TypeScript syntax errors immediately to unblock development",
+    "Upgrade Node.js version to ensure future Supabase compatibility",
+    "Address ESLint violations systematically to improve code maintainability", 
+    "Expand authentication middleware protection for comprehensive security",
+    "Consider implementing automated testing as part of development workflow"
+  ]
+}

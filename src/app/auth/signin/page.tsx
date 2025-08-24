@@ -1,38 +1,20 @@
 'use client'
 
-import { useEffect, useState } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/AuthContext"
-import { Button } from "@/components/ui/Button"
-import { Card, CardContent } from "@/components/ui/Card"
-import { Loader2, Chrome } from "lucide-react"
-import Link from "next/link"
+import SignInForm from "@/components/auth/SignInForm"
 
 export default function SignInPage() {
   const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
-  const searchParams = useSearchParams()
-  const { user, loading, error, signInWithGoogle } = useAuth()
-  
-  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard"
-  const errorParam = searchParams.get("error")
+  const { user, loading } = useAuth()
 
   // Redirect if already signed in
   useEffect(() => {
     if (user && !loading) {
-      router.push(callbackUrl)
+      router.push("/dashboard")
     }
-  }, [user, loading, router, callbackUrl])
-
-  const handleGoogleSignIn = async () => {
-    setIsLoading(true)
-    try {
-      await signInWithGoogle(callbackUrl)
-    } catch (error) {
-      console.error("Sign in error:", error)
-      setIsLoading(false)
-    }
-  }
+  }, [user, loading, router])
 
   // Show loading state while checking authentication
   if (loading) {
@@ -48,74 +30,5 @@ export default function SignInPage() {
     return null
   }
 
-  return (
-    <div className="bg-gray-50 min-h-screen">
-      <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-md w-full space-y-8">
-          <div className="text-center">
-            <h2 className="mt-6 text-3xl font-bold text-gray-900">
-              Sign in to your account
-            </h2>
-            <p className="mt-2 text-gray-600">
-              Find your next contract opportunity
-            </p>
-          </div>
-          
-          <Card className="bg-white border border-gray-200 shadow-lg">
-            <CardContent className="p-6">
-              {(errorParam || error) && (
-                <div className="mb-4 p-3 rounded-md bg-red-50 border border-red-200">
-                  <p className="text-sm text-red-600">
-                    {errorParam === "OAuthAccountNotLinked"
-                      ? "This email is already associated with another account."
-                      : errorParam === "AccessDenied"
-                      ? "Access was denied. Please try again."
-                      : error?.message || "An error occurred during sign in. Please try again."}
-                  </p>
-                </div>
-              )}
-
-              <div className="space-y-4">
-                <Button
-                  onClick={handleGoogleSignIn}
-                  disabled={isLoading}
-                  className="w-full bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:bg-gray-100"
-                  variant="outline"
-                >
-                  {isLoading ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <Chrome className="w-4 h-4 mr-2" />
-                  )}
-                  {isLoading ? "Signing in..." : "Continue with Google"}
-                </Button>
-
-                <div className="text-center">
-                  <p className="text-sm text-gray-600">
-                    By signing in, you agree to our{" "}
-                    <Link href="/terms" className="underline hover:text-indigo-600 text-indigo-600">
-                      Terms of Service
-                    </Link>{" "}
-                    and{" "}
-                    <Link href="/privacy" className="underline hover:text-indigo-600 text-indigo-600">
-                      Privacy Policy
-                    </Link>
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="text-center">
-            <p className="text-sm text-gray-600">
-              New to ContractsOnly?{" "}
-              <Link href="/jobs" className="font-medium text-indigo-600 hover:underline">
-                Browse jobs without signing in
-              </Link>
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  )
+  return <SignInForm />
 }

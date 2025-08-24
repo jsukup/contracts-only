@@ -82,14 +82,14 @@ export function Navigation() {
               <div className="flex items-center space-x-2">
                 {/* Notifications */}
                 <Button variant="ghost" size="sm" asChild>
-                  <Link href="/notifications">
+                  <Link href="/notifications" className="text-gray-800 hover:text-indigo-600 font-medium">
                     <Bell className="h-4 w-4" />
                   </Link>
                 </Button>
 
                 {/* User Menu */}
                 <div className="relative group">
-                  <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+                  <Button variant="ghost" size="sm" className="flex items-center space-x-2 text-gray-800 hover:text-indigo-600 font-medium">
                     <User className="h-4 w-4" />
                     <span className="hidden lg:block">{userProfile?.name || user?.user_metadata?.full_name}</span>
                   </Button>
@@ -97,6 +97,13 @@ export function Navigation() {
                   {/* Dropdown Menu */}
                   <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
                     <div className="py-1">
+                      <Link
+                        href="/profile"
+                        className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                      >
+                        <User className="h-4 w-4 mr-2" />
+                        Profile
+                      </Link>
                       <Link
                         href="/profile/settings"
                         className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
@@ -177,6 +184,14 @@ export function Navigation() {
                         <span className="text-sm font-medium">{userProfile?.name || user?.user_metadata?.full_name}</span>
                       </div>
                     </div>
+                    <Link
+                      href="/profile"
+                      className="flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 transition-colors"
+                      onClick={() => setMobileMenuOpen(false)}
+                    >
+                      <User className="h-4 w-4" />
+                      <span>Profile</span>
+                    </Link>
                     <Link
                       href="/profile/settings"
                       className="flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 transition-colors"

@@ -1,0 +1,276 @@
+{
+  "authenticationEnhancements": {
+    "planCreated": "2025-08-24T10:30:00Z",
+    "status": "active",
+    "priority": "P1",
+    "description": "Comprehensive authentication and authorization system enhancements based on user requirements",
+    
+    "requirements": {
+      "1": "Darken text and icons when user is logged in (navigation styling)",
+      "2": "Add email/password authentication alongside Google OAuth", 
+      "3": "Enhanced user dropdown with Settings and Profile options",
+      "4": "User role classification: contractor vs recruiter during signup",
+      "5": "Payment framework for recruiters (Stripe/PayPal) - $99/job, $199/unlimited"
+    },
+
+    "currentProfileFields": {
+      "basicInfo": ["name", "email", "image", "title", "bio", "location"],
+      "professional": ["website", "linkedin_url", "hourly_rate_min", "hourly_rate_max"],
+      "jobPreferences": ["availability", "job_alerts_enabled", "desired_rate_min", "desired_rate_max"],
+      "userClassification": "role enum ('USER', 'ADMIN', 'RECRUITER')"
+    },
+
+    "implementationTasks": [
+      {
+        "id": "auth-ui-styling",
+        "title": "Update navigation styling for authenticated users",
+        "priority": "P1",
+        "estimatedTime": "30 minutes",
+        "description": "Darken notification bell and user menu icons/text when logged in",
+        "status": "pending",
+        "targetComponent": "src/components/layout/Navigation.tsx",
+        "changes": [
+          "Add darker text colors for authenticated state",
+          "Apply font-medium or font-semibold when user is logged in",
+          "Ensure proper contrast for accessibility"
+        ]
+      },
+      {
+        "id": "email-password-auth",
+        "title": "Implement email/password authentication",
+        "priority": "P1",
+        "estimatedTime": "2 hours", 
+        "description": "Add Supabase email/password auth alongside existing Google OAuth",
+        "status": "pending",
+        "subtasks": [
+          {
+            "task": "Create sign-up form with email/password",
+            "files": ["src/app/auth/signup/page.tsx", "src/components/auth/SignUpForm.tsx"],
+            "time": "45 minutes"
+          },
+          {
+            "task": "Create sign-in form with email/password",
+            "files": ["src/app/auth/signin/page.tsx", "src/components/auth/SignInForm.tsx"],
+            "time": "45 minutes"
+          },
+          {
+            "task": "Add password validation and security",
+            "files": ["src/lib/validation/auth.ts"],
+            "time": "15 minutes"
+          },
+          {
+            "task": "Integrate with existing auth context",
+            "files": ["src/contexts/AuthContext.tsx"],
+            "time": "15 minutes"
+          }
+        ]
+      },
+      {
+        "id": "enhanced-user-dropdown",
+        "title": "Add Profile option to user dropdown menu",
+        "priority": "P1",
+        "estimatedTime": "45 minutes",
+        "description": "Add Profile link alongside Settings and Sign Out in user dropdown",
+        "status": "pending",
+        "targetComponent": "src/components/layout/Navigation.tsx",
+        "changes": [
+          "Add Profile menu item with User icon",
+          "Link to /profile page",
+          "Maintain existing Settings and Sign Out functionality"
+        ]
+      },
+      {
+        "id": "user-role-classification",
+        "title": "Implement user role selection during signup",
+        "priority": "P1", 
+        "estimatedTime": "3 hours",
+        "description": "Add contractor vs recruiter selection during profile creation",
+        "status": "pending",
+        "subtasks": [
+          {
+            "task": "Add role selection to signup flow",
+            "files": ["src/components/auth/RoleSelection.tsx"],
+            "time": "1 hour"
+          },
+          {
+            "task": "Update user profile creation logic",
+            "files": ["src/lib/auth/profile.ts", "src/contexts/AuthContext.tsx"],
+            "time": "1 hour"
+          },
+          {
+            "task": "Add role-based UI variations",
+            "files": ["src/components/layout/Navigation.tsx", "src/app/dashboard/page.tsx"],
+            "time": "1 hour"
+          }
+        ]
+      },
+      {
+        "id": "settings-page",
+        "title": "Create comprehensive Settings page",
+        "priority": "P2",
+        "estimatedTime": "4 hours",
+        "description": "Settings page with notifications, profile deletion, payment management",
+        "status": "pending",
+        "subtasks": [
+          {
+            "task": "Notification preferences management",
+            "files": ["src/app/profile/settings/page.tsx", "src/components/settings/NotificationSettings.tsx"],
+            "time": "1.5 hours"
+          },
+          {
+            "task": "Account deletion functionality",
+            "files": ["src/components/settings/AccountDeletion.tsx", "src/lib/auth/delete-account.ts"],
+            "time": "1.5 hours"
+          },
+          {
+            "task": "Payment method management (recruiters only)",
+            "files": ["src/components/settings/PaymentSettings.tsx"],
+            "time": "1 hour"
+          }
+        ]
+      },
+      {
+        "id": "profile-page",
+        "title": "Create Profile page for user information updates",
+        "priority": "P2", 
+        "estimatedTime": "3 hours",
+        "description": "Profile page for updating personal and professional information",
+        "status": "pending",
+        "subtasks": [
+          {
+            "task": "Basic info form (name, email, title, bio)",
+            "files": ["src/app/profile/page.tsx", "src/components/profile/BasicInfoForm.tsx"],
+            "time": "1 hour"
+          },
+          {
+            "task": "Professional info (location, website, LinkedIn, rates)",
+            "files": ["src/components/profile/ProfessionalInfoForm.tsx"],
+            "time": "1 hour"
+          },
+          {
+            "task": "Job preferences (availability, alerts, desired rates)",
+            "files": ["src/components/profile/JobPreferencesForm.tsx"],
+            "time": "1 hour"
+          }
+        ]
+      },
+      {
+        "id": "payment-framework",
+        "title": "Payment system framework for recruiters",
+        "priority": "P2",
+        "estimatedTime": "6 hours",
+        "description": "Stripe/PayPal integration framework with job posting plans",
+        "status": "pending",
+        "note": "Framework only - not full implementation",
+        "subtasks": [
+          {
+            "task": "Stripe integration setup",
+            "files": ["src/lib/payment/stripe.ts", "src/types/payment.ts"],
+            "time": "2 hours"
+          },
+          {
+            "task": "PayPal integration setup",
+            "files": ["src/lib/payment/paypal.ts"],
+            "time": "2 hours"
+          },
+          {
+            "task": "Payment plan models ($99/job, $199/unlimited)",
+            "files": ["src/lib/payment/plans.ts", "database/migrations/add_payment_plans.sql"],
+            "time": "1 hour"
+          },
+          {
+            "task": "Payment processing workflows",
+            "files": ["src/components/payment/PaymentFlow.tsx"],
+            "time": "1 hour"
+          }
+        ]
+      },
+      {
+        "id": "auth-flow-updates", 
+        "title": "Update authentication flow for existing vs new users",
+        "priority": "P1",
+        "estimatedTime": "2 hours",
+        "description": "Handle existing user sign-in vs new user profile creation flows",
+        "status": "pending",
+        "subtasks": [
+          {
+            "task": "Differentiate new vs existing users",
+            "files": ["src/contexts/AuthContext.tsx"],
+            "time": "30 minutes"
+          },
+          {
+            "task": "Profile completion flow for new users",
+            "files": ["src/components/auth/ProfileCompletion.tsx"],
+            "time": "1 hour"
+          },
+          {
+            "task": "Role assignment during first login",
+            "files": ["src/lib/auth/onboarding.ts"],
+            "time": "30 minutes"
+          }
+        ]
+      },
+      {
+        "id": "payment-plans",
+        "title": "Implement recruiter payment plans",
+        "priority": "P3",
+        "estimatedTime": "4 hours", 
+        "description": "$99/job (30 days) and $199/unlimited (30 days) payment plans",
+        "status": "pending",
+        "note": "Depends on payment-framework completion",
+        "subtasks": [
+          {
+            "task": "Job posting payment integration",
+            "files": ["src/app/jobs/post/payment/page.tsx"],
+            "time": "2 hours"
+          },
+          {
+            "task": "Subscription plan management",
+            "files": ["src/components/payment/SubscriptionManager.tsx"],
+            "time": "1 hour"
+          },
+          {
+            "task": "Usage tracking and limits",
+            "files": ["src/lib/payment/usage-tracker.ts"],
+            "time": "1 hour"
+          }
+        ]
+      }
+    ],
+
+    "executionPlan": {
+      "phase1_immediate": {
+        "tasks": ["auth-ui-styling", "enhanced-user-dropdown"],
+        "estimatedTime": "1.25 hours",
+        "description": "Quick UI improvements for immediate user experience enhancement"
+      },
+      "phase2_core_auth": {
+        "tasks": ["email-password-auth", "user-role-classification", "auth-flow-updates"],
+        "estimatedTime": "7 hours", 
+        "description": "Core authentication system enhancements"
+      },
+      "phase3_user_management": {
+        "tasks": ["profile-page", "settings-page"],
+        "estimatedTime": "7 hours",
+        "description": "User profile and settings management"
+      },
+      "phase4_payment_system": {
+        "tasks": ["payment-framework", "payment-plans"],
+        "estimatedTime": "10 hours",
+        "description": "Payment system framework and implementation"
+      }
+    },
+
+    "totalEstimatedTime": "25.25 hours",
+    "totalTasks": 9,
+    "readyForExecution": true,
+
+    "notes": [
+      "All critical fixes (TypeScript, Node.js) completed",
+      "Service role key configured in environment",
+      "Existing database schema supports user role classification", 
+      "Payment system will be framework-only initially",
+      "Comprehensive testing required for all auth flows"
+    ]
+  }
+}

@@ -234,8 +234,8 @@
     "totalTasks": 73,
     "completedTasks": 70,
     "completionPercentage": 96,
-    "criticalTasksComplete": true,
-    "deploymentReady": true,
+    "criticalTasksComplete": false,
+    "deploymentReady": false,
     "optionalTasksRemaining": 3,
     "healthScore": {
       "current": 80,

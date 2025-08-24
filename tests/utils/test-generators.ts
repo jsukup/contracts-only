@@ -361,7 +361,7 @@ describe('${featureName} Integration', () => {
         return this.generateUtilityTest(fileName, sourcePath)
       }
     } catch (error) {
-      throw new Error(\`Failed to generate test for \${sourcePath}: \${error}\`)
+      throw new Error(`Failed to generate test for ${sourcePath}: ${error}`)
     }
   }
 }

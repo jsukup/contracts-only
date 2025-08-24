@@ -12,6 +12,8 @@ interface AuthContextType {
   loading: boolean
   error: AuthError | null
   signInWithGoogle: (redirectTo?: string) => Promise<void>
+  signInWithEmail: (email: string, password: string) => Promise<void>
+  signUpWithEmail: (email: string, password: string, name: string, role: string) => Promise<void>
   signOut: () => Promise<void>
   refreshUserProfile: () => Promise<void>
 }
@@ -23,6 +25,8 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   error: null,
   signInWithGoogle: async () => {},
+  signInWithEmail: async () => {},
+  signUpWithEmail: async () => {},
   signOut: async () => {},
   refreshUserProfile: async () => {},
 })
@@ -194,6 +198,73 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }
 
+  // Sign in with email/password
+  const signInWithEmail = async (email: string, password: string) => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
+
+      if (error) {
+        setError(error)
+        throw error
+      }
+
+      return data
+    } catch (error) {
+      console.error('Error signing in with email:', error)
+      setError(error as AuthError)
+      throw error
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Sign up with email/password
+  const signUpWithEmail = async (email: string, password: string, name: string, role: string) => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: name,
+            role: role,
+          }
+        }
+      })
+
+      if (error) {
+        setError(error)
+        throw error
+      }
+
+      // Track user registration
+      if (data.user) {
+        trackUserRegistration(data.user.id)
+        trackEvent('sign_up', {
+          method: 'email',
+          user_role: role
+        })
+      }
+
+      return data
+    } catch (error) {
+      console.error('Error signing up with email:', error)
+      setError(error as AuthError)
+      throw error
+    } finally {
+      setLoading(false)
+    }
+  }
+
   // Sign out
   const signOut = async () => {
     try {
@@ -222,6 +293,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     loading,
     error,
     signInWithGoogle,
+    signInWithEmail,
+    signUpWithEmail,
     signOut,
     refreshUserProfile,
   }
