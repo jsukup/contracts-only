@@ -323,51 +323,113 @@ export const signInWithGoogle = async (redirectTo?: string) => {
   return data
 }
 
-// Database helpers
-export const createOrUpdateUser = async (user: User): Promise<{ data: SupabaseUser; isNewUser: boolean }> => {
-  // Use service client for user creation to handle initial INSERT
-  const serviceClient = createServiceSupabaseClient()
-  
-  // First check if user exists
-  const { data: existingUser } = await serviceClient
-    .from('users')
-    .select('id, created_at')
-    .eq('id', user.id)
-    .single()
-  
-  const isNewUser = !existingUser
-  
-  const userData = {
-    id: user.id,
-    email: user.email!,
-    name: user.user_metadata?.full_name || user.user_metadata?.name || null,
-    image: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
-    email_verified: user.email_confirmed_at || null,
-    role: (user.user_metadata?.role as 'USER' | 'ADMIN' | 'RECRUITER') || 'USER',
-    updated_at: new Date().toISOString(),
-  }
-
-  const { data, error } = await serviceClient
-    .from('users')
-    .upsert(userData, {
-      onConflict: 'id',
-      ignoreDuplicates: false
-    })
-    .select()
-    .single()
-
-  if (error) {
-    console.error('Error creating/updating user:', {
-      error: error.message,
-      details: error.details,
-      hint: error.hint,
-      code: error.code,
-      userData: { ...userData, id: userData.id.substring(0, 8) + '...' }
-    })
+export const deleteUserProfile = async (): Promise<void> => {
+  try {
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      throw new Error('No authenticated user found')
+    }
+    
+    console.log('Starting user deletion process for:', user.id.substring(0, 8) + '...')
+    
+    // First, delete from public.users table (this will cascade to related data)
+    const { error: deleteError } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', user.id)
+    
+    if (deleteError) {
+      console.error('Error deleting user profile:', deleteError)
+      throw deleteError
+    }
+    
+    // Then delete from auth.users (this removes the authentication)
+    const { error: authDeleteError } = await supabase.auth.admin.deleteUser(user.id)
+    
+    if (authDeleteError) {
+      console.error('Error deleting auth user:', authDeleteError)
+      // Continue even if auth deletion fails - user profile is already deleted
+      console.warn('User profile deleted but auth user deletion failed')
+    }
+    
+    // Sign out the user
+    await supabase.auth.signOut()
+    
+    console.log('User deletion completed successfully')
+  } catch (error) {
+    console.error('Error in deleteUserProfile:', error)
     throw error
   }
+}
 
-  return { data, isNewUser }
+// Database helpers
+export const createOrUpdateUser = async (user: User): Promise<{ data: SupabaseUser; isNewUser: boolean }> => {
+  try {
+    // Use regular supabase client since we now have RLS policies and triggers
+    const client = supabase
+    
+    // First check if user exists
+    const { data: existingUser, error: checkError } = await client
+      .from('users')
+      .select('id, created_at')
+      .eq('id', user.id)
+      .single()
+    
+    if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows found
+      console.error('Error checking existing user:', checkError)
+      throw checkError
+    }
+    
+    const isNewUser = !existingUser
+    
+    const userData = {
+      id: user.id,
+      email: user.email!,
+      name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+      image: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
+      email_verified: user.email_confirmed_at || null,
+      role: (user.user_metadata?.role as 'USER' | 'ADMIN' | 'RECRUITER') || 'USER',
+      updated_at: new Date().toISOString(),
+    }
+
+    // Use upsert to handle both insert and update cases
+    const { data, error } = await client
+      .from('users')
+      .upsert(userData, {
+        onConflict: 'id',
+        ignoreDuplicates: false
+      })
+      .select()
+      .single()
+
+    if (error) {
+      console.error('Error upserting user:', {
+        error: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code,
+        userId: user.id.substring(0, 8) + '...',
+        userEmail: user.email
+      })
+      throw error
+    }
+
+    if (!data) {
+      throw new Error('User upsert succeeded but returned no data')
+    }
+
+    console.log(`User ${isNewUser ? 'created' : 'updated'} successfully:`, {
+      userId: user.id.substring(0, 8) + '...',
+      email: user.email,
+      isNewUser
+    })
+
+    return { data, isNewUser }
+  } catch (error) {
+    console.error('Error in createOrUpdateUser:', error)
+    throw error
+  }
 }
 
 export type SupabaseUser = Database['public']['Tables']['users']['Row']

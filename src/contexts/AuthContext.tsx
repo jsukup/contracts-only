@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { User, Session, AuthError } from '@supabase/supabase-js'
-import { supabase, createOrUpdateUser, SupabaseUser } from '@/lib/supabase'
+import { supabase, createOrUpdateUser, deleteUserProfile as deleteUserProfileLib, SupabaseUser } from '@/lib/supabase'
 import { trackUserRegistration, trackEvent } from '@/lib/gtag'
 
 interface AuthContextType {
@@ -16,6 +16,7 @@ interface AuthContextType {
   signUpWithEmail: (email: string, password: string, name: string, role: string) => Promise<void>
   signOut: () => Promise<void>
   refreshUserProfile: () => Promise<void>
+  deleteUserProfile: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -29,6 +30,7 @@ const AuthContext = createContext<AuthContextType>({
   signUpWithEmail: async () => {},
   signOut: async () => {},
   refreshUserProfile: async () => {},
+  deleteUserProfile: async () => {},
 })
 
 export const useAuth = () => {
@@ -286,6 +288,28 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }
 
+  // Delete user profile
+  const deleteUserProfile = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      await deleteUserProfileLib()
+      
+      // Clear local state after successful deletion
+      setUser(null)
+      setUserProfile(null)
+      setSession(null)
+      
+    } catch (error) {
+      console.error('Error deleting user profile:', error)
+      setError(error as AuthError)
+      throw error
+    } finally {
+      setLoading(false)
+    }
+  }
+
   const value: AuthContextType = {
     user,
     userProfile,
@@ -297,6 +321,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     signUpWithEmail,
     signOut,
     refreshUserProfile,
+    deleteUserProfile,
   }
 
   return (
