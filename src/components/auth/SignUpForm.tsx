@@ -42,11 +42,13 @@ export default function SignUpForm() {
     const validation = signUpSchema.safeParse(formData)
     if (!validation.success) {
       const errors: Record<string, string> = {}
-      validation.error.errors.forEach((error) => {
-        if (error.path[0]) {
-          errors[error.path[0] as string] = error.message
-        }
-      })
+      if (validation.error?.errors) {
+        validation.error.errors.forEach((error) => {
+          if (error.path[0]) {
+            errors[error.path[0] as string] = error.message
+          }
+        })
+      }
       setValidationErrors(errors)
       return
     }
@@ -107,7 +109,7 @@ export default function SignUpForm() {
                     type="text"
                     value={formData.name}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                     placeholder="Enter your full name"
                   />
                   {validationErrors.name && (
@@ -127,7 +129,7 @@ export default function SignUpForm() {
                     autoComplete="email"
                     value={formData.email}
                     onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                     placeholder="Enter your email"
                   />
                   {validationErrors.email && (
@@ -190,7 +192,7 @@ export default function SignUpForm() {
                       autoComplete="new-password"
                       value={formData.password}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                       placeholder="Create a strong password"
                     />
                     <button
@@ -219,7 +221,7 @@ export default function SignUpForm() {
                       autoComplete="new-password"
                       value={formData.confirmPassword}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                      className="w-full px-3 py-2 pr-10 border border-gray-300 rounded-md shadow-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                       placeholder="Confirm your password"
                     />
                     <button

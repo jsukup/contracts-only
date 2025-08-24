@@ -343,6 +343,7 @@ export const createOrUpdateUser = async (user: User): Promise<{ data: SupabaseUs
     name: user.user_metadata?.full_name || user.user_metadata?.name || null,
     image: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
     email_verified: user.email_confirmed_at || null,
+    role: (user.user_metadata?.role as 'USER' | 'ADMIN' | 'RECRUITER') || 'USER',
     updated_at: new Date().toISOString(),
   }
 
