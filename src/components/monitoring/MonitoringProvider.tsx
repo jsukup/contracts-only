@@ -5,26 +5,34 @@ import { initializeMonitoring, performanceMonitor } from '@/lib/monitoring'
 
 export default function MonitoringProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
-    // Initialize monitoring only on client side and in production
-    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'production') {
-      const config = initializeMonitoring({
-        enabled: true,
-        sampling: parseFloat(process.env.NEXT_PUBLIC_MONITORING_SAMPLING || '0.1'),
-        endpoint: '/api/monitoring/metrics',
-        batchSize: 50,
-        flushInterval: 30000, // 30 seconds
-        enableRUM: true,
-        enableSynthetic: false // Disable synthetic monitoring on client
-      })
+    // Initialize monitoring only on client side and in production (or development for testing)
+    if (typeof window !== 'undefined' && (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'development')) {
+      try {
+        const config = initializeMonitoring({
+          enabled: true,
+          sampling: parseFloat(process.env.NEXT_PUBLIC_MONITORING_SAMPLING || '0.1'),
+          endpoint: '/api/monitoring/metrics',
+          batchSize: 50,
+          flushInterval: 30000, // 30 seconds
+          enableRUM: true,
+          enableSynthetic: false // Disable synthetic monitoring on client
+        })
 
-      console.log('Performance monitoring initialized', config)
+        console.log('Performance monitoring initialized', config)
 
-      // Add custom metrics for job board specific events
-      initializeJobBoardMonitoring()
+        // Add custom metrics for job board specific events
+        initializeJobBoardMonitoring()
 
-      // Cleanup on unmount
-      return () => {
-        performanceMonitor.destroy()
+        // Cleanup on unmount
+        return () => {
+          try {
+            performanceMonitor.destroy()
+          } catch (cleanupError) {
+            console.warn('Error during monitoring cleanup:', cleanupError)
+          }
+        }
+      } catch (monitoringInitError) {
+        console.warn('Failed to initialize performance monitoring:', monitoringInitError)
       }
     }
   }, [])
@@ -33,13 +41,23 @@ export default function MonitoringProvider({ children }: { children: React.React
 }
 
 function initializeJobBoardMonitoring() {
-  // Track job search performance
+  // Track job search performance with proper error handling
   const originalFetch = window.fetch
+  
   window.fetch = async (...args) => {
-    const url = typeof args[0] === 'string' ? args[0] : args[0].url
+    // Safely extract URL with proper type checking and error handling
+    let url: string | undefined
     
-    // Track specific API endpoints
-    if (url.includes('/api/jobs')) {
+    try {
+      if (typeof args[0] === 'string') {
+        url = args[0]
+      } else if (args[0] && typeof args[0] === 'object' && 'url' in args[0]) {
+        const request = args[0] as Request
+        url = request.url
+      }
+      
+      // Track specific API endpoints only if URL is valid and contains our target
+      if (url && typeof url === 'string' && url.includes('/api/jobs')) {
       const start = performance.now()
       
       try {
@@ -52,7 +70,7 @@ function initializeJobBoardMonitoring() {
           value: duration,
           unit: 'ms',
           timestamp: Date.now(),
-          url
+          url: url || 'unknown'
         })
 
         return response
@@ -63,12 +81,17 @@ function initializeJobBoardMonitoring() {
           value: 1,
           unit: 'count',
           timestamp: Date.now(),
-          url
+          url: url || 'unknown'
         })
         throw error
       }
     }
+    } catch (monitoringError) {
+      // If monitoring fails, don't break the fetch - just log and continue
+      console.warn('Monitoring error in fetch interception:', monitoringError)
+    }
 
+    // Always call original fetch, even if monitoring failed
     return originalFetch(...args)
   }
 

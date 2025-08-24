@@ -97,8 +97,8 @@ class PerformanceMonitor {
   }
 
   private initializeCustomMetrics() {
-    // Monitor API response times
-    this.interceptFetchCalls()
+    // Note: Fetch interception is handled by MonitoringProvider for job-board specific tracking
+    // This prevents duplicate fetch interception that can cause RSC payload errors
     
     // Monitor page load metrics
     window.addEventListener('load', () => {
@@ -193,53 +193,8 @@ class PerformanceMonitor {
     observer.observe({ entryTypes: ['resource'] })
   }
 
-  private interceptFetchCalls() {
-    const originalFetch = window.fetch
-    
-    window.fetch = async (...args) => {
-      const start = performance.now()
-      const url = typeof args[0] === 'string' ? args[0] : args[0].url
-      
-      try {
-        const response = await originalFetch(...args)
-        const duration = performance.now() - start
-        
-        this.recordMetric({
-          id: `api-call-${Date.now()}`,
-          name: 'API_RESPONSE_TIME',
-          value: duration,
-          unit: 'ms',
-          timestamp: Date.now(),
-          url
-        })
-
-        // Track API success/failure rates
-        this.recordMetric({
-          id: `api-status-${Date.now()}`,
-          name: response.ok ? 'API_SUCCESS' : 'API_ERROR',
-          value: 1,
-          unit: 'count',
-          timestamp: Date.now(),
-          url
-        })
-
-        return response
-      } catch (error) {
-        const duration = performance.now() - start
-        
-        this.recordMetric({
-          id: `api-error-${Date.now()}`,
-          name: 'API_ERROR',
-          value: 1,
-          unit: 'count',
-          timestamp: Date.now(),
-          url
-        })
-
-        throw error
-      }
-    }
-  }
+  // Removed interceptFetchCalls method to prevent duplicate fetch interception
+  // Fetch monitoring is handled by MonitoringProvider for job-board specific tracking
 
   recordMetric(metric: PerformanceMetric) {
     this.metrics.push(metric)
