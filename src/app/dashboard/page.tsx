@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Loader2, User, Briefcase, Star, Settings } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import AuthTester from '@/components/testing/AuthTester'
 
 interface Application {
   id: string
@@ -265,6 +266,9 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+      
+      {/* Authentication Tester - Development Only */}
+      <AuthTester />
     </div>
   )
 }

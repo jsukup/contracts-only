@@ -2,8 +2,12 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { User, Session, AuthError } from '@supabase/supabase-js'
-import { supabase, createOrUpdateUser, deleteUserProfile as deleteUserProfileLib, SupabaseUser } from '@/lib/supabase'
+import { supabase, SupabaseUser } from '@/lib/supabase'
 import { trackUserRegistration, trackEvent } from '@/lib/gtag'
+
+// UNIFIED AUTHENTICATION CONTEXT - SINGLE SOURCE OF TRUTH
+// This is the ONLY place where user creation and management happens
+// No triggers, no server-side user creation, no conflicts
 
 interface AuthContextType {
   user: User | null
@@ -52,7 +56,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<AuthError | null>(null)
 
-  // Fetch user profile from our users table
+  // UNIFIED USER PROFILE MANAGEMENT
+  // Fetch user profile from database
   const fetchUserProfile = async (userId: string): Promise<SupabaseUser | null> => {
     try {
       const { data, error } = await supabase
@@ -62,6 +67,11 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         .single()
 
       if (error) {
+        if (error.code === 'PGRST116') {
+          // No user profile found - this is expected for new users
+          console.log('No user profile found for:', userId.substring(0, 8) + '...')
+          return null
+        }
         console.error('Error fetching user profile:', error)
         return null
       }
@@ -70,6 +80,52 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } catch (error) {
       console.error('Error in fetchUserProfile:', error)
       return null
+    }
+  }
+
+  // UNIFIED USER CREATION - SINGLE SOURCE OF TRUTH
+  // This is the ONLY place where user profiles are created
+  const createUserProfile = async (authUser: User): Promise<SupabaseUser | null> => {
+    try {
+      console.log('Creating user profile for:', authUser.id.substring(0, 8) + '...', authUser.email)
+      
+      const userData = {
+        id: authUser.id,
+        email: authUser.email!,
+        name: authUser.user_metadata?.full_name || authUser.user_metadata?.name || null,
+        image: authUser.user_metadata?.avatar_url || authUser.user_metadata?.picture || null,
+        email_verified: authUser.email_confirmed_at || null,
+        role: (authUser.user_metadata?.role as 'USER' | 'ADMIN' | 'RECRUITER') || 'USER',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      }
+
+      const { data, error } = await supabase
+        .from('users')
+        .insert(userData)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error creating user profile:', {
+          error: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+          userId: authUser.id.substring(0, 8) + '...'
+        })
+        throw error
+      }
+
+      console.log('User profile created successfully:', {
+        userId: authUser.id.substring(0, 8) + '...',
+        email: authUser.email
+      })
+
+      return data
+    } catch (error) {
+      console.error('Error in createUserProfile:', error)
+      throw error
     }
   }
 
@@ -85,7 +141,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }
 
-  // Handle auth state changes
+  // UNIFIED AUTH STATE MANAGEMENT
   useEffect(() => {
     // Get initial session
     const getInitialSession = async () => {
@@ -100,11 +156,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setUser(session?.user ?? null)
           
           if (session?.user) {
-            // Create or update user in our users table
-            const { data: userData } = await createOrUpdateUser(session.user)
-            // Fetch complete user profile
-            const profile = await fetchUserProfile(session.user.id)
-            setUserProfile(profile)
+            await handleUserAuth(session.user, 'INITIAL_SESSION')
           }
         }
       } catch (error) {
@@ -128,37 +180,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       setError(null)
       
       if (session?.user) {
-        try {
-          // Create or update user in our users table
-          const { isNewUser } = await createOrUpdateUser(session.user)
-          
-          // Fetch complete user profile
-          const profile = await fetchUserProfile(session.user.id)
-          setUserProfile(profile)
-          
-          // Track Google OAuth login/registration for analytics
-          if (event === 'SIGNED_IN' && session.user.app_metadata.provider === 'google') {
-            const userType = profile?.role === 'EMPLOYER' ? 'employer' : 'contractor'
-            
-            if (isNewUser) {
-              // Track new user registration via Google OAuth
-              trackUserRegistration({
-                userType,
-                registrationMethod: 'google_oauth'
-              })
-            } else {
-              // Track existing user login via Google OAuth
-              trackEvent('user_login', 'Authentication', 'google_oauth', 1, {
-                user_type: userType,
-                login_method: 'google_oauth',
-                user_id: session.user.id
-              })
-            }
-          }
-        } catch (error) {
-          console.error('Error handling auth state change:', error)
-          setError(error as AuthError)
-        }
+        await handleUserAuth(session.user, event)
       } else {
         setUserProfile(null)
       }
@@ -171,6 +193,49 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       subscription.unsubscribe()
     }
   }, [])
+
+  // UNIFIED USER AUTHENTICATION HANDLER
+  // This handles all user authentication events in one place
+  const handleUserAuth = async (authUser: User, event: string) => {
+    try {
+      // First, try to fetch existing user profile
+      let profile = await fetchUserProfile(authUser.id)
+      let isNewUser = false
+      
+      // If no profile exists, create one
+      if (!profile) {
+        console.log('No profile found, creating new user profile')
+        profile = await createUserProfile(authUser)
+        isNewUser = true
+      }
+      
+      setUserProfile(profile)
+      
+      // Track analytics for auth events
+      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+        const userType = profile?.role === 'RECRUITER' ? 'recruiter' : 'contractor'
+        const provider = authUser.app_metadata?.provider || 'email'
+        
+        if (isNewUser) {
+          // Track new user registration
+          trackUserRegistration({
+            userType,
+            registrationMethod: provider === 'google' ? 'google_oauth' : 'email_password'
+          })
+        } else if (event === 'SIGNED_IN') {
+          // Track existing user login
+          trackEvent('user_login', 'Authentication', provider, 1, {
+            user_type: userType,
+            login_method: provider,
+            user_id: authUser.id
+          })
+        }
+      }
+    } catch (error) {
+      console.error('Error handling user auth:', error)
+      setError(error as AuthError)
+    }
+  }
 
   // Sign in with Google
   const signInWithGoogle = async (redirectTo?: string) => {
@@ -288,19 +353,38 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     }
   }
 
-  // Delete user profile
+  // UNIFIED DELETE USER PROFILE
   const deleteUserProfile = async () => {
     try {
       setLoading(true)
       setError(null)
       
-      await deleteUserProfileLib()
+      if (!user) {
+        throw new Error('No authenticated user found')
+      }
       
-      // Clear local state after successful deletion
+      console.log('Starting user deletion process for:', user.id.substring(0, 8) + '...')
+      
+      // Delete from public.users table (cascade will handle related data)
+      const { error: deleteError } = await supabase
+        .from('users')
+        .delete()
+        .eq('id', user.id)
+      
+      if (deleteError) {
+        console.error('Error deleting user profile:', deleteError)
+        throw deleteError
+      }
+      
+      // Sign out the user (this will also clear the auth.users entry if needed)
+      await supabase.auth.signOut()
+      
+      // Clear local state
       setUser(null)
       setUserProfile(null)
       setSession(null)
       
+      console.log('User deletion completed successfully')
     } catch (error) {
       console.error('Error deleting user profile:', error)
       setError(error as AuthError)

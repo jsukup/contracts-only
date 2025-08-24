@@ -3,6 +3,11 @@ import { createServerSupabaseClient } from '@/lib/supabase'
 import type { User } from '@supabase/supabase-js'
 import type { SupabaseUser } from '@/lib/supabase'
 
+// SERVER-SIDE AUTH - READ-ONLY
+// This is used by middleware and server components
+// It NEVER creates users - that's handled by AuthContext
+// It only reads existing auth state
+
 export interface AuthSession {
   user: SupabaseUser & {
     role: 'USER' | 'ADMIN' | 'RECRUITER'
@@ -10,57 +15,40 @@ export interface AuthSession {
 }
 
 export async function getServerSession(request?: NextRequest): Promise<AuthSession | null> {
-  const supabase = createServerSupabaseClient()
-  
-  // Get the authenticated user from Supabase
-  const { data: { user }, error: authError } = await supabase.auth.getUser()
-  
-  if (authError || !user) {
-    return null
-  }
-  
-  // Get the full user data from the users table
-  const { data: userData, error: userError } = await supabase
-    .from('users')
-    .select('*')
-    .eq('id', user.id)
-    .single()
-  
-  if (userError || !userData) {
-    // If user doesn't exist in our DB, create them
-    const newUser = {
-      id: user.id,
-      email: user.email!,
-      name: user.user_metadata?.full_name || user.user_metadata?.name || null,
-      image: user.user_metadata?.avatar_url || user.user_metadata?.picture || null,
-      email_verified: user.email_confirmed_at || null,
-      role: 'USER' as const,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+  try {
+    const supabase = createServerSupabaseClient()
+    
+    // Get the authenticated user from Supabase
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    
+    if (authError || !user) {
+      return null
     }
     
-    const { data: createdUser, error: createError } = await supabase
+    // READ-ONLY: Only get existing user data, never create
+    const { data: userData, error: userError } = await supabase
       .from('users')
-      .insert(newUser)
-      .select()
+      .select('*')
+      .eq('id', user.id)
       .single()
     
-    if (createError || !createdUser) {
-      console.error('Error creating user:', createError)
+    if (userError || !userData) {
+      // If user doesn't exist in our DB, return null
+      // User creation is handled by AuthContext on the client side
+      console.log('Server: User profile not found for:', user.id.substring(0, 8) + '...', 'Will be created by AuthContext')
       return null
     }
     
     return {
-      user: createdUser as SupabaseUser & { role: 'USER' | 'ADMIN' | 'RECRUITER' }
+      user: userData as SupabaseUser & { role: 'USER' | 'ADMIN' | 'RECRUITER' }
     }
-  }
-  
-  return {
-    user: userData as SupabaseUser & { role: 'USER' | 'ADMIN' | 'RECRUITER' }
+  } catch (error) {
+    console.error('Error in getServerSession:', error)
+    return null
   }
 }
 
-// For compatibility with existing code that might expect authOptions
+// Legacy compatibility - not used in Supabase auth
 export const authOptions = {
   // This is a placeholder for compatibility
   // The actual auth is handled by Supabase
