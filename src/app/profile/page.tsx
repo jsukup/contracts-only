@@ -160,7 +160,7 @@ export default function ProfilePage() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-900 mb-1">
                     Full Name *
                   </label>
                   <input
@@ -175,7 +175,7 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="title" className="block text-sm font-medium text-gray-900 mb-1">
                     Professional Title
                   </label>
                   <input
@@ -191,7 +191,7 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <label htmlFor="bio" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="bio" className="block text-sm font-medium text-gray-900 mb-1">
                   Bio
                 </label>
                 <textarea
@@ -207,7 +207,7 @@ export default function ProfilePage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="location" className="block text-sm font-medium text-gray-900 mb-1">
                     <MapPin className="w-4 h-4 inline mr-1" />
                     Location
                   </label>
@@ -222,7 +222,7 @@ export default function ProfilePage() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="availability" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="availability" className="block text-sm font-medium text-gray-900 mb-1">
                     <Clock className="w-4 h-4 inline mr-1" />
                     Availability
                   </label>
@@ -252,7 +252,7 @@ export default function ProfilePage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <label htmlFor="website" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="website" className="block text-sm font-medium text-gray-900 mb-1">
                   Website
                 </label>
                 <input
@@ -266,7 +266,7 @@ export default function ProfilePage() {
                 />
               </div>
               <div>
-                <label htmlFor="linkedin_url" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="linkedin_url" className="block text-sm font-medium text-gray-900 mb-1">
                   LinkedIn Profile
                 </label>
                 <input
@@ -294,7 +294,7 @@ export default function ProfilePage() {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="hourly_rate_min" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="hourly_rate_min" className="block text-sm font-medium text-gray-900 mb-1">
                       Current Rate (Min/hr)
                     </label>
                     <input
@@ -309,7 +309,7 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div>
-                    <label htmlFor="hourly_rate_max" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="hourly_rate_max" className="block text-sm font-medium text-gray-900 mb-1">
                       Current Rate (Max/hr)
                     </label>
                     <input
@@ -326,7 +326,7 @@ export default function ProfilePage() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="desired_rate_min" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="desired_rate_min" className="block text-sm font-medium text-gray-900 mb-1">
                       Desired Rate (Min/hr)
                     </label>
                     <input
@@ -341,7 +341,7 @@ export default function ProfilePage() {
                     />
                   </div>
                   <div>
-                    <label htmlFor="desired_rate_max" className="block text-sm font-medium text-gray-700 mb-1">
+                    <label htmlFor="desired_rate_max" className="block text-sm font-medium text-gray-900 mb-1">
                       Desired Rate (Max/hr)
                     </label>
                     <input
