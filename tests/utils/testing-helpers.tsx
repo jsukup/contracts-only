@@ -7,6 +7,15 @@ import userEvent from '@testing-library/user-event'
 export * from '@testing-library/react'
 export { userEvent }
 
+// Create test wrapper component
+export const createTestWrapper = () => {
+  return ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="test-wrapper">
+      {children}
+    </div>
+  )
+}
+
 // Custom render function with providers
 interface CustomRenderOptions extends Omit<RenderOptions, 'wrapper'> {
   user?: any

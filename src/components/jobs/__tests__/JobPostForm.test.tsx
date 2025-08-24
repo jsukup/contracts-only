@@ -3,7 +3,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { JobPostForm } from '../JobPostForm'
-import { createTestWrapper } from '../../../tests/utils/testing-helpers'
+import { createTestWrapper } from '../../../../tests/utils/testing-helpers'
 
 // Mock Next.js router
 const mockPush = jest.fn()
