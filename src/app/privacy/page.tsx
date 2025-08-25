@@ -78,8 +78,8 @@ export default function PrivacyPage() {
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Contact Us</h2>
               <p className="text-gray-700">
                 If you have any questions about this Privacy Policy, please contact us at{' '}
-                <a href="mailto:privacy@contractsonly.com" className="text-indigo-600 hover:underline">
-                  privacy@contractsonly.com
+                <a href="mailto:privacy@contracts-only.com" className="text-indigo-600 hover:underline">
+                  privacy@contracts-only.com
                 </a>
               </p>
             </section>

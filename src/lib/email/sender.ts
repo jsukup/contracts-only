@@ -36,7 +36,7 @@ class ResendProvider implements EmailProvider {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: options.from || 'ContractsOnly <onboarding@resend.dev>',
+        from: options.from || 'ContractsOnly <info@contracts-only.com>',
         to: [options.to],
         subject: options.subject,
         html: options.html,
@@ -79,7 +79,7 @@ class SendGridProvider implements EmailProvider {
           }
         ],
         from: {
-          email: options.from?.match(/<(.+)>/)?.[1] || 'onboarding@resend.dev',
+          email: options.from?.match(/<(.+)>/)?.[1] || 'info@contracts-only.com',
           name: options.from?.match(/^([^<]+)</)?.[1]?.trim() || 'ContractsOnly'
         },
         content: [

@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://contractsonly.com'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://contracts-only.com'),
   alternates: {
     canonical: '/',
   },
@@ -119,11 +119,11 @@ export default function RootLayout({
               "@context": "https://schema.org",
               "@type": "WebSite",
               "name": "ContractsOnly",
-              "url": process.env.NEXT_PUBLIC_APP_URL || "https://contractsonly.com",
+              "url": process.env.NEXT_PUBLIC_APP_URL || "https://contracts-only.com",
               "description": "The premier platform for finding contract work and connecting with top talent",
               "potentialAction": {
                 "@type": "SearchAction",
-                "target": `${process.env.NEXT_PUBLIC_APP_URL || "https://contractsonly.com"}/jobs?search={search_term_string}`,
+                "target": `${process.env.NEXT_PUBLIC_APP_URL || "https://contracts-only.com"}/jobs?search={search_term_string}`,
                 "query-input": "required name=search_term_string"
               }
             })

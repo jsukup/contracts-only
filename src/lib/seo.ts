@@ -32,8 +32,8 @@ export function generateMetadata(config: SEOConfig): Metadata {
   } = config
 
   const fullTitle = title.includes('ContractsOnly') ? title : `${title} | ContractsOnly`
-  const fullUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://contractsonly.com'}${url}`
-  const fullImage = image.startsWith('http') ? image : `${process.env.NEXT_PUBLIC_APP_URL || 'https://contractsonly.com'}${image}`
+  const fullUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://contracts-only.com'}${url}`
+  const fullImage = image.startsWith('http') ? image : `${process.env.NEXT_PUBLIC_APP_URL || 'https://contracts-only.com'}${image}`
 
   return {
     title: fullTitle,
@@ -47,7 +47,7 @@ export function generateMetadata(config: SEOConfig): Metadata {
       address: false,
       telephone: false,
     },
-    metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://contractsonly.com'),
+    metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://contracts-only.com'),
     alternates: {
       canonical: fullUrl,
     },
@@ -101,8 +101,8 @@ export class StructuredData {
       '@context': 'https://schema.org',
       '@type': 'Organization',
       name: 'ContractsOnly',
-      url: process.env.NEXT_PUBLIC_APP_URL || 'https://contractsonly.com',
-      logo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://contractsonly.com'}/logo.png`,
+      url: process.env.NEXT_PUBLIC_APP_URL || 'https://contracts-only.com',
+      logo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://contracts-only.com'}/logo.png`,
       description: 'The premier platform for finding contract work and connecting with top talent',
       address: {
         '@type': 'PostalAddress',
@@ -111,7 +111,7 @@ export class StructuredData {
       contactPoint: {
         '@type': 'ContactPoint',
         contactType: 'customer service',
-        email: 'support@contractsonly.com',
+        email: 'support@contracts-only.com',
       },
       sameAs: [
         'https://twitter.com/contractsonly',
@@ -126,13 +126,13 @@ export class StructuredData {
       '@context': 'https://schema.org',
       '@type': 'WebSite',
       name: 'ContractsOnly',
-      url: process.env.NEXT_PUBLIC_APP_URL || 'https://contractsonly.com',
+      url: process.env.NEXT_PUBLIC_APP_URL || 'https://contracts-only.com',
       description: 'Find your next contract job or hire top freelance talent',
       potentialAction: {
         '@type': 'SearchAction',
         target: {
           '@type': 'EntryPoint',
-          urlTemplate: `${process.env.NEXT_PUBLIC_APP_URL || 'https://contractsonly.com'}/jobs?search={search_term_string}`,
+          urlTemplate: `${process.env.NEXT_PUBLIC_APP_URL || 'https://contracts-only.com'}/jobs?search={search_term_string}`,
         },
         'query-input': 'required name=search_term_string',
       },
@@ -157,7 +157,7 @@ export class StructuredData {
       hiringOrganization: {
         '@type': 'Organization',
         name: job.company || 'ContractsOnly Employer',
-        sameAs: process.env.NEXT_PUBLIC_APP_URL || 'https://contractsonly.com',
+        sameAs: process.env.NEXT_PUBLIC_APP_URL || 'https://contracts-only.com',
       },
       jobLocation: job.location
         ? {
@@ -207,7 +207,7 @@ export class StructuredData {
       name: profile.name,
       jobTitle: profile.title || 'Freelance Professional',
       description: profile.bio,
-      url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://contractsonly.com'}/profile/${profile.id}`,
+      url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://contracts-only.com'}/profile/${profile.id}`,
       image: profile.image,
       knowsAbout: profile.skills?.map((skill: any) => skill.name) || [],
       worksFor: {
@@ -231,7 +231,7 @@ export class StructuredData {
         '@type': 'ListItem',
         position: index + 1,
         name: item.name,
-        item: `${process.env.NEXT_PUBLIC_APP_URL || 'https://contractsonly.com'}${item.url}`,
+        item: `${process.env.NEXT_PUBLIC_APP_URL || 'https://contracts-only.com'}${item.url}`,
       })),
     }
   }
@@ -276,13 +276,13 @@ export class StructuredData {
         name: 'ContractsOnly',
         logo: {
           '@type': 'ImageObject',
-          url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://contractsonly.com'}/logo.png`,
+          url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://contracts-only.com'}/logo.png`,
         },
       },
       datePublished: article.publishedAt,
       dateModified: article.modifiedAt || article.publishedAt,
-      image: article.image || `${process.env.NEXT_PUBLIC_APP_URL || 'https://contractsonly.com'}/og-image.png`,
-      url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://contractsonly.com'}${article.url}`,
+      image: article.image || `${process.env.NEXT_PUBLIC_APP_URL || 'https://contracts-only.com'}/og-image.png`,
+      url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://contracts-only.com'}${article.url}`,
     }
   }
 }
@@ -355,7 +355,7 @@ export class SitemapGenerator {
     changeFreq?: 'always' | 'hourly' | 'daily' | 'weekly' | 'monthly' | 'yearly' | 'never'
     priority?: number
   }>) {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://contractsonly.com'
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://contracts-only.com'
     
     return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
@@ -369,7 +369,7 @@ ${pages.map(page => `  <url>
   }
 
   static generateRobotsTxt() {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://contractsonly.com'
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://contracts-only.com'
     
     return `User-agent: *
 Allow: /
@@ -397,12 +397,12 @@ Crawl-delay: 1`
 
 // Meta tag helpers
 export function generateCanonicalUrl(path: string): string {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://contractsonly.com'
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://contracts-only.com'
   return `${baseUrl}${path.startsWith('/') ? path : `/${path}`}`
 }
 
 export function generateHrefLangs(path: string, locales: string[] = ['en']): Array<{ hrefLang: string; href: string }> {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://contractsonly.com'
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://contracts-only.com'
   
   return locales.map(locale => ({
     hrefLang: locale,

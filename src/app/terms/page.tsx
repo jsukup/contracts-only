@@ -86,8 +86,8 @@ export default function TermsPage() {
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Contact Information</h2>
               <p className="text-gray-700">
                 If you have any questions about these Terms of Service, please contact us at{' '}
-                <a href="mailto:legal@contractsonly.com" className="text-indigo-600 hover:underline">
-                  legal@contractsonly.com
+                <a href="mailto:legal@contracts-only.com" className="text-indigo-600 hover:underline">
+                  legal@contracts-only.com
                 </a>
               </p>
             </section>

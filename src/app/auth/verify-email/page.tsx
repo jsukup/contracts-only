@@ -126,8 +126,8 @@ export default function VerifyEmailPage() {
         <div className="mt-8 pt-6 border-t border-gray-200">
           <p className="text-xs text-gray-500">
             Need help? Contact us at{' '}
-            <a href="mailto:contact@contractsonly.com" className="text-blue-600 hover:underline">
-              contact@contractsonly.com
+            <a href="mailto:info@contracts-only.com" className="text-blue-600 hover:underline">
+              info@contracts-only.com
             </a>
           </p>
         </div>

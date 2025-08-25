@@ -70,11 +70,11 @@ export async function sendEmailVerification(
               <span style="color: #d1d5db; margin: 0 8px;">|</span>
               <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/jobs" style="color: #3b82f6; text-decoration: none; font-weight: 500;">Browse Jobs</a>
               <span style="color: #d1d5db; margin: 0 8px;">|</span>
-              <a href="mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'contact@contractsonly.com'}" style="color: #3b82f6; text-decoration: none; font-weight: 500;">Support</a>
+              <a href="mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'info@contracts-only.com'}" style="color: #3b82f6; text-decoration: none; font-weight: 500;">Support</a>
             </div>
             <p style="color: #9ca3af; font-size: 12px; margin: 10px 0 0 0;">
               You're receiving this email because you signed up for ContractsOnly.<br>
-              If you have any questions, contact us at <a href="mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'contact@contractsonly.com'}" style="color: #3b82f6;">${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'contact@contractsonly.com'}</a>
+              If you have any questions, contact us at <a href="mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'info@contracts-only.com'}" style="color: #3b82f6;">${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'info@contracts-only.com'}</a>
             </p>
           </div>
         </div>
@@ -100,7 +100,7 @@ Best regards,
 The ContractsOnly Team
 
 ContractsOnly.com
-Support: ${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'contact@contractsonly.com'}
+Support: ${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'info@contracts-only.com'}
       `
     })
 
@@ -200,7 +200,7 @@ export async function sendWelcomeEmail(
               <span style="color: #d1d5db; margin: 0 8px;">|</span>
               <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/profile" style="color: #3b82f6; text-decoration: none; font-weight: 500;">Profile</a>
               <span style="color: #d1d5db; margin: 0 8px;">|</span>
-              <a href="mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'contact@contractsonly.com'}" style="color: #3b82f6; text-decoration: none; font-weight: 500;">Support</a>
+              <a href="mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'info@contracts-only.com'}" style="color: #3b82f6; text-decoration: none; font-weight: 500;">Support</a>
             </div>
           </div>
         </div>
@@ -217,7 +217,7 @@ ${roleSpecificContent.benefits.map(benefit => `• ${benefit}`).join('\n')}
 
 Get started: ${roleSpecificContent.ctaUrl}
 
-Need help? Contact us at ${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'contact@contractsonly.com'}
+Need help? Contact us at ${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'info@contracts-only.com'}
 
 Welcome to the team!
 The ContractsOnly Team
