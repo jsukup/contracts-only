@@ -1,23 +1,42 @@
 import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
-import { createServerSupabaseClient } from "@/lib/supabase"
+import { createAuthenticatedSupabaseClient } from "@/lib/auth-server"
 
 export async function middleware(request: NextRequest) {
-  const supabase = createServerSupabaseClient()
+  const pathname = request.nextUrl.pathname
+  
+  // Skip middleware for static files and api routes that handle auth themselves
+  if (
+    pathname.startsWith('/_next/') ||
+    pathname.startsWith('/api/') ||
+    pathname.startsWith('/static/') ||
+    pathname.includes('.') // Skip all files with extensions (manifest.json, favicon.ico, etc.)
+  ) {
+    return NextResponse.next()
+  }
   
   // Protected paths
   const protectedPaths = ["/dashboard", "/jobs/new", "/profile"]
-  const pathname = request.nextUrl.pathname
   
   // Check if the current path is protected
   const isProtected = protectedPaths.some(path => pathname.startsWith(path))
   
   if (isProtected) {
-    // Check for authentication
-    const { data: { user }, error } = await supabase.auth.getUser()
-    
-    if (error || !user) {
-      // Redirect to signin page
+    try {
+      const supabase = createAuthenticatedSupabaseClient(request)
+      
+      // Check for authentication
+      const { data: { user }, error } = await supabase.auth.getUser()
+      
+      if (error || !user) {
+        // Redirect to signin page
+        const redirectUrl = new URL('/auth/signin', request.url)
+        redirectUrl.searchParams.set('redirectTo', request.url)
+        return NextResponse.redirect(redirectUrl)
+      }
+    } catch (error) {
+      console.error('Middleware auth error:', error)
+      // Redirect to signin page on auth error
       const redirectUrl = new URL('/auth/signin', request.url)
       redirectUrl.searchParams.set('redirectTo', request.url)
       return NextResponse.redirect(redirectUrl)
@@ -29,11 +48,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/dashboard/:path*",
-    "/jobs/new/:path*", 
-    "/profile/:path*",
-    "/api/jobs/create",
-    "/api/jobs/update/:path*",
-    "/api/jobs/delete/:path*",
+    // Match all paths except static files and api routes
+    '/((?!_next/static|_next/image|favicon.ico|manifest.json|.*\\.png|.*\\.jpg|.*\\.jpeg|.*\\.gif|.*\\.svg|.*\\.ico|.*\\.woff|.*\\.woff2).*)',
   ],
 }

@@ -1,4 +1,5 @@
 import { createClient, SupabaseClient, User } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
 
 // Database schema types
 export type Database = {
@@ -244,28 +245,35 @@ if (!supabaseUrl || !supabaseAnonKey) {
   )
 }
 
-// Client-side Supabase client
-export const supabase: SupabaseClient<Database> = createClient(
+// Client-side Supabase client using SSR
+export const supabase: SupabaseClient<Database> = createBrowserClient<Database>(
   supabaseUrl,
-  supabaseAnonKey,
-  {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true,
-    },
-  }
+  supabaseAnonKey
 )
 
 // Server-side Supabase client (for API routes)
-export const createServerSupabaseClient = () => {
-  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+export const createServerSupabaseClient = (req?: Request) => {
+  // Create client with auth context from request
+  const client = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
       detectSessionInUrl: false,
     },
+    global: {
+      headers: req ? {
+        // Pass through authorization and cookie headers for proper auth context
+        ...(req.headers.get('authorization') && {
+          Authorization: req.headers.get('authorization')!
+        }),
+        ...(req.headers.get('cookie') && {
+          Cookie: req.headers.get('cookie')!
+        }),
+      } : {},
+    },
   })
+  
+  return client
 }
 
 // Service role client (bypasses RLS for admin operations)

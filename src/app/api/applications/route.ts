@@ -1,24 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase'
+import { authenticateApiRoute } from '@/lib/auth-server'
 
 export async function GET(req: NextRequest) {
   try {
-    const supabase = createServerSupabaseClient()
-    
-    // Get the authorization header from the request
-    const authHeader = req.headers.get('authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized - No token provided' }, { status: 401 })
-    }
-    
-    const token = authHeader.replace('Bearer ', '')
-    
-    // Get user from token
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-    
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized - Invalid token' }, { status: 401 })
-    }
+    const { user, userProfile, supabase } = await authenticateApiRoute(req)
     
     const { searchParams } = new URL(req.url)
     const type = searchParams.get('type') || 'sent' // 'sent' or 'received'
@@ -110,6 +95,18 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(applications || [])
   } catch (error) {
     console.error('Error fetching applications:', error)
+    
+    // Handle authentication errors
+    if (error instanceof Error && 
+        (error.message.includes('Authentication failed') || 
+         error.message.includes('No authenticated user') ||
+         error.message.includes('User profile not found'))) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: error.message },
+        { status: 401 }
+      )
+    }
+    
     return NextResponse.json(
       { error: 'Failed to fetch applications' },
       { status: 500 }

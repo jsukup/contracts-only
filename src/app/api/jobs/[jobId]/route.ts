@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase'
+import { createPublicSupabaseClient } from '@/lib/auth-server'
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { jobId: string } }
+  { params }: { params: Promise<{ jobId: string }> }
 ) {
   try {
-    const supabase = createServerSupabaseClient()
+    const { jobId } = await params
+    const supabase = createPublicSupabaseClient(req)
     
     const { data: job, error } = await supabase
       .from('jobs')
@@ -22,7 +23,7 @@ export async function GET(
         ),
         applications:job_applications (count)
       `)
-      .eq('id', params.jobId)
+      .eq('id', jobId)
       .single()
     
     if (error || !job) {
@@ -65,7 +66,7 @@ export async function PUT(
     const { data: existingJob, error: jobError } = await supabase
       .from('jobs')
       .select('poster_id')
-      .eq('id', params.jobId)
+      .eq('id', jobId)
       .single()
     
     if (jobError || !existingJob) {
@@ -116,7 +117,7 @@ export async function PUT(
         application_email: applicationEmail,
         is_active: isActive
       })
-      .eq('id', params.jobId)
+      .eq('id', jobId)
       .select(`
         *,
         poster:poster_id (
@@ -180,7 +181,7 @@ export async function PUT(
           )
         )
       `)
-      .eq('id', params.jobId)
+      .eq('id', jobId)
       .single()
     
     if (finalError) {
@@ -224,7 +225,7 @@ export async function DELETE(
     const { data: job, error: jobError } = await supabase
       .from('jobs')
       .select('poster_id')
-      .eq('id', params.jobId)
+      .eq('id', jobId)
       .single()
     
     if (jobError || !job) {
@@ -239,7 +240,7 @@ export async function DELETE(
     const { error: deleteError } = await supabase
       .from('jobs')
       .update({ is_active: false })
-      .eq('id', params.jobId)
+      .eq('id', jobId)
     
     if (deleteError) {
       console.error('Error deleting job:', deleteError)

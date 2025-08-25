@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase'
+import { createPublicSupabaseClient } from '@/lib/auth-server'
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
-    const supabase = createServerSupabaseClient()
+    const { userId } = await params
+    const supabase = createPublicSupabaseClient(req)
     
     const { data: user, error } = await supabase
       .from('users')
@@ -29,7 +30,7 @@ export async function GET(
           )
         )
       `)
-      .eq('id', params.userId)
+      .eq('id', userId)
       .single()
 
     if (error || !user) {
