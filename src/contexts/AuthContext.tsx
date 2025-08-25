@@ -301,6 +301,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         email,
         password,
         options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard?welcome=true`,
           data: {
             full_name: name,
             role: role,

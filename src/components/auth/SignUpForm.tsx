@@ -25,6 +25,8 @@ export default function SignUpForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSubmittingGoogle, setIsSubmittingGoogle] = useState(false)
   const [showEmailVerificationMessage, setShowEmailVerificationMessage] = useState(false)
+  const [isResending, setIsResending] = useState(false)
+  const [resendSuccess, setResendSuccess] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -130,6 +132,8 @@ export default function SignUpForm() {
                         type="button" 
                         variant="outline" 
                         onClick={async () => {
+                          setIsResending(true)
+                          setResendSuccess(false)
                           try {
                             const response = await fetch('/api/auth/resend-verification', {
                               method: 'POST',
@@ -137,16 +141,33 @@ export default function SignUpForm() {
                               body: JSON.stringify({ email: formData.email })
                             })
                             if (response.ok) {
-                              // Show success message or update UI
-                              console.log('Verification email resent successfully')
+                              setResendSuccess(true)
+                              setTimeout(() => setResendSuccess(false), 3000)
                             }
                           } catch (error) {
                             console.error('Failed to resend verification email:', error)
+                          } finally {
+                            setIsResending(false)
                           }
                         }}
-                        className="w-full"
+                        disabled={isResending}
+                        className="w-full bg-white hover:bg-gray-50 border-2 border-blue-500 text-blue-700 font-medium transition-all disabled:opacity-50"
                       >
-                        Resend Verification Email
+                        {isResending ? (
+                          <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Sending...
+                          </>
+                        ) : resendSuccess ? (
+                          <>
+                            <svg className="w-4 h-4 mr-2 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            Email Sent!
+                          </>
+                        ) : (
+                          'Resend Verification Email'
+                        )}
                       </Button>
                       <p className="text-xs text-blue-600">
                         Didn't receive the email? Check your spam folder or click above to resend.
