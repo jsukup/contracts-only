@@ -27,19 +27,24 @@ export async function POST(request: NextRequest) {
       }
     )
 
+    // Log for debugging
+    console.log('Attempting to resend verification email to:', email)
+    
     // Resend verification email
-    const { error } = await supabase.auth.resend({
+    const { data, error } = await supabase.auth.resend({
       type: 'signup',
       email: email,
       options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/callback?next=/dashboard?welcome=true`,
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://contracts-only.vercel.app'}/auth/callback?next=/dashboard?welcome=true`,
       }
     })
+
+    console.log('Resend response:', { data, error })
 
     if (error) {
       console.error('Resend verification error:', error)
       return NextResponse.json(
-        { error: error.message },
+        { error: error.message || 'Failed to resend verification email' },
         { status: 400 }
       )
     }

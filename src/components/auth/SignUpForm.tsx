@@ -131,7 +131,9 @@ export default function SignUpForm() {
                       <Button 
                         type="button" 
                         variant="outline" 
-                        onClick={async () => {
+                        onClick={async (e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
                           setIsResending(true)
                           setResendSuccess(false)
                           try {
@@ -140,12 +142,17 @@ export default function SignUpForm() {
                               headers: { 'Content-Type': 'application/json' },
                               body: JSON.stringify({ email: formData.email })
                             })
+                            const data = await response.json()
                             if (response.ok) {
                               setResendSuccess(true)
                               setTimeout(() => setResendSuccess(false), 3000)
+                            } else {
+                              console.error('Resend failed:', data.error)
+                              alert(`Failed to resend email: ${data.error || 'Unknown error'}`)
                             }
                           } catch (error) {
                             console.error('Failed to resend verification email:', error)
+                            alert('Failed to resend verification email. Please try again.')
                           } finally {
                             setIsResending(false)
                           }
