@@ -63,7 +63,11 @@ export class EmailService {
       subject: `New Application: ${data.jobTitle}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333;">New Job Application Received</h2>
+          <div style="text-align: center; padding: 20px 0; border-bottom: 1px solid #e5e7eb;">
+            <img src="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/images/icons/android-chrome-192x192-light.png" alt="ContractsOnly" style="width: 64px; height: 64px;" />
+            <h1 style="color: #3b82f6; margin: 10px 0 0 0; font-size: 24px;">ContractsOnly</h1>
+          </div>
+          <h2 style="color: #333; margin-top: 30px;">New Job Application Received</h2>
           
           <p>Hello,</p>
           
@@ -105,7 +109,11 @@ export class EmailService {
       subject: `Application Confirmed: ${data.jobTitle}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333;">Application Submitted Successfully</h2>
+          <div style="text-align: center; padding: 20px 0; border-bottom: 1px solid #e5e7eb;">
+            <img src="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/images/icons/android-chrome-192x192-light.png" alt="ContractsOnly" style="width: 64px; height: 64px;" />
+            <h1 style="color: #3b82f6; margin: 10px 0 0 0; font-size: 24px;">ContractsOnly</h1>
+          </div>
+          <h2 style="color: #333; margin-top: 30px;">Application Submitted Successfully</h2>
           
           <p>Hello ${data.applicantName},</p>
           
@@ -149,7 +157,11 @@ export class EmailService {
       subject: `New Job Match: ${data.jobTitle}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333;">New Job Opportunity</h2>
+          <div style="text-align: center; padding: 20px 0; border-bottom: 1px solid #e5e7eb;">
+            <img src="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/images/icons/android-chrome-192x192-light.png" alt="ContractsOnly" style="width: 64px; height: 64px;" />
+            <h1 style="color: #3b82f6; margin: 10px 0 0 0; font-size: 24px;">ContractsOnly</h1>
+          </div>
+          <h2 style="color: #333; margin-top: 30px;">New Job Opportunity</h2>
           
           <p>Hello,</p>
           
@@ -198,7 +210,11 @@ export class EmailService {
       subject: `Application Update: ${jobTitle}`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #333;">Application Status Update</h2>
+          <div style="text-align: center; padding: 20px 0; border-bottom: 1px solid #e5e7eb;">
+            <img src="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/images/icons/android-chrome-192x192-light.png" alt="ContractsOnly" style="width: 64px; height: 64px;" />
+            <h1 style="color: #3b82f6; margin: 10px 0 0 0; font-size: 24px;">ContractsOnly</h1>
+          </div>
+          <h2 style="color: #333; margin-top: 30px;">Application Status Update</h2>
           
           <p>Hello ${applicantName},</p>
           

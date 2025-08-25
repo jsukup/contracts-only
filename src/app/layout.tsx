@@ -106,7 +106,7 @@ export default function RootLayout({
         />
         
         {/* Apple touch icon */}
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="apple-touch-icon" href="/images/icons/apple-touch-icon-light.png" />
         
         {/* Manifest for PWA */}
         <link rel="manifest" href="/manifest.json" />

@@ -36,7 +36,7 @@ class ResendProvider implements EmailProvider {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: options.from || 'ContractsOnly <noreply@contractsonly.com>',
+        from: options.from || 'ContractsOnly <onboarding@resend.dev>',
         to: [options.to],
         subject: options.subject,
         html: options.html,
@@ -79,7 +79,7 @@ class SendGridProvider implements EmailProvider {
           }
         ],
         from: {
-          email: options.from?.match(/<(.+)>/)?.[1] || 'noreply@contractsonly.com',
+          email: options.from?.match(/<(.+)>/)?.[1] || 'onboarding@resend.dev',
           name: options.from?.match(/^([^<]+)</)?.[1]?.trim() || 'ContractsOnly'
         },
         content: [
@@ -258,12 +258,18 @@ export async function testEmailConfiguration(testEmail: string): Promise<{
       to: testEmail,
       subject: 'ContractsOnly Email Test',
       html: `
-        <h2>Email Configuration Test</h2>
-        <p>This is a test email to verify your ContractsOnly email configuration is working correctly.</p>
-        <p>If you received this email, your email service is configured properly.</p>
-        <p>Provider used: <strong>${emailService.getProviderInfo().primary}</strong></p>
-        <hr>
-        <small>This is an automated test email from ContractsOnly</small>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <div style="text-align: center; padding: 20px 0; border-bottom: 1px solid #e5e7eb;">
+            <img src="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/images/icons/android-chrome-192x192-light.png" alt="ContractsOnly" style="width: 64px; height: 64px;" />
+            <h1 style="color: #3b82f6; margin: 10px 0 0 0; font-size: 24px;">ContractsOnly</h1>
+          </div>
+          <h2 style="margin-top: 30px;">Email Configuration Test</h2>
+          <p>This is a test email to verify your ContractsOnly email configuration is working correctly.</p>
+          <p>If you received this email, your email service is configured properly.</p>
+          <p>Provider used: <strong>${emailService.getProviderInfo().primary}</strong></p>
+          <hr>
+          <small>This is an automated test email from ContractsOnly</small>
+        </div>
       `,
       text: `
 Email Configuration Test

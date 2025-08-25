@@ -6,12 +6,12 @@ import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
 import { signUpSchema, SignUpFormData } from '@/lib/validation/auth'
-import { Eye, EyeOff, Loader2, UserCheck, Briefcase } from 'lucide-react'
+import { Eye, EyeOff, Loader2, UserCheck, Briefcase, Chrome } from 'lucide-react'
 import Link from 'next/link'
 
 export default function SignUpForm() {
   const router = useRouter()
-  const { signUpWithEmail, loading, error } = useAuth()
+  const { signUpWithEmail, signInWithGoogle, loading, error } = useAuth()
   const [formData, setFormData] = useState<SignUpFormData>({
     email: '',
     password: '',
@@ -23,6 +23,8 @@ export default function SignUpForm() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSubmittingGoogle, setIsSubmittingGoogle] = useState(false)
+  const [showEmailVerificationMessage, setShowEmailVerificationMessage] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -55,15 +57,21 @@ export default function SignUpForm() {
 
     setIsSubmitting(true)
     try {
-      await signUpWithEmail(
+      const result = await signUpWithEmail(
         formData.email,
         formData.password,
         formData.name,
         formData.role
       )
       
-      // Show success message and redirect
-      router.push('/dashboard?welcome=true')
+      // Check if email confirmation is required (user not immediately confirmed)
+      if (result?.user && !result.user.email_confirmed_at) {
+        // Show email verification message
+        setShowEmailVerificationMessage(true)
+      } else {
+        // User is immediately confirmed, redirect to dashboard
+        router.push('/dashboard?welcome=true')
+      }
     } catch (error) {
       console.error('Sign up error:', error)
       // Error is handled by auth context
@@ -74,6 +82,18 @@ export default function SignUpForm() {
 
   const handleRoleSelect = (role: 'USER' | 'RECRUITER') => {
     setFormData(prev => ({ ...prev, role }))
+  }
+
+  const handleGoogleSignUp = async () => {
+    setIsSubmittingGoogle(true)
+    try {
+      // Google OAuth will handle both sign-in and sign-up
+      // New users will be automatically registered
+      await signInWithGoogle('/dashboard?welcome=true')
+    } catch (error) {
+      console.error('Google sign up error:', error)
+      setIsSubmittingGoogle(false)
+    }
   }
 
   return (
@@ -91,13 +111,85 @@ export default function SignUpForm() {
           
           <Card className="bg-white border border-gray-200 shadow-lg">
             <CardContent className="p-6">
+              {/* Email Verification Message */}
+              {showEmailVerificationMessage && (
+                <div className="mb-6 p-4 rounded-md bg-blue-50 border border-blue-200">
+                  <div className="text-center">
+                    <div className="w-12 h-12 mx-auto bg-blue-100 rounded-full flex items-center justify-center mb-3">
+                      <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-semibold text-blue-800 mb-2">Check your email!</h3>
+                    <p className="text-sm text-blue-700 mb-4">
+                      We've sent a verification email to <strong>{formData.email}</strong>. 
+                      Click the link in the email to verify your account and get started.
+                    </p>
+                    <div className="space-y-2">
+                      <Button 
+                        type="button" 
+                        variant="outline" 
+                        onClick={async () => {
+                          try {
+                            const response = await fetch('/api/auth/resend-verification', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ email: formData.email })
+                            })
+                            if (response.ok) {
+                              // Show success message or update UI
+                              console.log('Verification email resent successfully')
+                            }
+                          } catch (error) {
+                            console.error('Failed to resend verification email:', error)
+                          }
+                        }}
+                        className="w-full"
+                      >
+                        Resend Verification Email
+                      </Button>
+                      <p className="text-xs text-blue-600">
+                        Didn't receive the email? Check your spam folder or click above to resend.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {error && (
                 <div className="mb-4 p-3 rounded-md bg-red-50 border border-red-200">
                   <p className="text-sm text-red-600">{error.message}</p>
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-4">
+              {!showEmailVerificationMessage && (
+                <div className="space-y-4">
+                  {/* Google Sign Up */}
+                  <Button
+                    onClick={handleGoogleSignUp}
+                    disabled={isSubmittingGoogle || loading}
+                    className="w-full bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:bg-gray-100"
+                    variant="outline"
+                  >
+                    {isSubmittingGoogle ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Chrome className="w-4 h-4 mr-2" />
+                    )}
+                    {isSubmittingGoogle ? "Creating account..." : "Sign up with Google"}
+                  </Button>
+                  
+                  <div className="relative">
+                    <div className="absolute inset-0 flex items-center">
+                      <div className="w-full border-t border-gray-300" />
+                    </div>
+                    <div className="relative flex justify-center text-sm">
+                      <span className="px-2 bg-white text-gray-500">Or create account with email</span>
+                    </div>
+                  </div>
+
+                  {/* Email/Password Sign Up Form */}
+                  <form onSubmit={handleSubmit} className="space-y-4">
                 {/* Name Field */}
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
@@ -263,7 +355,9 @@ export default function SignUpForm() {
                     Privacy Policy
                   </Link>
                 </div>
-              </form>
+                  </form>
+                </div>
+              )}
             </CardContent>
           </Card>
 
