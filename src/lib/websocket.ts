@@ -37,8 +37,13 @@ export class WebSocketClient {
       return
     }
 
-    // In production, connect to actual WebSocket server
-    const wsUrl = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8080'
+    // In production, only connect if WebSocket URL is explicitly provided
+    const wsUrl = process.env.NEXT_PUBLIC_WS_URL
+    
+    if (!wsUrl) {
+      console.log('No WebSocket URL configured for production, skipping WebSocket connection')
+      return
+    }
     
     try {
       this.ws = new WebSocket(`${wsUrl}?userId=${userId}`)

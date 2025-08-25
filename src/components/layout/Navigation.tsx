@@ -79,9 +79,7 @@ export function Navigation() {
 
           {/* Desktop Auth Section */}
           <div className="hidden md:flex items-center space-x-4">
-            {loading ? (
-              <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse" />
-            ) : user ? (
+            {user ? (
               <div className="flex items-center space-x-2">
                 {/* Notifications */}
                 <Button variant="ghost" size="sm" asChild>
@@ -94,7 +92,9 @@ export function Navigation() {
                 <div className="relative group">
                   <Button variant="ghost" size="sm" className="flex items-center space-x-2 text-gray-800 hover:text-indigo-600 font-medium">
                     <User className="h-4 w-4" />
-                    <span className="hidden lg:block">{userProfile?.name || user?.user_metadata?.full_name}</span>
+                    <span className="hidden lg:block">
+                      {userProfile?.name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
+                    </span>
                   </Button>
                   
                   {/* Dropdown Menu */}
@@ -133,6 +133,8 @@ export function Navigation() {
                   </div>
                 </div>
               </div>
+            ) : loading ? (
+              <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse" />
             ) : (
               <div className="flex items-center space-x-2">
                 <Button variant="ghost" asChild className="text-gray-700 hover:text-indigo-600">
@@ -192,7 +194,9 @@ export function Navigation() {
                     <div className="px-3 py-2">
                       <div className="flex items-center space-x-2">
                         <User className="h-4 w-4" />
-                        <span className="text-sm font-medium">{userProfile?.name || user?.user_metadata?.full_name}</span>
+                        <span className="text-sm font-medium">
+                          {userProfile?.name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
+                        </span>
                       </div>
                     </div>
                     <Link
