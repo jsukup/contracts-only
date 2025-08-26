@@ -48,7 +48,10 @@ This issue is now prevented in future projects by:
 
 ## File Created
 The fix has been implemented in:
-- `/root/contracts-only/database/schema.sql` (updated with correct policies)
-- `/root/contracts-only/database/migrations/add_users_insert_policy.sql` (migration file)
+- `/root/contracts-only/supabase/migrations/20240816_initial_schema.sql` (complete schema with correct policies)
+- `/root/contracts-only/supabase/migrations/20240816_add_users_insert_policy.sql` (migration file)
 
 **This migration file can be applied in Supabase SQL Editor to fix the immediate issue.**
+
+## Migration Structure
+All database migrations have been consolidated into `/root/contracts-only/supabase/migrations/` following Supabase best practices.

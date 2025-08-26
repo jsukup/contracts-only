@@ -25,6 +25,11 @@ interface NotificationSettings {
   marketing_emails: boolean
 }
 
+interface RecruiterNotificationSettings {
+  weekly_click_reports: boolean
+  job_performance_summaries: boolean
+}
+
 export default function SettingsPage() {
   const { user, userProfile, loading, refreshUserProfile, signOut } = useAuth()
   const router = useRouter()
@@ -33,6 +38,10 @@ export default function SettingsPage() {
     application_updates: true,
     weekly_digest: true,
     marketing_emails: false
+  })
+  const [recruiterNotifications, setRecruiterNotifications] = useState<RecruiterNotificationSettings>({
+    weekly_click_reports: true,
+    job_performance_summaries: true
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false)
@@ -59,6 +68,15 @@ export default function SettingsPage() {
         weekly_digest: true,
         marketing_emails: false
       })
+      
+      // Load recruiter notifications if user is a recruiter
+      if (userProfile.role === 'RECRUITER' && userProfile.recruiter_notifications) {
+        const recruiterNotifs = userProfile.recruiter_notifications as any
+        setRecruiterNotifications({
+          weekly_click_reports: recruiterNotifs.weekly_click_reports ?? true,
+          job_performance_summaries: recruiterNotifs.job_performance_summaries ?? true
+        })
+      }
     }
   }, [userProfile])
 
@@ -69,17 +87,31 @@ export default function SettingsPage() {
     }))
   }
 
+  const handleRecruiterNotificationChange = (key: keyof RecruiterNotificationSettings) => {
+    setRecruiterNotifications(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }))
+  }
+
   const handleSaveNotifications = async () => {
     if (!user) return
 
     setIsSubmitting(true)
     try {
+      const updateData: any = {
+        job_alerts_enabled: notifications.job_alerts_enabled,
+        updated_at: new Date().toISOString()
+      }
+
+      // Add recruiter notifications if user is a recruiter
+      if (userProfile?.role === 'RECRUITER') {
+        updateData.recruiter_notifications = recruiterNotifications
+      }
+
       const { error } = await supabase
         .from('users')
-        .update({
-          job_alerts_enabled: notifications.job_alerts_enabled,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', user.id)
 
       if (error) throw error
@@ -233,6 +265,40 @@ export default function SettingsPage() {
                   />
                 </div>
               </div>
+              
+              {/* Recruiter-specific notifications */}
+              {isRecruiter && (
+                <div className="pt-4 border-t">
+                  <h4 className="text-sm font-medium text-gray-900 mb-3">Recruiter Notifications</h4>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h5 className="text-sm font-medium text-gray-900">Weekly Click Reports</h5>
+                        <p className="text-sm text-gray-500">Receive weekly summaries of external link clicks on your job postings</p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={recruiterNotifications.weekly_click_reports}
+                        onChange={() => handleRecruiterNotificationChange('weekly_click_reports')}
+                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                      />
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h5 className="text-sm font-medium text-gray-900">Job Performance Summaries</h5>
+                        <p className="text-sm text-gray-500">Get insights on job posting performance and candidate engagement</p>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={recruiterNotifications.job_performance_summaries}
+                        onChange={() => handleRecruiterNotificationChange('job_performance_summaries')}
+                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
               
               <div className="pt-4 border-t">
                 <Button

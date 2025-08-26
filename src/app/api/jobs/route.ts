@@ -107,7 +107,9 @@ export async function POST(req: NextRequest) {
       startDate,
       applicationUrl,
       applicationEmail,
-      skills
+      skills,
+      externalUrl,
+      clickTrackingEnabled
     } = body
     
     // Validation
@@ -151,7 +153,9 @@ export async function POST(req: NextRequest) {
         poster_id: user.id,
         is_active: true,
         view_count: 0,
-        experience_level: 'MID' // Default value, can be made configurable
+        experience_level: 'MID', // Default value, can be made configurable
+        external_url: externalUrl || null,
+        click_tracking_enabled: clickTrackingEnabled || false
       })
       .select(`
         *,

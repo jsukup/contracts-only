@@ -36,6 +36,8 @@ interface JobFormData {
   hoursPerWeek?: number
   skills: string[]
   applicationDeadline?: string
+  externalUrl?: string
+  clickTrackingEnabled: boolean
 }
 
 export default function PostJobPage() {
@@ -60,7 +62,9 @@ export default function PostJobPage() {
     contractDuration: '',
     hoursPerWeek: 40,
     skills: [],
-    applicationDeadline: ''
+    applicationDeadline: '',
+    externalUrl: '',
+    clickTrackingEnabled: false
   })
 
   if (!user) {
@@ -469,6 +473,43 @@ export default function PostJobPage() {
                   min={new Date().toISOString().split('T')[0]}
                 />
               </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  External Application URL (Optional)
+                </label>
+                <Input
+                  type="url"
+                  value={formData.externalUrl}
+                  onChange={(e) => handleInputChange('externalUrl', e.target.value)}
+                  placeholder="https://company.com/careers/job-posting"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  If provided, candidates will be redirected to this URL to apply directly on your company website
+                </p>
+              </div>
+
+              {/* Click Tracking Toggle */}
+              {formData.externalUrl && (
+                <div className="flex items-start space-x-3 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                  <input
+                    type="checkbox"
+                    id="clickTrackingEnabled"
+                    checked={formData.clickTrackingEnabled}
+                    onChange={(e) => handleInputChange('clickTrackingEnabled', e.target.checked)}
+                    className="h-4 w-4 rounded mt-0.5"
+                  />
+                  <div className="flex-1">
+                    <label htmlFor="clickTrackingEnabled" className="text-sm font-medium text-blue-900">
+                      Track External Link Clicks
+                    </label>
+                    <p className="text-xs text-blue-700 mt-1">
+                      Get notified when candidates click the link to your external job posting. 
+                      This helps you track engagement and measure job posting performance.
+                    </p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 

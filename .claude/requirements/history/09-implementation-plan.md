@@ -114,7 +114,7 @@ src/
 
 ```sql
 -- Database schema managed in Supabase Dashboard
--- See database/schema.sql for the complete Supabase schema
+-- See supabase/migrations/20240816_initial_schema.sql for the complete Supabase schema
 -- Tables use snake_case naming convention with Row Level Security policies
 
 

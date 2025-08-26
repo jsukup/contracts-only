@@ -40,6 +40,8 @@ interface Job {
   createdAt: string
   expiresAt: string
   isActive: boolean
+  externalUrl?: string
+  clickTrackingEnabled?: boolean
   postedBy: {
     id: string
     name: string
@@ -67,6 +69,7 @@ export default function JobDetailsPage() {
   const [loading, setLoading] = useState(true)
   const [applying, setApplying] = useState(false)
   const [hasApplied, setHasApplied] = useState(false)
+  const [trackingClick, setTrackingClick] = useState(false)
 
   const fetchJob = async () => {
     try {
@@ -80,6 +83,35 @@ export default function JobDetailsPage() {
       router.push('/jobs')
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleExternalLinkClick = async (externalUrl: string) => {
+    try {
+      setTrackingClick(true)
+      
+      // Track the click if tracking is enabled for this job
+      if (job?.clickTrackingEnabled) {
+        await fetch(`/api/jobs/${params.jobId}/track-click`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            externalUrl,
+            referrerUrl: window.location.href,
+          }),
+        })
+      }
+      
+      // Redirect to external URL
+      window.open(externalUrl, '_blank')
+    } catch (error) {
+      console.error('Error tracking click:', error)
+      // Still redirect even if tracking fails
+      window.open(externalUrl, '_blank')
+    } finally {
+      setTrackingClick(false)
     }
   }
 
@@ -347,7 +379,28 @@ export default function JobDetailsPage() {
             )}
 
             <div className="space-y-2">
-              {job.applicationUrl && (
+              {job.externalUrl && (
+                <Button 
+                  variant="outline" 
+                  className="w-full" 
+                  onClick={() => handleExternalLinkClick(job.externalUrl!)}
+                  disabled={trackingClick}
+                >
+                  {trackingClick ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Opening...
+                    </>
+                  ) : (
+                    <>
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Apply on Company Website
+                    </>
+                  )}
+                </Button>
+              )}
+
+              {job.applicationUrl && !job.externalUrl && (
                 <Button variant="outline" className="w-full" asChild>
                   <a 
                     href={job.applicationUrl} 
@@ -367,6 +420,12 @@ export default function JobDetailsPage() {
                     Email Application ({job.applicationEmail})
                   </a>
                 </Button>
+              )}
+              
+              {job.externalUrl && job.clickTrackingEnabled && (
+                <p className="text-xs text-gray-500 text-center">
+                  📊 This employer tracks link clicks to measure job posting performance
+                </p>
               )}
             </div>
           </CardContent>
