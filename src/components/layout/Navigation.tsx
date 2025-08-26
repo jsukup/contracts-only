@@ -33,14 +33,39 @@ export function Navigation() {
     return pathname.startsWith(path)
   }
 
-  const navigationItems = [
-    { name: 'Home', href: '/', icon: Home, public: true },
-    { name: 'Browse Jobs', href: '/jobs', icon: Briefcase, public: true },
-    ...(user ? [
-      { name: 'Dashboard', href: '/dashboard', icon: User, public: false },
-      { name: 'Post Job', href: '/jobs/post', icon: Plus, public: false },
-    ] : [])
-  ]
+  // Role-based navigation items
+  const getNavigationItems = () => {
+    const baseItems = [
+      { name: 'Home', href: '/', icon: Home, public: true }
+    ]
+
+    if (!user) {
+      return [
+        ...baseItems,
+        { name: 'Browse Jobs', href: '/jobs', icon: Briefcase, public: true }
+      ]
+    }
+
+    // Authenticated user navigation
+    const isRecruiter = userProfile?.role === 'RECRUITER'
+    
+    if (isRecruiter) {
+      return [
+        ...baseItems,
+        { name: 'Dashboard', href: '/employer/dashboard', icon: User, public: false },
+        { name: 'Post Job', href: '/jobs/post', icon: Plus, public: false },
+        { name: 'Browse Candidates', href: '/candidates', icon: Briefcase, public: false },
+      ]
+    } else {
+      return [
+        ...baseItems,
+        { name: 'Browse Jobs', href: '/jobs', icon: Briefcase, public: true },
+        { name: 'Dashboard', href: '/dashboard', icon: User, public: false },
+      ]
+    }
+  }
+
+  const navigationItems = getNavigationItems()
 
   return (
     <nav className="bg-white shadow-sm border-b">

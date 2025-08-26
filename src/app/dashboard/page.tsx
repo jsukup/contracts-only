@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Loader2, User, Briefcase, Star, Settings } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import AuthTester from '@/components/testing/AuthTester'
 
 interface Application {
@@ -34,7 +35,8 @@ interface UserStats {
 }
 
 export default function DashboardPage() {
-  const { user } = useAuth()
+  const { user, userProfile } = useAuth()
+  const router = useRouter()
   const [applications, setApplications] = useState<Application[]>([])
   const [stats, setStats] = useState<UserStats | null>(null)
   const [loading, setLoading] = useState(true)
@@ -44,6 +46,14 @@ export default function DashboardPage() {
       redirect('/auth/signin')
     }
   }, [user])
+
+  // Redirect recruiters to employer dashboard
+  useEffect(() => {
+    if (userProfile?.role === 'RECRUITER') {
+      router.push('/employer/dashboard')
+      return
+    }
+  }, [userProfile, router])
 
   useEffect(() => {
     if (user?.id) {
@@ -117,7 +127,7 @@ export default function DashboardPage() {
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold">Welcome back, {user?.name}</h1>
+          <h1 className="text-3xl font-bold">Welcome back, {userProfile?.name || user?.name}</h1>
           <p className="text-muted-foreground mt-2">
             Manage your applications and track your contract opportunities
           </p>
