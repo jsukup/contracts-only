@@ -26,6 +26,7 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:report": "playwright show-report",
     "test:e2e:install": "playwright install",
+    "cleanup-test-users": "tsx scripts/cleanup-test-users.ts",
     "test:performance": "playwright test --config=playwright-performance.config.ts",
     "test:job-board": "jest src/components/jobs src/app/api/jobs && jest tests/integration/api/jobs && npm run test:e2e -- tests/e2e/job-board",
     "test:job-board:unit": "jest src/components/jobs src/app/api/jobs",
