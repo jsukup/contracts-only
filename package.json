@@ -42,6 +42,7 @@
     "test:supabase": "tsx scripts/test-supabase-connection.ts",
     "test:db-setup": "tsx scripts/test-database-setup.ts",
     "test:integration:auth": "jest tests/integration/auth-core-validation.test.ts",
+    "test:integration:auth:ci": "jest tests/integration/auth-*.test.ts --ci --coverage --watchAll=false --testResultsProcessor=jest-junit",
     "test:integration:auth:all": "jest tests/integration/auth-*.test.ts",
     "test:integration:verbose": "jest tests/integration --verbose"
   },
@@ -93,6 +94,7 @@
     "supertest": "^7.1.4",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
-    "typescript": "^5"
+    "typescript": "^5",
+    "jest-junit": "^16.0.0"
   }
 }

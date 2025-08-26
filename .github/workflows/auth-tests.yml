@@ -26,7 +26,7 @@ jobs:
   test-auth:
     name: Run Authentication Tests
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     
     steps:
     - name: Checkout code
@@ -37,9 +37,25 @@ jobs:
       with:
         node-version: '20'
         cache: 'npm'
+        registry-url: 'https://registry.npmjs.org'
     
     - name: Install dependencies
-      run: npm ci
+      run: |
+        # Retry npm ci up to 3 times with exponential backoff for rate limiting
+        for i in {1..3}; do
+          if npm ci; then
+            echo "✅ npm ci succeeded on attempt $i"
+            break
+          else
+            echo "❌ npm ci failed on attempt $i"
+            if [ $i -eq 3 ]; then
+              echo "💥 All npm ci attempts failed"
+              exit 1
+            fi
+            echo "⏳ Waiting $((i * 10)) seconds before retry..."
+            sleep $((i * 10))
+          fi
+        done
     
     - name: Check Supabase Connection
       env:
@@ -57,8 +73,10 @@ jobs:
         SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}
         NODE_ENV: test
         CI: true
+        JEST_JUNIT_OUTPUT_DIR: ./
+        JEST_JUNIT_OUTPUT_NAME: junit.xml
       run: |
-        npm run test:integration:auth -- --ci --coverage --maxWorkers=2
+        npm run test:integration:auth:ci -- --maxWorkers=2
     
     - name: Upload Coverage Reports
       if: success()
@@ -74,8 +92,8 @@ jobs:
       uses: dorny/test-reporter@v1
       with:
         name: Authentication Test Results
-        path: 'test-results.json'
-        reporter: jest-json
+        path: 'junit.xml'
+        reporter: jest-junit
         fail-on-error: false
 
   verify-build:
@@ -92,9 +110,25 @@ jobs:
       with:
         node-version: '20'
         cache: 'npm'
+        registry-url: 'https://registry.npmjs.org'
     
     - name: Install dependencies
-      run: npm ci
+      run: |
+        # Retry npm ci up to 3 times with exponential backoff for rate limiting
+        for i in {1..3}; do
+          if npm ci; then
+            echo "✅ npm ci succeeded on attempt $i"
+            break
+          else
+            echo "❌ npm ci failed on attempt $i"
+            if [ $i -eq 3 ]; then
+              echo "💥 All npm ci attempts failed"
+              exit 1
+            fi
+            echo "⏳ Waiting $((i * 10)) seconds before retry..."
+            sleep $((i * 10))
+          fi
+        done
     
     - name: Build application
       env:
