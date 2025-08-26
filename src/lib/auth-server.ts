@@ -92,7 +92,7 @@ export async function authenticateApiRoute(req: NextRequest): Promise<AuthResult
     .from('users')
     .select('*')
     .eq('id', user.id)
-    .single()
+    .maybeSingle()
   
   if (profileError || !userProfile) {
     console.error(`[${requestId}] Profile error:`, {

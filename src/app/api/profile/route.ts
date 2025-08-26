@@ -32,10 +32,18 @@ export async function GET(req: NextRequest) {
         )
       `)
       .eq('id', user.id)
-      .single()
+      .maybeSingle() // Use maybeSingle() to prevent 406 errors
 
-    if (profileError || !userProfile) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+    if (profileError) {
+      console.error('Profile fetch error:', profileError)
+      return NextResponse.json({ 
+        error: 'Failed to fetch profile',
+        details: profileError.message 
+      }, { status: 500 })
+    }
+
+    if (!userProfile) {
+      return NextResponse.json({ error: 'User profile not found' }, { status: 404 })
     }
 
     return NextResponse.json(userProfile)
@@ -147,11 +155,15 @@ export async function PUT(req: NextRequest) {
         )
       `)
       .eq('id', user.id)
-      .single()
+      .maybeSingle() // Use maybeSingle() to prevent 406 errors
 
     if (finalError) {
       console.error('Error fetching updated user profile:', finalError)
       throw finalError
+    }
+
+    if (!finalUser) {
+      throw new Error('User profile not found after update')
     }
 
     return NextResponse.json(finalUser)

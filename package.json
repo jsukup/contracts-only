@@ -33,7 +33,17 @@
     "test:job-board:integration": "jest tests/integration/api/jobs",
     "test:job-board:e2e": "playwright test tests/e2e/job-board",
     "test:job-board:performance": "playwright test tests/performance/job-board --config=playwright-performance.config.ts",
-    "test:all": "npm run test && npm run test:integration && npm run test:e2e && npm run test:performance"
+    "test:all": "npm run test && npm run test:integration && npm run test:e2e && npm run test:performance",
+    "test:auth": "node scripts/test-auth.js",
+    "test:auth:local": "node scripts/test-auth.js --env=local",
+    "test:auth:staging": "node scripts/test-auth.js --env=staging",
+    "test:auth:coverage": "node scripts/test-auth.js --coverage",
+    "test:auth:watch": "node scripts/test-auth.js --watch",
+    "test:supabase": "tsx scripts/test-supabase-connection.ts",
+    "test:db-setup": "tsx scripts/test-database-setup.ts",
+    "test:integration:auth": "jest tests/integration/auth-core-validation.test.ts",
+    "test:integration:auth:all": "jest tests/integration/auth-*.test.ts",
+    "test:integration:verbose": "jest tests/integration --verbose"
   },
   "dependencies": {
     "@next/bundle-analyzer": "^15.4.7",
@@ -74,6 +84,7 @@
     "@types/react-dom": "^19",
     "@types/supertest": "^6.0.3",
     "babel-jest": "^30.0.5",
+    "dotenv": "^17.2.1",
     "eslint": "^9",
     "eslint-config-next": "15.4.6",
     "jest": "^30.0.5",

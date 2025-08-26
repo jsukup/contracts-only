@@ -30,9 +30,14 @@ export async function getServerSession(request?: NextRequest): Promise<AuthSessi
       .from('users')
       .select('*')
       .eq('id', user.id)
-      .single()
+      .maybeSingle() // Use maybeSingle() to prevent 406 errors
     
-    if (userError || !userData) {
+    if (userError) {
+      console.error('Server: Error fetching user profile:', userError)
+      return null
+    }
+    
+    if (!userData) {
       // If user doesn't exist in our DB, return null
       // User creation is handled by AuthContext on the client side
       console.log('Server: User profile not found for:', user.id.substring(0, 8) + '...', 'Will be created by AuthContext')

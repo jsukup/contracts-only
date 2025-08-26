@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/Button'
@@ -8,10 +8,12 @@ import { Card, CardContent } from '@/components/ui/Card'
 import { signUpSchema, SignUpFormData } from '@/lib/validation/auth'
 import { Eye, EyeOff, Loader2, UserCheck, Briefcase, Chrome } from 'lucide-react'
 import Link from 'next/link'
+import { useToast } from '@/components/ui/Toast'
 
 export default function SignUpForm() {
   const router = useRouter()
   const { signUpWithEmail, signInWithGoogle, loading, error } = useAuth()
+  const { addToast } = useToast()
   const [formData, setFormData] = useState<SignUpFormData>({
     email: '',
     password: '',
@@ -27,6 +29,18 @@ export default function SignUpForm() {
   const [showEmailVerificationMessage, setShowEmailVerificationMessage] = useState(false)
   const [isResending, setIsResending] = useState(false)
   const [resendSuccess, setResendSuccess] = useState(false)
+  const [resendCooldown, setResendCooldown] = useState(0)
+  const [resendError, setResendError] = useState('')
+
+  // Handle resend cooldown timer
+  useEffect(() => {
+    if (resendCooldown > 0) {
+      const timer = setTimeout(() => {
+        setResendCooldown(prev => prev - 1)
+      }, 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [resendCooldown])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
@@ -70,8 +84,19 @@ export default function SignUpForm() {
       if (result?.user && !result.user.email_confirmed_at) {
         // Show email verification message
         setShowEmailVerificationMessage(true)
+        
+        addToast({
+          type: 'info',
+          title: 'Account created!',
+          message: 'Please check your email to verify your account.'
+        })
       } else {
         // User is immediately confirmed, redirect to dashboard
+        addToast({
+          type: 'success',
+          title: 'Welcome to ContractsOnly!',
+          message: 'Your account has been created successfully.'
+        })
         router.push('/dashboard?welcome=true')
       }
     } catch (error) {
@@ -136,6 +161,8 @@ export default function SignUpForm() {
                           e.stopPropagation()
                           setIsResending(true)
                           setResendSuccess(false)
+                          setResendError('')
+                          
                           try {
                             const response = await fetch('/api/auth/resend-verification', {
                               method: 'POST',
@@ -143,22 +170,69 @@ export default function SignUpForm() {
                               body: JSON.stringify({ email: formData.email })
                             })
                             const data = await response.json()
+                            
                             if (response.ok) {
                               setResendSuccess(true)
+                              setResendCooldown(60) // Set 60 second cooldown after successful send
                               setTimeout(() => setResendSuccess(false), 3000)
+                              
+                              // Show success toast
+                              addToast({
+                                type: 'success',
+                                title: 'Verification email sent!',
+                                message: 'Check your inbox for the verification link.'
+                              })
                             } else {
-                              console.error('Resend failed:', data.error)
-                              alert(`Failed to resend email: ${data.error || 'Unknown error'}`)
+                              // Handle rate limiting and other errors gracefully
+                              if (data.error?.includes('For security purposes, you can only request this after')) {
+                                const match = data.error.match(/after (\d+) seconds/)
+                                const seconds = match ? parseInt(match[1]) : 60
+                                setResendCooldown(seconds)
+                                setResendError(`Please wait ${seconds} seconds before requesting another email.`)
+                                
+                                addToast({
+                                  type: 'warning',
+                                  title: 'Rate limit reached',
+                                  message: `Please wait ${seconds} seconds before requesting another email.`
+                                })
+                              } else if (data.error?.includes('rate limit')) {
+                                setResendCooldown(60)
+                                setResendError('Rate limit reached. Please wait before trying again.')
+                                
+                                addToast({
+                                  type: 'warning',
+                                  title: 'Rate limit reached',
+                                  message: 'Please wait before trying again.'
+                                })
+                              } else {
+                                setResendError(data.error || 'Failed to send verification email. Please try again.')
+                                
+                                addToast({
+                                  type: 'error',
+                                  title: 'Failed to send email',
+                                  message: data.error || 'Please try again later.'
+                                })
+                              }
                             }
                           } catch (error) {
                             console.error('Failed to resend verification email:', error)
-                            alert('Failed to resend verification email. Please try again.')
+                            setResendError('Network error. Please check your connection and try again.')
+                            
+                            addToast({
+                              type: 'error',
+                              title: 'Network error',
+                              message: 'Please check your connection and try again.'
+                            })
                           } finally {
                             setIsResending(false)
                           }
                         }}
-                        disabled={isResending}
-                        className="w-full bg-white hover:bg-gray-50 border-2 border-blue-500 text-blue-700 font-medium transition-all disabled:opacity-50"
+                        disabled={isResending || resendCooldown > 0}
+                        className={`w-full font-medium transition-all disabled:opacity-50 ${
+                          resendCooldown > 0 
+                            ? 'bg-gray-100 border-2 border-gray-300 text-gray-500 cursor-not-allowed' 
+                            : 'bg-white hover:bg-gray-50 border-2 border-blue-500 text-blue-700'
+                        }`}
                       >
                         {isResending ? (
                           <>
@@ -172,12 +246,29 @@ export default function SignUpForm() {
                             </svg>
                             Email Sent!
                           </>
+                        ) : resendCooldown > 0 ? (
+                          <>
+                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            Wait {resendCooldown}s
+                          </>
                         ) : (
                           'Resend Verification Email'
                         )}
                       </Button>
+                      
+                      {resendError && (
+                        <div className="p-2 rounded-md bg-red-50 border border-red-200">
+                          <p className="text-xs text-red-600">{resendError}</p>
+                        </div>
+                      )}
+                      
                       <p className="text-xs text-blue-600">
-                        Didn't receive the email? Check your spam folder or click above to resend.
+                        {resendCooldown > 0 
+                          ? `Please wait ${resendCooldown} seconds before trying again.`
+                          : "Didn't receive the email? Check your spam folder or click above to resend."
+                        }
                       </p>
                     </div>
                   </div>

@@ -1,9 +1,10 @@
 "use client"
 
-import React, { createContext, useContext, useEffect, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react'
 import { User, Session, AuthError } from '@supabase/supabase-js'
 import { supabase, SupabaseUser } from '@/lib/supabase'
 import { trackUserRegistration, trackEvent } from '@/lib/gtag'
+import { useToast } from '@/components/ui/Toast'
 
 // UNIFIED AUTHENTICATION CONTEXT - SINGLE SOURCE OF TRUTH
 // This is the ONLY place where user creation and management happens
@@ -21,6 +22,9 @@ interface AuthContextType {
   signOut: () => Promise<void>
   refreshUserProfile: () => Promise<void>
   deleteUserProfile: () => Promise<void>
+  showRoleSelection: boolean
+  setShowRoleSelection: (show: boolean) => void
+  updateUserRole: (role: 'USER' | 'RECRUITER') => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -35,6 +39,9 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
   refreshUserProfile: async () => {},
   deleteUserProfile: async () => {},
+  showRoleSelection: false,
+  setShowRoleSelection: () => {},
+  updateUserRole: async () => {},
 })
 
 export const useAuth = () => {
@@ -55,6 +62,31 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<AuthError | null>(null)
+  const [showRoleSelection, setShowRoleSelection] = useState(false)
+  
+  // Track component mount status to prevent memory leaks
+  const mountedRef = useRef(true)
+
+  // Safe setState functions to prevent memory leaks
+  const safeSetUser = (user: User | null) => {
+    if (mountedRef.current) setUser(user)
+  }
+  
+  const safeSetUserProfile = (profile: SupabaseUser | null) => {
+    if (mountedRef.current) setUserProfile(profile)
+  }
+  
+  const safeSetSession = (session: Session | null) => {
+    if (mountedRef.current) setSession(session)
+  }
+  
+  const safeSetLoading = (loading: boolean) => {
+    if (mountedRef.current) setLoading(loading)
+  }
+  
+  const safeSetError = (error: AuthError | null) => {
+    if (mountedRef.current) setError(error)
+  }
 
   // UNIFIED USER PROFILE MANAGEMENT
   // Fetch user profile from database
@@ -64,16 +96,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         .from('users')
         .select('*')
         .eq('id', userId)
-        .single()
+        .maybeSingle() // Use maybeSingle() instead of single() to avoid PGRST116 errors
 
       if (error) {
-        if (error.code === 'PGRST116') {
-          // No user profile found - this is expected for new users
-          console.log('No user profile found for:', userId.substring(0, 8) + '...')
-          return null
-        }
-        console.error('Error fetching user profile:', error)
+        console.error('Error fetching user profile:', {
+          error: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+          userId: userId.substring(0, 8) + '...'
+        })
         return null
+      }
+
+      // data will be null if no user found, which is expected for new users
+      if (!data) {
+        console.log('No user profile found for:', userId.substring(0, 8) + '...')
       }
 
       return data
@@ -100,13 +138,23 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         updated_at: new Date().toISOString(),
       }
 
+      // Use upsert to handle conflicts gracefully - this prevents 409 errors
       const { data, error } = await supabase
         .from('users')
-        .insert(userData)
+        .upsert(userData, {
+          onConflict: 'id', // Handle conflicts on the id field
+          ignoreDuplicates: false // Update if user already exists
+        })
         .select()
         .single()
 
       if (error) {
+        // If upsert still fails, try to fetch the existing user
+        if (error.code === '23505') { // Unique constraint violation
+          console.log('User already exists, fetching existing profile')
+          return await fetchUserProfile(authUser.id)
+        }
+        
         console.error('Error creating user profile:', {
           error: error.message,
           details: error.details,
@@ -114,10 +162,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           code: error.code,
           userId: authUser.id.substring(0, 8) + '...'
         })
-        throw error
+        
+        // Don't throw error, try to return existing user instead
+        return await fetchUserProfile(authUser.id)
       }
 
-      console.log('User profile created successfully:', {
+      console.log('User profile created/updated successfully:', {
         userId: authUser.id.substring(0, 8) + '...',
         email: authUser.email
       })
@@ -125,7 +175,12 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       return data
     } catch (error) {
       console.error('Error in createUserProfile:', error)
-      throw error
+      // As a last resort, try to fetch existing user profile
+      try {
+        return await fetchUserProfile(authUser.id)
+      } catch {
+        return null
+      }
     }
   }
 
@@ -135,9 +190,51 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     
     try {
       const profile = await fetchUserProfile(user.id)
-      setUserProfile(profile)
+      safeSetUserProfile(profile)
     } catch (error) {
       console.error('Error refreshing user profile:', error)
+    }
+  }
+
+  // Update user role - used for OAuth role selection
+  const updateUserRole = async (role: 'USER' | 'RECRUITER') => {
+    try {
+      if (!user) {
+        throw new Error('No authenticated user found')
+      }
+
+      console.log('Updating user role to:', role, 'for user:', user.id.substring(0, 8) + '...')
+
+      // Update the user profile in the database
+      const { data: updatedUser, error } = await supabase
+        .from('users')
+        .update({ 
+          role,
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', user.id)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error updating user role:', error)
+        throw error
+      }
+
+      // Update local state
+      safeSetUserProfile(updatedUser)
+      setShowRoleSelection(false)
+
+      console.log('User role updated successfully to:', role)
+      
+      // Navigate to dashboard
+      if (typeof window !== 'undefined') {
+        window.location.href = '/dashboard?welcome=true'
+      }
+    } catch (error) {
+      console.error('Error updating user role:', error)
+      safeSetError(error as AuthError)
+      throw error
     }
   }
 
@@ -150,10 +247,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         
         if (error) {
           console.error('Error getting session:', error)
-          setError(error)
+          safeSetError(error)
         } else {
-          setSession(session)
-          setUser(session?.user ?? null)
+          safeSetSession(session)
+          safeSetUser(session?.user ?? null)
           
           if (session?.user) {
             await handleUserAuth(session.user, 'INITIAL_SESSION')
@@ -161,9 +258,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         }
       } catch (error) {
         console.error('Error in getInitialSession:', error)
-        setError(error as AuthError)
+        safeSetError(error as AuthError)
       } finally {
-        setLoading(false)
+        safeSetLoading(false)
       }
     }
 
@@ -175,21 +272,40 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('Auth state change:', event, session?.user?.email, 'Email confirmed:', !!session?.user?.email_confirmed_at)
       
-      setSession(session)
-      setUser(session?.user ?? null)
-      setError(null)
-      
-      if (session?.user) {
-        await handleUserAuth(session.user, event)
-      } else {
-        setUserProfile(null)
+      try {
+        safeSetSession(session)
+        safeSetUser(session?.user ?? null)
+        safeSetError(null)
+        
+        if (session?.user) {
+          // Set loading to true while handling user auth
+          safeSetLoading(true)
+          await handleUserAuth(session.user, event)
+        } else {
+          safeSetUserProfile(null)
+        }
+      } catch (error) {
+        console.error('Error in auth state change handler:', error)
+        safeSetError(error as AuthError)
+      } finally {
+        // Always set loading to false after handling auth state change
+        safeSetLoading(false)
+        
+        // For OAuth redirects, refresh the page to ensure proper navigation
+        if (event === 'SIGNED_IN' && typeof window !== 'undefined') {
+          // Check if we're on an auth callback page
+          if (window.location.pathname.includes('/auth/') || window.location.search.includes('code=')) {
+            // Small delay to ensure auth state is fully processed
+            setTimeout(() => {
+              window.location.href = '/dashboard'
+            }, 100)
+          }
+        }
       }
-      
-      // Set loading to false for all auth events to ensure UI updates
-      setLoading(false)
     })
 
     return () => {
+      mountedRef.current = false // Mark component as unmounted
       subscription.unsubscribe()
     }
   }, [])
@@ -209,6 +325,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         console.log('No profile found, creating new user profile')
         profile = await createUserProfile(authUser)
         isNewUser = true
+        
+        // For OAuth users, show role selection if they're new and don't have a role
+        const isOAuthUser = authUser.app_metadata?.provider !== 'email'
+        if (isNewUser && isOAuthUser && (!profile?.role || profile.role === 'USER')) {
+          console.log('New OAuth user detected, showing role selection')
+          setShowRoleSelection(true)
+          safeSetUserProfile(profile)
+          return // Don't proceed with navigation until role is selected
+        }
       } else {
         console.log('Existing profile found, updating if needed')
         
@@ -231,7 +356,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         }
       }
       
-      setUserProfile(profile)
+      safeSetUserProfile(profile)
       
       // Track analytics for auth events
       if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
@@ -260,16 +385,18 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       
     } catch (error) {
       console.error('Error handling user auth:', error)
-      setError(error as AuthError)
-      throw error // Re-throw to allow caller to handle
+      safeSetError(error as AuthError)
+      // Don't throw error to prevent breaking the auth flow
+      // The auth state change handler will catch this and continue
+      return
     }
   }
 
   // Sign in with Google
   const signInWithGoogle = async (redirectTo?: string) => {
     try {
-      setLoading(true)
-      setError(null)
+      safeSetLoading(true)
+      safeSetError(null)
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -279,25 +406,25 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       })
 
       if (error) {
-        setError(error)
+        safeSetError(error)
         throw error
       }
 
       return data
     } catch (error) {
       console.error('Error signing in with Google:', error)
-      setError(error as AuthError)
+      safeSetError(error as AuthError)
       throw error
     } finally {
-      setLoading(false)
+      safeSetLoading(false)
     }
   }
 
   // Sign in with email/password
   const signInWithEmail = async (email: string, password: string) => {
     try {
-      setLoading(true)
-      setError(null)
+      safeSetLoading(true)
+      safeSetError(null)
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
@@ -305,25 +432,25 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       })
 
       if (error) {
-        setError(error)
+        safeSetError(error)
         throw error
       }
 
       return data
     } catch (error) {
       console.error('Error signing in with email:', error)
-      setError(error as AuthError)
+      safeSetError(error as AuthError)
       throw error
     } finally {
-      setLoading(false)
+      safeSetLoading(false)
     }
   }
 
   // Sign up with email/password
   const signUpWithEmail = async (email: string, password: string, name: string, role: string) => {
     try {
-      setLoading(true)
-      setError(null)
+      safeSetLoading(true)
+      safeSetError(null)
       
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -338,7 +465,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       })
 
       if (error) {
-        setError(error)
+        safeSetError(error)
         throw error
       }
 
@@ -354,39 +481,39 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       return data
     } catch (error) {
       console.error('Error signing up with email:', error)
-      setError(error as AuthError)
+      safeSetError(error as AuthError)
       throw error
     } finally {
-      setLoading(false)
+      safeSetLoading(false)
     }
   }
 
   // Sign out
   const signOut = async () => {
     try {
-      setLoading(true)
-      setError(null)
+      safeSetLoading(true)
+      safeSetError(null)
       
       const { error } = await supabase.auth.signOut()
       
       if (error) {
-        setError(error)
+        safeSetError(error)
         throw error
       }
     } catch (error) {
       console.error('Error signing out:', error)
-      setError(error as AuthError)
+      safeSetError(error as AuthError)
       throw error
     } finally {
-      setLoading(false)
+      safeSetLoading(false)
     }
   }
 
   // UNIFIED DELETE USER PROFILE
   const deleteUserProfile = async () => {
     try {
-      setLoading(true)
-      setError(null)
+      safeSetLoading(true)
+      safeSetError(null)
       
       if (!user) {
         throw new Error('No authenticated user found')
@@ -409,17 +536,17 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       await supabase.auth.signOut()
       
       // Clear local state
-      setUser(null)
-      setUserProfile(null)
-      setSession(null)
+      safeSetUser(null)
+      safeSetUserProfile(null)
+      safeSetSession(null)
       
       console.log('User deletion completed successfully')
     } catch (error) {
       console.error('Error deleting user profile:', error)
-      setError(error as AuthError)
+      safeSetError(error as AuthError)
       throw error
     } finally {
-      setLoading(false)
+      safeSetLoading(false)
     }
   }
 
@@ -435,6 +562,9 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     signOut,
     refreshUserProfile,
     deleteUserProfile,
+    showRoleSelection,
+    setShowRoleSelection,
+    updateUserRole,
   }
 
   return (

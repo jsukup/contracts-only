@@ -1,21 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from '@/lib/auth'
-import { createServerSupabaseClient } from '@/lib/supabase'
+import { withAuth } from '@/lib/auth-server'
 
-export async function GET(req: NextRequest) {
+export const GET = withAuth(async (req: NextRequest, auth) => {
   try {
-    const session = await getServerSession()
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const { user, userProfile, supabase } = auth
 
     const { searchParams } = new URL(req.url)
     const status = searchParams.get('status')
     const limit = parseInt(searchParams.get('limit') || '10')
     const offset = parseInt(searchParams.get('offset') || '0')
-
-    const supabase = createServerSupabaseClient()
     
     // Build the query
     let jobsQuery = supabase
@@ -27,7 +20,7 @@ export async function GET(req: NextRequest) {
           skills!inner(id, name)
         )
       `)
-      .eq('poster_id', session.user.id)
+      .eq('poster_id', user.id)
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
 
@@ -43,7 +36,7 @@ export async function GET(req: NextRequest) {
     let countQuery = supabase
       .from('jobs')
       .select('*', { count: 'exact', head: true })
-      .eq('poster_id', session.user.id)
+      .eq('poster_id', user.id)
 
     if (status && status !== 'all') {
       if (status === 'active') {
@@ -81,4 +74,4 @@ export async function GET(req: NextRequest) {
       { status: 500 }
     )
   }
-}
+})

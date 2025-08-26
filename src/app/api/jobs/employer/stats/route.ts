@@ -1,21 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from '@/lib/auth'
-import { createServerSupabaseClient } from '@/lib/supabase'
+import { withAuth } from '@/lib/auth-server'
 
-
-export async function GET(_req: NextRequest) {
+export const GET = withAuth(async (req: NextRequest, auth) => {
   try {
-    const session = await getServerSession()
-    
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    const { user, userProfile, supabase } = auth
 
     // Calculate date for "this month"
     const now = new Date()
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-
-    const supabase = createServerSupabaseClient()
 
     const [
       totalJobsResult,
@@ -27,13 +19,13 @@ export async function GET(_req: NextRequest) {
       supabase
         .from('jobs')
         .select('*', { count: 'exact', head: true })
-        .eq('poster_id', session.user.id),
+        .eq('poster_id', user.id),
       
       // Active jobs
       supabase
         .from('jobs')
         .select('*', { count: 'exact', head: true })
-        .eq('poster_id', session.user.id)
+        .eq('poster_id', user.id)
         .eq('is_active', true),
       
       // Total applications across all jobs - need to join with jobs table
@@ -43,13 +35,13 @@ export async function GET(_req: NextRequest) {
           id,
           jobs!inner(poster_id)
         `, { count: 'exact', head: true })
-        .eq('jobs.poster_id', session.user.id),
+        .eq('jobs.poster_id', user.id),
       
       // Jobs created this month for views calculation
       supabase
         .from('jobs')
         .select('*', { count: 'exact', head: true })
-        .eq('poster_id', session.user.id)
+        .eq('poster_id', user.id)
         .gte('created_at', startOfMonth.toISOString())
     ])
 
@@ -71,4 +63,4 @@ export async function GET(_req: NextRequest) {
       { status: 500 }
     )
   }
-}
+})

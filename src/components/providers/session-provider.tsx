@@ -2,6 +2,9 @@
 
 import { AuthProvider } from "@/contexts/AuthContext"
 import { NoSSR } from "./no-ssr"
+import AuthWrapper from "@/components/auth/AuthWrapper"
+import { ErrorBoundary } from "@/components/error/ErrorBoundary"
+import { ToastProvider } from "@/components/ui/Toast"
 
 type Props = {
   children?: React.ReactNode
@@ -10,7 +13,15 @@ type Props = {
 export const SupabaseAuthProvider = ({ children }: Props) => {
   return (
     <NoSSR>
-      <AuthProvider>{children}</AuthProvider>
+      <ErrorBoundary>
+        <ToastProvider>
+          <AuthProvider>
+            <AuthWrapper>
+              {children}
+            </AuthWrapper>
+          </AuthProvider>
+        </ToastProvider>
+      </ErrorBoundary>
     </NoSSR>
   )
 }
