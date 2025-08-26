@@ -10,7 +10,11 @@
  *   npm run cleanup-test-users -- --pattern "test_%@%"
  */
 
+import dotenv from 'dotenv'
 import { cleanupTestUsers, verifyDatabaseClean } from '../tests/e2e/utils/database-cleanup'
+
+// Load environment variables
+dotenv.config()
 
 async function main() {
   const args = process.argv.slice(2)
