@@ -11,8 +11,13 @@ import { createClient } from '@supabase/supabase-js'
 import * as dotenv from 'dotenv'
 import * as path from 'path'
 
-// Load environment variables
-dotenv.config({ path: path.join(process.cwd(), '.env.test.local') })
+// Load environment variables from .env.test.local if it exists (local development)
+// In CI, environment variables will be provided directly
+try {
+  dotenv.config({ path: path.join(process.cwd(), '.env.test.local') })
+} catch (error) {
+  // File doesn't exist - that's ok in CI environment
+}
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY

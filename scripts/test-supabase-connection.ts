@@ -12,11 +12,18 @@
 import { createClient } from '@supabase/supabase-js'
 import * as dotenv from 'dotenv'
 import * as path from 'path'
-// Get the current directory and create path to env file
+
+// Load environment variables from .env.test.local if it exists (local development)
+// In CI, environment variables will be provided directly
 const currentDir = process.cwd()
 const envPath = path.join(currentDir, '.env.test.local')
 
-dotenv.config({ path: envPath })
+try {
+  dotenv.config({ path: envPath })
+} catch (error) {
+  // File doesn't exist - that's ok in CI environment
+  console.log('No .env.test.local file found - using environment variables from CI')
+}
 
 // Color codes for terminal output
 const colors = {

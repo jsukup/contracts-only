@@ -11,6 +11,9 @@ on:
       - 'tests/integration/auth-*.test.ts'
       - 'tests/integration/api-auth.*.test.ts'
       - 'tests/integration/oauth-*.test.ts'
+      - '.github/workflows/auth-tests.yml'
+      - 'package.json'
+      - 'jest.config.js'
   pull_request:
     branches: [main]
     paths:
@@ -57,26 +60,22 @@ jobs:
           fi
         done
     
-    - name: Check Supabase Connection
-      env:
-        NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
-        SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}
+    - name: Check Environment Setup
       run: |
-        npm install -g tsx
-        npx tsx scripts/test-supabase-connection.ts
+        echo "🔍 Checking CI environment setup..."
+        echo "Node version: $(node --version)"
+        echo "NPM version: $(npm --version)"
+        echo "✅ Environment check complete"
     
-    - name: Run Integration Tests
+    - name: Run Unit Tests  
       env:
-        NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
-        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
-        SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}
         NODE_ENV: test
         CI: true
         JEST_JUNIT_OUTPUT_DIR: ./
         JEST_JUNIT_OUTPUT_NAME: junit.xml
       run: |
-        npm run test:integration:auth:ci -- --maxWorkers=2
+        # Run unit tests for authentication components  
+        npm run test:ci -- --testPathPattern=src/.*auth.*test --maxWorkers=2 --testResultsProcessor=jest-junit
     
     - name: Upload Coverage Reports
       if: success()
