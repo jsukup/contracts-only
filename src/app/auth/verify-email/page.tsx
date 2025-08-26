@@ -4,44 +4,123 @@ import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/Button'
+import { supabase } from '@/lib/supabase'
 
 export default function VerifyEmailPage() {
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
   const [message, setMessage] = useState('')
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { user, loading: authLoading } = useAuth()
+  const { user, userProfile, loading: authLoading, refreshUserProfile } = useAuth()
 
   useEffect(() => {
     const handleEmailVerification = async () => {
       try {
+        console.log('Starting email verification process...')
+        
         // Check if we have token_hash and type parameters from Supabase
         const tokenHash = searchParams.get('token_hash')
         const type = searchParams.get('type')
+        const accessToken = searchParams.get('access_token')
+        const refreshToken = searchParams.get('refresh_token')
 
-        if (!tokenHash || type !== 'email') {
+        console.log('Verification params:', { 
+          hasTokenHash: !!tokenHash, 
+          type, 
+          hasAccessToken: !!accessToken,
+          hasRefreshToken: !!refreshToken 
+        })
+
+        if (!tokenHash && !accessToken) {
           setStatus('error')
           setMessage('Invalid verification link. Please try signing up again.')
           return
         }
 
-        // The Supabase client will automatically handle the token exchange
-        // We just need to wait for the auth state to update
-        setTimeout(() => {
-          if (!authLoading) {
-            if (user && user.email_confirmed_at) {
-              setStatus('success')
-              setMessage('Your email has been verified successfully!')
-              // Redirect to dashboard after 2 seconds
-              setTimeout(() => {
-                router.push('/dashboard?welcome=true')
-              }, 2000)
-            } else {
-              setStatus('error')
-              setMessage('Email verification failed. Please try again.')
-            }
+        // Handle different verification methods
+        if (tokenHash && type === 'email') {
+          // Method 1: Token hash verification (most common)
+          console.log('Using token hash verification...')
+          
+          const { data, error } = await supabase.auth.verifyOtp({
+            token_hash: tokenHash,
+            type: 'email'
+          })
+
+          if (error) {
+            console.error('Token verification error:', error)
+            setStatus('error')
+            setMessage(`Verification failed: ${error.message}`)
+            return
           }
-        }, 1000)
+
+          console.log('Token verification successful:', data.user?.id?.substring(0, 8) + '...')
+        } else if (accessToken && refreshToken) {
+          // Method 2: Direct session establishment
+          console.log('Using access token session establishment...')
+          
+          const { data, error } = await supabase.auth.setSession({
+            access_token: accessToken,
+            refresh_token: refreshToken
+          })
+
+          if (error) {
+            console.error('Session establishment error:', error)
+            setStatus('error')
+            setMessage(`Session failed: ${error.message}`)
+            return
+          }
+
+          console.log('Session established successfully:', data.user?.id?.substring(0, 8) + '...')
+        } else {
+          setStatus('error')
+          setMessage('Invalid verification parameters. Please try signing up again.')
+          return
+        }
+
+        // Wait for AuthContext to process the auth state change
+        console.log('Waiting for auth context to update...')
+        
+        // Wait up to 5 seconds for auth state to update
+        let attempts = 0
+        const maxAttempts = 10
+        
+        const checkAuthState = async () => {
+          attempts++
+          console.log(`Auth state check attempt ${attempts}/${maxAttempts}...`)
+          
+          // Get current session to check if verification worked
+          const { data: { session } } = await supabase.auth.getSession()
+          
+          if (session?.user?.email_confirmed_at) {
+            console.log('Email verification confirmed in session')
+            
+            // Force refresh user profile to ensure it exists
+            await refreshUserProfile()
+            
+            setStatus('success')
+            setMessage('Your email has been verified successfully!')
+            
+            // Redirect to dashboard after 2 seconds
+            setTimeout(() => {
+              router.push('/dashboard?welcome=true')
+            }, 2000)
+            
+            return
+          }
+          
+          if (attempts < maxAttempts) {
+            setTimeout(checkAuthState, 500)
+          } else {
+            console.log('Auth state check timed out')
+            setStatus('error')
+            setMessage('Email verification timed out. Please try signing in manually.')
+          }
+        }
+        
+        // Start checking auth state
+        await checkAuthState()
+        
       } catch (error) {
         console.error('Email verification error:', error)
         setStatus('error')
@@ -49,13 +128,51 @@ export default function VerifyEmailPage() {
       }
     }
 
-    handleEmailVerification()
-  }, [searchParams, user, authLoading, router])
+    // Only run verification if we have parameters
+    const tokenHash = searchParams.get('token_hash')
+    const accessToken = searchParams.get('access_token')
+    
+    if (tokenHash || accessToken) {
+      handleEmailVerification()
+    } else {
+      // No verification parameters, check if user is already signed in
+      if (!authLoading) {
+        if (user?.email_confirmed_at) {
+          setStatus('success')
+          setMessage('Your email is already verified!')
+          setTimeout(() => {
+            router.push('/dashboard')
+          }, 1000)
+        } else {
+          setStatus('error')
+          setMessage('No verification link found. Please check your email or request a new verification link.')
+        }
+      }
+    }
+  }, [searchParams, user, userProfile, authLoading, router, refreshUserProfile])
 
   const handleResendVerification = async () => {
-    // This would trigger a resend verification email
-    // Implementation will be added in the next step
-    setMessage('Verification email sent! Please check your inbox.')
+    try {
+      setMessage('Sending verification email...')
+      
+      const response = await fetch('/api/auth/resend-verification', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to send verification email')
+      }
+
+      setMessage('Verification email sent! Please check your inbox and spam folder.')
+    } catch (error) {
+      console.error('Error resending verification:', error)
+      setMessage('Failed to send verification email. Please try again later.')
+    }
   }
 
   const handleGoToSignIn = () => {

@@ -139,11 +139,29 @@ export default function SettingsPage() {
 
     setIsUpdatingPassword(true)
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword
+      // Get the current user's session token
+      const { data: { session } } = await supabase.auth.getSession()
+      
+      if (!session?.access_token) {
+        throw new Error('No valid session found')
+      }
+
+      const response = await fetch('/api/profile/update-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({
+          password: newPassword
+        })
       })
 
-      if (error) throw error
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to update password')
+      }
 
       setNewPassword('')
       setConfirmPassword('')
@@ -212,90 +230,102 @@ export default function SettingsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-900">Job Alerts</h4>
-                    <p className="text-sm text-gray-500">Receive email notifications for new job postings that match your criteria</p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={notifications.job_alerts_enabled}
-                    onChange={() => handleNotificationChange('job_alerts_enabled')}
-                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-900">Application Updates</h4>
-                    <p className="text-sm text-gray-500">Get notified when employers respond to your applications</p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={notifications.application_updates}
-                    onChange={() => handleNotificationChange('application_updates')}
-                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-900">Weekly Digest</h4>
-                    <p className="text-sm text-gray-500">Weekly summary of new opportunities and platform updates</p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={notifications.weekly_digest}
-                    onChange={() => handleNotificationChange('weekly_digest')}
-                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-900">Marketing Emails</h4>
-                    <p className="text-sm text-gray-500">Tips, best practices, and ContractsOnly news</p>
-                  </div>
-                  <input
-                    type="checkbox"
-                    checked={notifications.marketing_emails}
-                    onChange={() => handleNotificationChange('marketing_emails')}
-                    className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                  />
-                </div>
-              </div>
-              
-              {/* Recruiter-specific notifications */}
-              {isRecruiter && (
-                <div className="pt-4 border-t">
-                  <h4 className="text-sm font-medium text-gray-900 mb-3">Recruiter Notifications</h4>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h5 className="text-sm font-medium text-gray-900">Weekly Click Reports</h5>
-                        <p className="text-sm text-gray-500">Receive weekly summaries of external link clicks on your job postings</p>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={recruiterNotifications.weekly_click_reports}
-                        onChange={() => handleRecruiterNotificationChange('weekly_click_reports')}
-                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                      />
+              {/* Role-based notification sections */}
+              {isRecruiter ? (
+                /* Recruiter-only notifications */
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-900">Weekly Click Reports</h4>
+                      <p className="text-sm text-gray-500">Receive weekly summaries of external link clicks on your job postings</p>
                     </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h5 className="text-sm font-medium text-gray-900">Job Performance Summaries</h5>
-                        <p className="text-sm text-gray-500">Get insights on job posting performance and candidate engagement</p>
-                      </div>
-                      <input
-                        type="checkbox"
-                        checked={recruiterNotifications.job_performance_summaries}
-                        onChange={() => handleRecruiterNotificationChange('job_performance_summaries')}
-                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                      />
+                    <input
+                      type="checkbox"
+                      checked={recruiterNotifications.weekly_click_reports}
+                      onChange={() => handleRecruiterNotificationChange('weekly_click_reports')}
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-900">Job Performance Summaries</h4>
+                      <p className="text-sm text-gray-500">Get insights on job posting performance and candidate engagement</p>
                     </div>
+                    <input
+                      type="checkbox"
+                      checked={recruiterNotifications.job_performance_summaries}
+                      onChange={() => handleRecruiterNotificationChange('job_performance_summaries')}
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-900">Marketing Emails</h4>
+                      <p className="text-sm text-gray-500">Tips, best practices, and ContractsOnly news</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={notifications.marketing_emails}
+                      onChange={() => handleNotificationChange('marketing_emails')}
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    />
+                  </div>
+                </div>
+              ) : (
+                /* Contractor notifications */
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-900">Job Alerts</h4>
+                      <p className="text-sm text-gray-500">Receive email notifications for new job postings that match your criteria</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={notifications.job_alerts_enabled}
+                      onChange={() => handleNotificationChange('job_alerts_enabled')}
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-900">Application Updates</h4>
+                      <p className="text-sm text-gray-500">Get notified when employers respond to your applications</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={notifications.application_updates}
+                      onChange={() => handleNotificationChange('application_updates')}
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-900">Weekly Digest</h4>
+                      <p className="text-sm text-gray-500">Weekly summary of new opportunities and platform updates</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={notifications.weekly_digest}
+                      onChange={() => handleNotificationChange('weekly_digest')}
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-medium text-gray-900">Marketing Emails</h4>
+                      <p className="text-sm text-gray-500">Tips, best practices, and ContractsOnly news</p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={notifications.marketing_emails}
+                      onChange={() => handleNotificationChange('marketing_emails')}
+                      className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                    />
                   </div>
                 </div>
               )}
@@ -304,7 +334,7 @@ export default function SettingsPage() {
                 <Button
                   onClick={handleSaveNotifications}
                   disabled={isSubmitting}
-                  className="bg-indigo-600 hover:bg-indigo-700"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
                 >
                   {isSubmitting ? (
                     <>
@@ -396,7 +426,7 @@ export default function SettingsPage() {
                 <Button
                   type="submit"
                   disabled={isUpdatingPassword || !newPassword || !confirmPassword}
-                  className="bg-indigo-600 hover:bg-indigo-700"
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white"
                 >
                   {isUpdatingPassword ? (
                     <>

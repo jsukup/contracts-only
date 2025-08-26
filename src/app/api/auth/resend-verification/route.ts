@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       type: 'signup',
       email: email,
       options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://contracts-only.vercel.app'}/auth/callback?next=/dashboard?welcome=true`,
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'https://contracts-only.vercel.app'}/auth/verify-email`,
       }
     })
 

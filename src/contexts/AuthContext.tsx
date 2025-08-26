@@ -173,7 +173,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('Auth state change:', event, session?.user?.email)
+      console.log('Auth state change:', event, session?.user?.email, 'Email confirmed:', !!session?.user?.email_confirmed_at)
       
       setSession(session)
       setUser(session?.user ?? null)
@@ -198,6 +198,8 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   // This handles all user authentication events in one place
   const handleUserAuth = async (authUser: User, event: string) => {
     try {
+      console.log(`Handling auth for user ${authUser.id.substring(0, 8)}... Event: ${event}`)
+      
       // First, try to fetch existing user profile
       let profile = await fetchUserProfile(authUser.id)
       let isNewUser = false
@@ -207,22 +209,44 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         console.log('No profile found, creating new user profile')
         profile = await createUserProfile(authUser)
         isNewUser = true
+      } else {
+        console.log('Existing profile found, updating if needed')
+        
+        // Update profile with latest auth data if email was just verified
+        if (authUser.email_confirmed_at && !profile.email_verified) {
+          console.log('Email verification detected, updating profile')
+          
+          const { error } = await supabase
+            .from('users')
+            .update({ 
+              email_verified: authUser.email_confirmed_at,
+              updated_at: new Date().toISOString() 
+            })
+            .eq('id', authUser.id)
+          
+          if (!error) {
+            // Refresh the profile with updated data
+            profile = await fetchUserProfile(authUser.id)
+          }
+        }
       }
       
       setUserProfile(profile)
       
       // Track analytics for auth events
-      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION') {
+      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'TOKEN_REFRESHED') {
         const userType = profile?.role === 'RECRUITER' ? 'recruiter' : 'contractor'
         const provider = authUser.app_metadata?.provider || 'email'
         
         if (isNewUser) {
+          console.log('Tracking new user registration')
           // Track new user registration
           trackUserRegistration({
             userType,
             registrationMethod: provider === 'google' ? 'google_oauth' : 'email_password'
           })
         } else if (event === 'SIGNED_IN') {
+          console.log('Tracking user login')
           // Track existing user login
           trackEvent('user_login', 'Authentication', provider, 1, {
             user_type: userType,
@@ -231,9 +255,13 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           })
         }
       }
+      
+      console.log(`Auth handling completed for user ${authUser.id.substring(0, 8)}...`)
+      
     } catch (error) {
       console.error('Error handling user auth:', error)
       setError(error as AuthError)
+      throw error // Re-throw to allow caller to handle
     }
   }
 
