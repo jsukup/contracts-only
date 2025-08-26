@@ -1,9 +1,9 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/Button'
-import DeleteAccountModal from '@/components/modals/DeleteAccountModal'
 import { 
   User, 
   LogOut, 
@@ -13,8 +13,7 @@ import {
   Home,
   Plus,
   Settings,
-  Bell,
-  Trash2
+  Bell
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -22,9 +21,10 @@ import { cn } from '@/lib/utils'
 
 export function Navigation() {
   const { user, userProfile, loading, signOut } = useAuth()
+  const router = useRouter()
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false)
+  const [signingOut, setSigningOut] = useState(false)
 
   const isActive = (path: string) => {
     if (path === '/') {
@@ -66,6 +66,22 @@ export function Navigation() {
   }
 
   const navigationItems = getNavigationItems()
+
+  const handleSignOut = async () => {
+    if (signingOut) return
+    
+    try {
+      setSigningOut(true)
+      await signOut()
+      router.push('/')
+    } catch (error) {
+      console.error('Sign out error:', error)
+      // In case of error, still redirect to home
+      router.push('/')
+    } finally {
+      setSigningOut(false)
+    }
+  }
 
   return (
     <nav className="bg-white shadow-sm border-b">
@@ -141,18 +157,12 @@ export function Navigation() {
                       </Link>
                       <div className="border-t border-gray-100 my-1" />
                       <button
-                        onClick={() => setDeleteModalOpen(true)}
-                        className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-700 transition-colors"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete Account
-                      </button>
-                      <button
-                        onClick={() => signOut()}
-                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors"
+                        onClick={handleSignOut}
+                        disabled={signingOut}
+                        className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors disabled:opacity-50"
                       >
                         <LogOut className="h-4 w-4 mr-2" />
-                        Sign Out
+                        {signingOut ? 'Signing Out...' : 'Sign Out'}
                       </button>
                     </div>
                   </div>
@@ -243,22 +253,13 @@ export function Navigation() {
                     <button
                       onClick={() => {
                         setMobileMenuOpen(false)
-                        setDeleteModalOpen(true)
+                        handleSignOut()
                       }}
-                      className="flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 transition-colors w-full text-left"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      <span>Delete Account</span>
-                    </button>
-                    <button
-                      onClick={() => {
-                        setMobileMenuOpen(false)
-                        signOut()
-                      }}
-                      className="flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 transition-colors w-full text-left"
+                      disabled={signingOut}
+                      className="flex items-center space-x-3 px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 transition-colors w-full text-left disabled:opacity-50"
                     >
                       <LogOut className="h-4 w-4" />
-                      <span>Sign Out</span>
+                      <span>{signingOut ? 'Signing Out...' : 'Sign Out'}</span>
                     </button>
                   </div>
                 ) : (
@@ -284,12 +285,6 @@ export function Navigation() {
           </div>
         )}
       </div>
-      
-      {/* Delete Account Modal */}
-      <DeleteAccountModal 
-        isOpen={deleteModalOpen} 
-        onClose={() => setDeleteModalOpen(false)} 
-      />
     </nav>
   )
 }

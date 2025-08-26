@@ -176,7 +176,7 @@ export default function ProfilePage() {
                 </div>
                 <div>
                   <label htmlFor="title" className="block text-sm font-medium text-gray-900 mb-1">
-                    Professional Title
+                    {isRecruiter ? 'Position at Company' : 'Professional Title'}
                   </label>
                   <input
                     id="title"
@@ -192,7 +192,7 @@ export default function ProfilePage() {
 
               <div>
                 <label htmlFor="bio" className="block text-sm font-medium text-gray-900 mb-1">
-                  Bio
+                  {isRecruiter ? 'Company Description' : 'Bio'}
                 </label>
                 <textarea
                   id="bio"
@@ -201,7 +201,7 @@ export default function ProfilePage() {
                   value={formData.bio}
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="Tell us about yourself and your experience..."
+                  placeholder={isRecruiter ? "Describe your company and what you're looking for in candidates..." : "Tell us about yourself and your experience..."}
                 />
               </div>
 
@@ -253,7 +253,7 @@ export default function ProfilePage() {
             <CardContent className="space-y-4">
               <div>
                 <label htmlFor="website" className="block text-sm font-medium text-gray-900 mb-1">
-                  Website
+                  {isRecruiter ? 'Recruitment Website' : 'Website'}
                 </label>
                 <input
                   id="website"
@@ -262,7 +262,7 @@ export default function ProfilePage() {
                   value={formData.website}
                   onChange={handleChange}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="https://yourwebsite.com"
+                  placeholder={isRecruiter ? "https://company-careers.com" : "https://yourwebsite.com"}
                 />
               </div>
               <div>

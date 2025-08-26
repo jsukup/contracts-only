@@ -100,8 +100,9 @@ export default function CandidatesPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="container mx-auto px-4">
+        <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold">Browse Candidates</h1>
@@ -261,6 +262,7 @@ export default function CandidatesPage() {
             ))}
           </div>
         )}
+        </div>
       </div>
     </div>
   )

@@ -110,10 +110,8 @@ export default function DashboardPage() {
 
   if (!user || loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex justify-center items-center min-h-[400px]">
-          <Loader2 className="h-8 w-8 animate-spin" />
-        </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
       </div>
     )
   }
@@ -123,7 +121,8 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="container mx-auto px-4">
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
@@ -279,6 +278,7 @@ export default function DashboardPage() {
       
       {/* Authentication Tester - Development Only */}
       <AuthTester />
+      </div>
     </div>
   )
 }
