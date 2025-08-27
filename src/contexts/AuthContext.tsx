@@ -494,16 +494,44 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       safeSetLoading(true)
       safeSetError(null)
       
-      const { error } = await supabase.auth.signOut()
+      // Clear local state first to ensure UI updates immediately
+      safeSetUser(null)
+      safeSetUserProfile(null)
+      safeSetSession(null)
+      
+      // Set a timeout for sign out operation
+      const signOutPromise = supabase.auth.signOut()
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Sign out timeout')), 5000)
+      )
+      
+      // Race between sign out and timeout
+      const { error } = await Promise.race([
+        signOutPromise,
+        timeoutPromise
+      ].filter(p => p instanceof Promise)) as { error: AuthError | null }
       
       if (error) {
-        safeSetError(error)
-        throw error
+        console.error('Sign out error:', error)
+        // Don't throw the error, just log it
+        // The user state is already cleared, so the UI will update
+      }
+      
+      // Always redirect to home after sign out attempt
+      if (typeof window !== 'undefined') {
+        window.location.href = '/'
       }
     } catch (error) {
-      console.error('Error signing out:', error)
-      safeSetError(error as AuthError)
-      throw error
+      console.error('Error during sign out:', error)
+      // Don't throw - ensure sign out completes from user perspective
+      // Clear state and redirect anyway
+      safeSetUser(null)
+      safeSetUserProfile(null)
+      safeSetSession(null)
+      
+      if (typeof window !== 'undefined') {
+        window.location.href = '/'
+      }
     } finally {
       safeSetLoading(false)
     }

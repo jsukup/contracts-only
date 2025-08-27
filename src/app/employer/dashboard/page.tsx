@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -49,6 +49,7 @@ export default function EmployerDashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<'all' | 'active' | 'draft' | 'closed'>('all')
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   useEffect(() => {
     if (!user) {
@@ -57,34 +58,55 @@ export default function EmployerDashboardPage() {
   }, [user])
 
   useEffect(() => {
+    // Cancel any pending requests when component unmounts or dependencies change
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+
     if (user?.id) {
       fetchDashboardData()
+    }
+
+    // Cleanup function to cancel requests on unmount
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
     }
   }, [user, filter])
 
   const fetchDashboardData = async () => {
+    // Create new AbortController for this request
+    abortControllerRef.current = new AbortController()
+    const signal = abortControllerRef.current.signal
+
     setLoading(true)
     try {
       // Fetch job postings
       const jobsParams = new URLSearchParams()
       if (filter !== 'all') jobsParams.append('status', filter)
       
-      const jobsResponse = await fetch(`/api/jobs/employer?${jobsParams}`)
-      if (jobsResponse.ok) {
+      const jobsResponse = await fetch(`/api/jobs/employer?${jobsParams}`, { signal })
+      if (jobsResponse.ok && !signal.aborted) {
         const jobsData = await jobsResponse.json()
         setJobs(jobsData.jobs || [])
       }
 
       // Fetch dashboard stats
-      const statsResponse = await fetch('/api/jobs/employer/stats')
-      if (statsResponse.ok) {
+      const statsResponse = await fetch('/api/jobs/employer/stats', { signal })
+      if (statsResponse.ok && !signal.aborted) {
         const statsData = await statsResponse.json()
         setStats(statsData)
       }
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error)
+    } catch (error: any) {
+      // Ignore abort errors
+      if (error.name !== 'AbortError') {
+        console.error('Error fetching dashboard data:', error)
+      }
     } finally {
-      setLoading(false)
+      if (!signal.aborted) {
+        setLoading(false)
+      }
     }
   }
 

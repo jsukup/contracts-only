@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
 import { Button } from '@/components/ui/Button'
@@ -25,6 +25,25 @@ export function Navigation() {
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [signingOut, setSigningOut] = useState(false)
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // Handle click outside to close dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false)
+      }
+    }
+
+    if (dropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [dropdownOpen])
 
   const isActive = (path: string) => {
     if (path === '/') {
@@ -72,6 +91,7 @@ export function Navigation() {
     
     try {
       setSigningOut(true)
+      setDropdownOpen(false) // Close dropdown immediately
       await signOut()
       router.push('/')
     } catch (error) {
@@ -130,8 +150,13 @@ export function Navigation() {
                 </Button>
 
                 {/* User Menu */}
-                <div className="relative group">
-                  <Button variant="ghost" size="sm" className="flex items-center space-x-2 text-gray-800 hover:text-indigo-600 font-medium">
+                <div className="relative" ref={dropdownRef}>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                    className="flex items-center space-x-2 text-gray-800 hover:text-indigo-600 font-medium"
+                  >
                     <User className="h-4 w-4" />
                     <span className="hidden lg:block">
                       {userProfile?.name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
@@ -139,7 +164,10 @@ export function Navigation() {
                   </Button>
                   
                   {/* Dropdown Menu */}
-                  <div className="absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div className={cn(
+                    "absolute right-0 mt-2 w-48 bg-white border rounded-md shadow-lg transition-all duration-200 z-50",
+                    dropdownOpen ? "opacity-100 visible" : "opacity-0 invisible"
+                  )}>
                     <div className="py-1">
                       <Link
                         href="/profile"
