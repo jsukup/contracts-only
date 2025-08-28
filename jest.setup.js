@@ -34,21 +34,29 @@ jest.mock('next/navigation', () => ({
   usePathname: () => '/',
 }))
 
-// Mock AuthContext (Supabase)
-jest.mock('@/contexts/AuthContext', () => ({
-  useAuth: () => ({
+// Mock Clerk
+jest.mock('@clerk/nextjs', () => ({
+  useUser: () => ({
     user: {
       id: 'test-user-id',
-      name: 'Test User',
-      email: 'test@example.com',
-      role: 'USER',
+      primaryEmailAddress: { emailAddress: 'test@example.com' },
+      fullName: 'Test User',
+      firstName: 'Test',
+      lastName: 'User',
+      publicMetadata: { role: 'USER' },
+      update: jest.fn().mockResolvedValue({}),
     },
-    loading: false,
-    signIn: jest.fn(),
-    signOut: jest.fn(),
-    signUp: jest.fn(),
+    isLoaded: true,
   }),
-  AuthProvider: ({ children }) => children,
+  useClerk: () => ({
+    signOut: jest.fn(),
+    openSignIn: jest.fn(),
+    openSignUp: jest.fn(),
+  }),
+  ClerkProvider: ({ children }) => children,
+  SignIn: () => '<div>Sign In</div>',
+  SignUp: () => '<div>Sign Up</div>',
+  UserButton: () => '<div>User Button</div>',
 }))
 
 // Mock Supabase client - note: specific tests can override this mock

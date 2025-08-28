@@ -1,7 +1,7 @@
 'use client'
 
 import { createContext, useContext, useEffect, ReactNode } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useUser } from '@clerk/nextjs'
 import { useWebSocket } from '@/lib/websocket'
 import { toast } from 'react-hot-toast'
 
@@ -18,7 +18,7 @@ interface WebSocketProviderProps {
 }
 
 export function WebSocketProvider({ children }: WebSocketProviderProps) {
-  const { user } = useAuth()
+  const { user } = useUser()
   const ws = useWebSocket(user?.id)
 
   useEffect(() => {

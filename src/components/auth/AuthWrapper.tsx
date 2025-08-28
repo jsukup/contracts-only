@@ -1,6 +1,7 @@
 'use client'
 
-import { useAuth } from '@/contexts/AuthContext'
+import { useUser } from '@clerk/nextjs'
+import { useState, useEffect } from 'react'
 import RoleSelectionModal from './RoleSelectionModal'
 
 interface AuthWrapperProps {
@@ -8,16 +9,34 @@ interface AuthWrapperProps {
 }
 
 export default function AuthWrapper({ children }: AuthWrapperProps) {
-  const { 
-    user, 
-    showRoleSelection, 
-    setShowRoleSelection, 
-    updateUserRole 
-  } = useAuth()
+  const { user, isLoaded } = useUser()
+  const [showRoleSelection, setShowRoleSelection] = useState(false)
+
+  useEffect(() => {
+    // Show role selection if user is authenticated but hasn't selected a role yet
+    if (isLoaded && user && !user.publicMetadata?.role) {
+      setShowRoleSelection(true)
+    }
+  }, [isLoaded, user])
 
   const handleRoleSelect = async (role: 'USER' | 'RECRUITER') => {
     try {
-      await updateUserRole(role)
+      // Update user metadata with selected role
+      await user?.update({
+        publicMetadata: { role }
+      })
+      
+      // Create user profile in Supabase
+      await fetch('/api/profile/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          role,
+          email: user?.primaryEmailAddress?.emailAddress 
+        })
+      })
+      
+      setShowRoleSelection(false)
     } catch (error) {
       console.error('Failed to update user role:', error)
     }
@@ -25,7 +44,7 @@ export default function AuthWrapper({ children }: AuthWrapperProps) {
 
   const handleCloseModal = () => {
     // Default to USER role if modal is closed without selection
-    updateUserRole('USER')
+    handleRoleSelect('USER')
   }
 
   return (
@@ -35,7 +54,7 @@ export default function AuthWrapper({ children }: AuthWrapperProps) {
         isOpen={showRoleSelection}
         onClose={handleCloseModal}
         onSelectRole={handleRoleSelect}
-        userEmail={user?.email || ''}
+        userEmail={user?.primaryEmailAddress?.emailAddress || ''}
       />
     </>
   )

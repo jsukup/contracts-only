@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useUser } from '@clerk/nextjs'
 import { useParams, useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -46,7 +46,7 @@ interface ApplicationDetails {
 }
 
 export default function ApplicationDetailsPage() {
-  const { user } = useAuth()
+  const { user } = useUser()
   const params = useParams()
   const router = useRouter()
   const applicationId = params.applicationId as string

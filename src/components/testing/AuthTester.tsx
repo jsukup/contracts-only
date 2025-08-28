@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useUser, useClerk } from '@clerk/nextjs'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent } from '@/components/ui/Card'
@@ -18,7 +18,8 @@ interface TestResult {
 }
 
 export default function AuthTester() {
-  const { user, userProfile, signInWithGoogle, signOut } = useAuth()
+  const { user, isLoaded } = useUser()
+  const { signOut } = useClerk()
   const [tests, setTests] = useState<TestResult[]>([])
   const [isRunning, setIsRunning] = useState(false)
 

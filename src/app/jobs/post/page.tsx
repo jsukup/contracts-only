@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -41,7 +41,7 @@ interface JobFormData {
 }
 
 export default function PostJobPage() {
-  const { user } = useAuth()
+  const { user } = useUser()
   const router = useRouter()
   const [submitting, setSubmitting] = useState(false)
   const [newSkill, setNewSkill] = useState('')

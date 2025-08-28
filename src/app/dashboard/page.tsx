@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useUser } from '@clerk/nextjs'
 import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -35,7 +35,7 @@ interface UserStats {
 }
 
 export default function DashboardPage() {
-  const { user, userProfile } = useAuth()
+  const { user } = useUser()
   const router = useRouter()
   const [applications, setApplications] = useState<Application[]>([])
   const [stats, setStats] = useState<UserStats | null>(null)

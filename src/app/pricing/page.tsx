@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useUser } from '@clerk/nextjs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -10,7 +10,7 @@ import Link from 'next/link'
 import { PRICING_PLANS, JOB_POSTING_PRICE, formatPrice, isPaymentsEnabled, createPaymentSession } from '@/lib/stripe'
 
 export default function PricingPage() {
-  const { user } = useAuth()
+  const { user } = useUser()
   const [loading, setLoading] = useState<string | null>(null)
   const [billingInterval, setBillingInterval] = useState<'month' | 'year'>('month')
 

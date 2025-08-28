@@ -15,11 +15,12 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
-import { useAuth } from '@/contexts/AuthContext'
+import { useUser, useClerk } from '@clerk/nextjs'
 import Link from 'next/link'
 
 export function AdminHeader() {
-  const { user, signOut } = useAuth()
+  const { user } = useUser()
+  const { signOut } = useClerk()
   const [showNotifications, setShowNotifications] = useState(false)
   const [showProfile, setShowProfile] = useState(false)
   const [darkMode, setDarkMode] = useState(false)

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/contexts/AuthContext'
+import { useUser, useClerk } from '@clerk/nextjs'
 import { Button } from '@/components/ui/Button'
 import { AlertTriangle, Loader2, X } from 'lucide-react'
 
@@ -13,7 +13,8 @@ interface DeleteAccountModalProps {
 
 export default function DeleteAccountModal({ isOpen, onClose }: DeleteAccountModalProps) {
   const router = useRouter()
-  const { deleteUserProfile, loading, userProfile } = useAuth()
+  const { user } = useUser()
+  const { signOut } = useClerk()
   const [confirmText, setConfirmText] = useState('')
   const [isDeleting, setIsDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)

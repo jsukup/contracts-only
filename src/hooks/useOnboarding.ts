@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useUser } from '@clerk/nextjs'
 
 interface OnboardingState {
   hasCompletedOnboarding: boolean
@@ -12,7 +12,7 @@ interface OnboardingState {
 }
 
 export function useOnboarding() {
-  const { user, loading } = useAuth()
+  const { user, isLoaded } = useUser()
   const [onboardingState, setOnboardingState] = useState<OnboardingState>({
     hasCompletedOnboarding: false,
     hasSeenModal: false,
@@ -23,7 +23,7 @@ export function useOnboarding() {
 
   useEffect(() => {
     // Only run after auth is loaded
-    if (loading) return
+    if (!isLoaded) return
 
     const checkOnboardingStatus = () => {
       const completedOnboarding = localStorage.getItem('onboarding_completed') === 'true'
@@ -44,7 +44,7 @@ export function useOnboarding() {
     }
 
     checkOnboardingStatus()
-  }, [user, loading])
+  }, [user, isLoaded])
 
   const completeOnboarding = (role?: 'contractor' | 'employer') => {
     localStorage.setItem('onboarding_completed', 'true')

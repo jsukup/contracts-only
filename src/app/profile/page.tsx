@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
@@ -25,7 +25,7 @@ interface ProfileFormData {
 }
 
 export default function ProfilePage() {
-  const { user, userProfile, loading, refreshUserProfile } = useAuth()
+  const { user, isLoaded } = useUser()
   const router = useRouter()
   const [formData, setFormData] = useState<ProfileFormData>({
     name: '',
@@ -46,10 +46,10 @@ export default function ProfilePage() {
 
   // Redirect if not authenticated
   useEffect(() => {
-    if (!loading && !user) {
+    if (isLoaded && !user) {
       router.push('/auth/signin?callbackUrl=/profile')
     }
-  }, [user, loading, router])
+  }, [user, isLoaded, router])
 
   // Load user data when available
   useEffect(() => {
@@ -123,7 +123,7 @@ export default function ProfilePage() {
   }
 
   // Show loading state
-  if (loading) {
+  if (!isLoaded) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>

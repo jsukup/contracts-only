@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useUser } from '@clerk/nextjs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -46,7 +46,7 @@ interface AnalyticsData {
 // }
 
 export default function AnalyticsPage() {
-  const { user } = useAuth()
+  const { user } = useUser()
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null)
@@ -58,7 +58,7 @@ export default function AnalyticsPage() {
   })
 
   useEffect(() => {
-    if (user?.role === 'ADMIN') {
+    if (user?.publicMetadata?.role === 'ADMIN') {
       fetchAnalytics()
     }
   }, [user, selectedView, dateRange, fetchAnalytics])
@@ -117,7 +117,7 @@ export default function AnalyticsPage() {
     }
   }
 
-  if (user?.role !== 'ADMIN') {
+  if (user?.publicMetadata?.role !== 'ADMIN') {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="text-center">

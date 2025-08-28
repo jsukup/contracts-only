@@ -1,6 +1,6 @@
 import React from 'react'
 import { render, RenderOptions, RenderResult } from '@testing-library/react'
-import { AuthProvider } from '@/contexts/AuthContext'
+import { ClerkProvider } from '@clerk/nextjs'
 import userEvent from '@testing-library/user-event'
 
 // Re-export everything from testing library
@@ -16,23 +16,30 @@ export const createTestWrapper = () => {
   )
 }
 
-// Custom render function with providers
+// Mock Clerk user for testing
+const createMockClerkUser = (overrides: any = {}) => ({
+  id: 'test-user-id',
+  primaryEmailAddress: { emailAddress: 'test@example.com' },
+  fullName: 'Test User',
+  firstName: 'Test',
+  lastName: 'User',
+  publicMetadata: { role: 'USER' },
+  update: jest.fn().mockResolvedValue({}),
+  ...overrides,
+})
+
+// Custom render function with Clerk provider
 interface CustomRenderOptions extends Omit<RenderOptions, 'wrapper'> {
   user?: any
-  initialAuthState?: any
+  clerkState?: any
   wrapper?: React.ComponentType<any>
 }
 
 export function renderWithProviders(
   ui: React.ReactElement,
   {
-    user = {
-      id: 'test-user-id',
-      name: 'Test User',
-      email: 'test@example.com',
-      role: 'USER',
-    },
-    initialAuthState,
+    user = createMockClerkUser(),
+    clerkState = {},
     wrapper,
     ...renderOptions
   }: CustomRenderOptions = {}
@@ -42,9 +49,9 @@ export function renderWithProviders(
     
     return (
       <WrapperComponent>
-        <AuthProvider value={{ user, loading: false, ...initialAuthState }}>
+        <ClerkProvider publishableKey="pk_test_mock">
           {children}
-        </AuthProvider>
+        </ClerkProvider>
       </WrapperComponent>
     )
   }

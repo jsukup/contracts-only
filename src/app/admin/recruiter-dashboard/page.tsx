@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useUser } from '@clerk/nextjs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
@@ -35,7 +35,7 @@ interface RecruiterDashboardData extends RecruiterAnalytics {
 }
 
 export default function RecruiterDashboard() {
-  useAuth() // Hook required for auth context
+  const { user } = useUser() // User authentication
   const [data, setData] = useState<RecruiterDashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [dateRange, setDateRange] = useState<string>('30days')
