@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useAuth } from '@/contexts/AuthContext'
+import { useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -39,11 +39,12 @@ interface UserRole {
 }
 
 export default function OnboardingPage() {
-  const { user } = useAuth()
+  const { user, isLoaded } = useUser()
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(0)
   const [selectedRole, setSelectedRole] = useState<'contractor' | 'employer' | null>(null)
   const [completedSteps, setCompletedSteps] = useState<Set<string>>(new Set())
+  const [isUpdating, setIsUpdating] = useState(false)
 
   const userRoles: UserRole[] = [
     {
@@ -136,18 +137,58 @@ export default function OnboardingPage() {
 
   const steps = selectedRole === 'contractor' ? contractorSteps : employerSteps
 
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      </div>
+    )
+  }
+
   useEffect(() => {
-    // Check if user has already completed onboarding
+    if (!isLoaded) return
+    
+    // Check if user has already completed onboarding or has a role set
     const hasCompletedOnboarding = localStorage.getItem('onboarding_completed')
-    if (hasCompletedOnboarding && user) {
+    const userRole = user?.publicMetadata?.role
+    
+    if (hasCompletedOnboarding || userRole) {
       router.push('/dashboard')
     }
-  }, [user, router])
+  }, [user, isLoaded, router])
 
-  const handleRoleSelection = (role: 'contractor' | 'employer') => {
+  const handleRoleSelection = async (role: 'contractor' | 'employer') => {
+    if (!user || isUpdating) return
+    
+    setIsUpdating(true)
     setSelectedRole(role)
-    setCompletedSteps(prev => new Set([...prev, 'role-selection']))
-    setCurrentStep(1)
+    
+    try {
+      // Update user metadata with selected role
+      await user.update({
+        publicMetadata: {
+          role: role === 'contractor' ? 'USER' : 'RECRUITER'
+        }
+      })
+
+      // Create user profile in Supabase
+      await fetch('/api/profile/create', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          role: role === 'contractor' ? 'USER' : 'RECRUITER'
+        })
+      })
+
+      setCompletedSteps(prev => new Set([...prev, 'role-selection']))
+      setCurrentStep(1)
+    } catch (error) {
+      console.error('Error updating user role:', error)
+    } finally {
+      setIsUpdating(false)
+    }
   }
 
   const handleNext = () => {
@@ -194,8 +235,8 @@ export default function OnboardingPage() {
                   key={role.id}
                   className={`cursor-pointer transition-all hover:shadow-lg ${
                     selectedRole === role.id ? 'ring-2 ring-blue-500' : ''
-                  }`}
-                  onClick={() => handleRoleSelection(role.id)}
+                  } ${isUpdating ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  onClick={() => !isUpdating && handleRoleSelection(role.id)}
                 >
                   <CardHeader>
                     <div className="flex items-center space-x-3">

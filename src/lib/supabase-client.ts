@@ -1,7 +1,7 @@
-import { createClient, SupabaseClient, User } from '@supabase/supabase-js'
-import { createBrowserClient } from '@supabase/ssr'
+import { createClient, SupabaseClient } from '@supabase/supabase-js'
+import { useAuth } from '@clerk/nextjs'
 
-// Database schema types
+// Database schema types (keeping existing schema)
 export type Database = {
   public: {
     Tables: {
@@ -245,35 +245,60 @@ if (!supabaseUrl || !supabaseAnonKey) {
   )
 }
 
-// Client-side Supabase client using SSR
-export const supabase: SupabaseClient<Database> = createBrowserClient<Database>(
-  supabaseUrl,
-  supabaseAnonKey
-)
-
-// Server-side Supabase client (for API routes)
-export const createServerSupabaseClient = (req?: Request) => {
-  // Create client with auth context from request
-  const client = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-      detectSessionInUrl: false,
-    },
+// Client-side Supabase client that integrates with Clerk authentication
+export function createClerkSupabaseClient(): SupabaseClient<Database> {
+  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
     global: {
-      headers: req ? {
-        // Pass through authorization and cookie headers for proper auth context
-        ...(req.headers.get('authorization') && {
-          Authorization: req.headers.get('authorization')!
-        }),
-        ...(req.headers.get('cookie') && {
-          Cookie: req.headers.get('cookie')!
-        }),
-      } : {},
+      // Custom fetch that includes Clerk session token
+      fetch: async (url, options = {}) => {
+        // Try to get Clerk session token
+        const clerkToken = await getClerkToken()
+        
+        const clerkSupabaseToken = await generateSupabaseToken(clerkToken)
+        
+        return fetch(url, {
+          ...options,
+          headers: {
+            ...options.headers,
+            Authorization: clerkSupabaseToken ? `Bearer ${clerkSupabaseToken}` : '',
+          },
+        })
+      },
     },
   })
+}
+
+// Hook to use Clerk-authenticated Supabase client
+export function useSupabaseClient(): SupabaseClient<Database> {
+  const { getToken } = useAuth()
   
-  return client
+  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+    global: {
+      fetch: async (url, options = {}) => {
+        const clerkToken = await getToken({ template: 'supabase' })
+        
+        return fetch(url, {
+          ...options,
+          headers: {
+            ...options.headers,
+            Authorization: clerkToken ? `Bearer ${clerkToken}` : '',
+          },
+        })
+      },
+    },
+  })
+}
+
+// Server-side Supabase client (for API routes)
+export const createServerSupabaseClient = (clerkUserId?: string) => {
+  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+    global: {
+      headers: {
+        // Add Clerk user ID for RLS policies
+        ...(clerkUserId && { 'sb-clerk-user-id': clerkUserId }),
+      },
+    },
+  })
 }
 
 // Service role client (bypasses RLS for admin operations)
@@ -281,8 +306,7 @@ export const createServiceSupabaseClient = () => {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
   
   if (!serviceRoleKey) {
-    console.warn('SUPABASE_SERVICE_ROLE_KEY not found, falling back to anon key')
-    return createServerSupabaseClient()
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY is required for admin operations')
   }
   
   return createClient<Database>(supabaseUrl, serviceRoleKey, {
@@ -294,7 +318,32 @@ export const createServiceSupabaseClient = () => {
   })
 }
 
-// Legacy helper functions - kept for backward compatibility during migration
+// Helper function to get Clerk token on client side
+async function getClerkToken(): Promise<string | null> {
+  try {
+    // This will only work on the client side
+    if (typeof window !== 'undefined' && (window as any).__clerk_session) {
+      return await (window as any).__clerk_session.getToken({ template: 'supabase' })
+    }
+  } catch (error) {
+    console.error('Error getting Clerk token:', error)
+  }
+  return null
+}
+
+// Generate Supabase-compatible token from Clerk token
+async function generateSupabaseToken(clerkToken: string | null): Promise<string | null> {
+  if (!clerkToken) return null
+  
+  try {
+    // For now, we'll use the Clerk token directly
+    // In a production setup, you might want to verify and transform the token
+    return clerkToken
+  } catch (error) {
+    console.error('Error generating Supabase token:', error)
+    return null
+  }
+}
 
 export type SupabaseUser = Database['public']['Tables']['users']['Row']
 export type SupabaseJob = Database['public']['Tables']['jobs']['Row']

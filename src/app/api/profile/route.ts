@@ -1,24 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createServerSupabaseClient } from '@/lib/supabase'
+import { auth } from '@clerk/nextjs/server'
+import { createServiceSupabaseClient } from '@/lib/supabase-client'
 
 export async function GET(req: NextRequest) {
   try {
-    const supabase = createServerSupabaseClient()
+    // Get authenticated user from Clerk
+    const { userId } = auth()
     
-    // Get the authorization header from the request
-    const authHeader = req.headers.get('authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized - No token provided' }, { status: 401 })
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    
-    const token = authHeader.replace('Bearer ', '')
-    
-    // Get user from token
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-    
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized - Invalid token' }, { status: 401 })
-    }
+
+    const supabase = createServiceSupabaseClient()
 
     // Get user profile with skills
     const { data: userProfile, error: profileError } = await supabase
@@ -31,7 +24,7 @@ export async function GET(req: NextRequest) {
           )
         )
       `)
-      .eq('id', user.id)
+      .eq('id', userId)
       .maybeSingle() // Use maybeSingle() to prevent 406 errors
 
     if (profileError) {
@@ -58,22 +51,14 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    const supabase = createServerSupabaseClient()
+    // Get authenticated user from Clerk
+    const { userId } = auth()
     
-    // Get the authorization header from the request
-    const authHeader = req.headers.get('authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized - No token provided' }, { status: 401 })
+    if (!userId) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-    
-    const token = authHeader.replace('Bearer ', '')
-    
-    // Get user from token
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token)
-    
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized - Invalid token' }, { status: 401 })
-    }
+
+    const supabase = createServiceSupabaseClient()
 
     const body = await req.json()
     const {
@@ -103,7 +88,7 @@ export async function PUT(req: NextRequest) {
         hourly_rate_max: hourlyRateMax,
         availability
       })
-      .eq('id', user.id)
+      .eq('id', userId)
       .select()
       .single()
 
@@ -131,7 +116,7 @@ export async function PUT(req: NextRequest) {
           .from('user_skills')
           .insert(
             skills.map((skillId: string) => ({
-              user_id: user.id,
+              user_id: userId,
               skill_id: skillId
             }))
           )
@@ -154,7 +139,7 @@ export async function PUT(req: NextRequest) {
           )
         )
       `)
-      .eq('id', user.id)
+      .eq('id', userId)
       .maybeSingle() // Use maybeSingle() to prevent 406 errors
 
     if (finalError) {

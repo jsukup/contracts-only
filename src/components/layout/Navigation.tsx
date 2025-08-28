@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { useAuth } from '@/contexts/AuthContext'
+import { useUser, useClerk, UserButton } from '@clerk/nextjs'
 import { Button } from '@/components/ui/Button'
 import { 
   User, 
@@ -20,7 +20,8 @@ import { usePathname } from 'next/navigation'
 import { cn } from '@/lib/utils'
 
 export function Navigation() {
-  const { user, userProfile, loading, signOut } = useAuth()
+  const { user, isLoaded } = useUser()
+  const { signOut } = useClerk()
   const router = useRouter()
   const pathname = usePathname()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -66,7 +67,8 @@ export function Navigation() {
     }
 
     // Authenticated user navigation
-    const isRecruiter = userProfile?.role === 'RECRUITER'
+    const userRole = user.publicMetadata?.role as string
+    const isRecruiter = userRole === 'RECRUITER'
     
     if (isRecruiter) {
       return [
@@ -159,7 +161,10 @@ export function Navigation() {
                   >
                     <User className="h-4 w-4" />
                     <span className="hidden lg:block">
-                      {userProfile?.name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
+                      {user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : 
+                       user?.username || 
+                       user?.primaryEmailAddress?.emailAddress?.split('@')[0] || 
+                       'User'}
                     </span>
                   </Button>
                   
@@ -196,15 +201,15 @@ export function Navigation() {
                   </div>
                 </div>
               </div>
-            ) : loading ? (
+            ) : !isLoaded ? (
               <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse" />
             ) : (
               <div className="flex items-center space-x-2">
                 <Button variant="ghost" asChild className="text-gray-700 hover:text-indigo-600">
-                  <Link href="/auth/signin">Sign In</Link>
+                  <Link href="/sign-in">Sign In</Link>
                 </Button>
                 <Button asChild className="bg-indigo-600 hover:bg-indigo-700 text-white">
-                  <Link href="/jobs/post">Post a Job</Link>
+                  <Link href="/sign-up">Get Started</Link>
                 </Button>
               </div>
             )}
@@ -258,7 +263,10 @@ export function Navigation() {
                       <div className="flex items-center space-x-2">
                         <User className="h-4 w-4" />
                         <span className="text-sm font-medium">
-                          {userProfile?.name || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User'}
+                          {user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : 
+                           user?.username || 
+                           user?.primaryEmailAddress?.emailAddress?.split('@')[0] || 
+                           'User'}
                         </span>
                       </div>
                     </div>
@@ -293,18 +301,18 @@ export function Navigation() {
                 ) : (
                   <div className="space-y-2">
                     <Link
-                      href="/auth/signin"
+                      href="/sign-in"
                       className="block px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >
                       Sign In
                     </Link>
                     <Link
-                      href="/jobs/post"
+                      href="/sign-up"
                       className="block px-3 py-2 rounded-md text-sm font-medium bg-indigo-600 text-white hover:bg-indigo-700 transition-colors"
                       onClick={() => setMobileMenuOpen(false)}
                     >
-                      Post a Job
+                      Get Started
                     </Link>
                   </div>
                 )}

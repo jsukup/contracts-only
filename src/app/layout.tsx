@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { NextAuthProvider } from "@/components/providers/session-provider";
+import { ClerkProvider } from '@clerk/nextjs';
 import { Navigation } from "@/components/layout/Navigation";
 import { WebSocketProvider } from "@/components/providers/WebSocketProvider";
 import { PerformanceMonitor } from "@/components/performance/LazyComponents";
@@ -146,13 +146,13 @@ export default function RootLayout({
         suppressHydrationWarning
         data-lt-installed="false"
       >
-        <Suspense fallback={
-          <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-          </div>
-        }>
-          <MonitoringProvider>
-            <NextAuthProvider>
+        <ClerkProvider>
+          <Suspense fallback={
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            </div>
+          }>
+            <MonitoringProvider>
               <WebSocketProvider>
                 <div className="relative flex min-h-screen flex-col">
                   <Navigation />
@@ -164,9 +164,9 @@ export default function RootLayout({
                 {/* Performance monitoring in development */}
                 {process.env.NODE_ENV === 'development' && <PerformanceMonitor />}
               </WebSocketProvider>
-            </NextAuthProvider>
-          </MonitoringProvider>
-        </Suspense>
+            </MonitoringProvider>
+          </Suspense>
+        </ClerkProvider>
         
         {/* Analytics scripts */}
         {process.env.NEXT_PUBLIC_GA_ID && (
