@@ -137,14 +137,6 @@ export default function OnboardingPage() {
 
   const steps = selectedRole === 'contractor' ? contractorSteps : employerSteps
 
-  if (!isLoaded) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
-      </div>
-    )
-  }
-
   useEffect(() => {
     if (!isLoaded) return
     
@@ -156,6 +148,14 @@ export default function OnboardingPage() {
       router.push('/dashboard')
     }
   }, [user, isLoaded, router])
+
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      </div>
+    )
+  }
 
   const handleRoleSelection = async (role: 'contractor' | 'employer') => {
     if (!user || isUpdating) return

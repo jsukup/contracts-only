@@ -25,7 +25,7 @@ export default function Page() {
               privacyPageUrl: "/privacy"
             }
           }}
-          afterSignUpUrl="/onboarding"
+          fallbackRedirectUrl="/onboarding"
         />
       </div>
     </div>
