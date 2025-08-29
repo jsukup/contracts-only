@@ -1,18 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
-import { createClient } from '@supabase/supabase-js'
-
-// Create Supabase client with service role for user creation
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-  {
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false
-    }
-  }
-)
+import { createServiceSupabaseClient } from '@/lib/supabase-clerk'
 
 export async function POST(req: NextRequest) {
   try {
@@ -51,6 +39,9 @@ export async function POST(req: NextRequest) {
     console.log('Clerk user data received:', { id: clerkUser.id, email: clerkUser.email_addresses?.[0]?.email_address })
 
     // Create user profile in Supabase
+    // Use service role client for user creation (bypasses RLS for initial setup)
+    const supabase = createServiceSupabaseClient()
+    
     const userData = {
       id: userId,
       email: clerkUser.email_addresses[0]?.email_address || '',
@@ -68,7 +59,7 @@ export async function POST(req: NextRequest) {
       job_alerts_enabled: true
     }
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('users')
       .upsert(userData, {
         onConflict: 'id',
