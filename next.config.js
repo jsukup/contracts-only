@@ -103,10 +103,14 @@ const nextConfig = {
     },
   }),
 
-  // Environment variables for performance monitoring
+  // Environment variables for performance monitoring and deployment
   env: {
     ANALYZE: process.env.ANALYZE,
     PERFORMANCE_MONITORING: process.env.NODE_ENV === 'development' ? 'true' : 'false',
+    // Vercel deployment URLs for dynamic configuration
+    VERCEL_URL: process.env.VERCEL_URL,
+    NEXT_PUBLIC_VERCEL_URL: process.env.NEXT_PUBLIC_VERCEL_URL,
+    VERCEL_ENV: process.env.VERCEL_ENV,
   },
 
   // TypeScript configuration
