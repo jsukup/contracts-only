@@ -557,8 +557,8 @@ export default function OnboardingPage() {
 
             <div className="text-center">
               <Button asChild>
-                <Link href="/employer/dashboard">
-                  Set Up Company Profile
+                <Link href="/profile">
+                  Complete Company Profile
                 </Link>
               </Button>
             </div>
