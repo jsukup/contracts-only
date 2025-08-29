@@ -27,6 +27,8 @@ interface ProfileFormData {
 export default function ProfilePage() {
   const { user, isLoaded } = useUser()
   const router = useRouter()
+  const [userProfile, setUserProfile] = useState(null)
+  const [loading, setLoading] = useState(true)
   const [formData, setFormData] = useState<ProfileFormData>({
     name: '',
     title: '',
@@ -50,6 +52,41 @@ export default function ProfilePage() {
       router.push('/auth/signin?callbackUrl=/profile')
     }
   }, [user, isLoaded, router])
+
+  // Fetch user profile data
+  const fetchUserProfile = async () => {
+    if (!user?.id) return
+    
+    try {
+      setLoading(true)
+      const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single()
+        
+      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+        throw error
+      }
+      
+      setUserProfile(data)
+    } catch (error) {
+      console.error('Error fetching user profile:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Refresh user profile data
+  const refreshUserProfile = async () => {
+    await fetchUserProfile()
+  }
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchUserProfile()
+    }
+  }, [user?.id])
 
   // Load user data when available
   useEffect(() => {
@@ -120,6 +157,14 @@ export default function ProfilePage() {
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  if (!isLoaded || loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    )
   }
 
   // Show loading state

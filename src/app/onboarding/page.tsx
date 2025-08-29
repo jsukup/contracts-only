@@ -166,7 +166,7 @@ export default function OnboardingPage() {
     try {
       // Update user metadata with selected role
       await user.update({
-        publicMetadata: {
+        unsafeMetadata: {
           role: role === 'contractor' ? 'USER' : 'RECRUITER'
         }
       })
