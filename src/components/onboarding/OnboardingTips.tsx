@@ -34,7 +34,7 @@ const tips: OnboardingTip[] = [
     icon: <Users className="h-5 w-5" />,
     action: {
       text: 'Complete Profile',
-      href: '/dashboard/profile'
+      href: '/profile'
     },
     targetRole: 'contractor'
   },
@@ -45,7 +45,7 @@ const tips: OnboardingTip[] = [
     icon: <DollarSign className="h-5 w-5" />,
     action: {
       text: 'Update Rates',
-      href: '/dashboard/profile'
+      href: '/profile'
     },
     targetRole: 'contractor'
   },

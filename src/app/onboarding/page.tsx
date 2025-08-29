@@ -481,7 +481,7 @@ export default function OnboardingPage() {
 
             <div className="text-center">
               <Button asChild>
-                <Link href="/dashboard/profile">
+                <Link href="/profile">
                   Complete Profile Now
                 </Link>
               </Button>
@@ -557,7 +557,7 @@ export default function OnboardingPage() {
 
             <div className="text-center">
               <Button asChild>
-                <Link href="/dashboard/company">
+                <Link href="/employer/dashboard">
                   Set Up Company Profile
                 </Link>
               </Button>

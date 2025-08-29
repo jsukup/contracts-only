@@ -253,7 +253,7 @@ export class EmailAutomationEngine {
             name: user.name,
             email: user.email
           },
-          dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/profile`,
+          dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/profile`,
           unsubscribeUrl: `${process.env.NEXT_PUBLIC_APP_URL}/unsubscribe?email=${encodeURIComponent(user.email)}`
         },
         scheduledFor: new Date()
