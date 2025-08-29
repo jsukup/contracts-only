@@ -20,10 +20,14 @@ export async function POST(req: NextRequest) {
     const { userId } = auth()
     
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      console.error('Profile creation failed: No userId from Clerk auth')
+      return NextResponse.json({ error: 'Unauthorized - No user ID' }, { status: 401 })
     }
 
-    const { role } = await req.json()
+    const body = await req.json()
+    const { role } = body
+    
+    console.log('Profile creation request:', { userId, role })
 
     if (!role || !['USER', 'RECRUITER'].includes(role)) {
       return NextResponse.json({ error: 'Invalid role' }, { status: 400 })
@@ -38,10 +42,13 @@ export async function POST(req: NextRequest) {
     })
 
     if (!clerkResponse.ok) {
-      throw new Error('Failed to fetch user from Clerk')
+      const errorText = await clerkResponse.text()
+      console.error('Clerk API error:', clerkResponse.status, errorText)
+      throw new Error(`Failed to fetch user from Clerk: ${clerkResponse.status}`)
     }
 
     const clerkUser = await clerkResponse.json()
+    console.log('Clerk user data received:', { id: clerkUser.id, email: clerkUser.email_addresses?.[0]?.email_address })
 
     // Create user profile in Supabase
     const userData = {
@@ -71,10 +78,14 @@ export async function POST(req: NextRequest) {
       .single()
 
     if (error) {
-      console.error('Error creating user profile:', error)
-      return NextResponse.json({ error: 'Failed to create profile' }, { status: 500 })
+      console.error('Supabase error creating user profile:', error)
+      return NextResponse.json({ 
+        error: 'Failed to create profile', 
+        details: error.message 
+      }, { status: 500 })
     }
 
+    console.log('Profile created successfully:', { userId: data.id, role: data.role })
     return NextResponse.json({ user: data })
   } catch (error) {
     console.error('Profile creation error:', error)

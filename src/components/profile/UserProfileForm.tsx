@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
+import LocationAutocomplete from '@/components/ui/LocationAutocomplete'
 import { User, MapPin, Globe, Linkedin, DollarSign, Calendar, Save, Plus, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -245,10 +246,10 @@ export default function UserProfileForm() {
                 <MapPin className="h-4 w-4" />
                 Location
               </label>
-              <Input
+              <LocationAutocomplete
                 value={formData.location}
-                onChange={(e) => handleInputChange('location', e.target.value)}
-                placeholder="City, State/Country"
+                onChange={(value) => handleInputChange('location', value)}
+                placeholder="e.g., Chicago, IL, USA"
               />
             </div>
             <div>
@@ -297,21 +298,21 @@ export default function UserProfileForm() {
           <div>
             <label className="block text-sm font-medium mb-2 flex items-center gap-1">
               <DollarSign className="h-4 w-4" />
-              Hourly Rate Range (USD)
+              Desired Hourly Rate Range (USD)
             </label>
             <div className="grid grid-cols-2 gap-4">
               <Input
                 type="number"
                 value={formData.hourlyRateMin}
                 onChange={(e) => handleInputChange('hourlyRateMin', e.target.value)}
-                placeholder="Min rate"
+                placeholder="Min desired rate"
                 min="0"
               />
               <Input
                 type="number"
                 value={formData.hourlyRateMax}
                 onChange={(e) => handleInputChange('hourlyRateMax', e.target.value)}
-                placeholder="Max rate"
+                placeholder="Max desired rate"
                 min="0"
               />
             </div>

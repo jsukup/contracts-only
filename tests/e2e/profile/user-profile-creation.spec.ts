@@ -224,9 +224,9 @@ test.describe('User Profile Creation & Management', () => {
         await page.selectOption('select[name="availability"]', 'AVAILABLE')
         await expect(page.locator('select[name="availability"]')).toHaveValue('AVAILABLE')
 
-        // Set hourly rate range
-        await page.fill('input[name="hourlyRateMin"]', '85')
-        await page.fill('input[name="hourlyRateMax"]', '125')
+        // Set desired hourly rate range
+        await page.fill('input[name="hourly_rate_min"]', '85')
+        await page.fill('input[name="hourly_rate_max"]', '125')
 
         // Verify rate validation
         await helpers.verifyElementNotExists('[data-testid="rate-validation-error"]')
@@ -311,8 +311,8 @@ test.describe('User Profile Creation & Management', () => {
         await expect(page.locator('input[name="title"]')).toHaveValue('Senior Full-Stack Developer')
         await expect(page.locator('textarea[name="bio"]')).toContainText('Experienced full-stack developer')
         await expect(page.locator('input[name="location"]')).toHaveValue('San Francisco, CA (Remote)')
-        await expect(page.locator('input[name="hourlyRateMin"]')).toHaveValue('85')
-        await expect(page.locator('input[name="hourlyRateMax"]')).toHaveValue('125')
+        await expect(page.locator('input[name="hourly_rate_min"]')).toHaveValue('85')
+        await expect(page.locator('input[name="hourly_rate_max"]')).toHaveValue('125')
         await expect(page.locator('select[name="availability"]')).toHaveValue('AVAILABLE')
 
         // Verify skills are selected
@@ -371,23 +371,23 @@ test.describe('User Profile Creation & Management', () => {
 
       test.step('Test hourly rate validation', async () => {
         // Test negative rates
-        await page.fill('input[name="hourlyRateMin"]', '-10')
-        await page.blur('input[name="hourlyRateMin"]')
+        await page.fill('input[name="hourly_rate_min"]', '-10')
+        await page.blur('input[name="hourly_rate_min"]')
 
         await helpers.verifyElementExists('[data-testid="rate-validation-error"]')
         await helpers.verifyTextContent('[data-testid="rate-validation-error"]', /positive number/i)
 
         // Test min > max validation
-        await page.fill('input[name="hourlyRateMin"]', '100')
-        await page.fill('input[name="hourlyRateMax"]', '50')
-        await page.blur('input[name="hourlyRateMax"]')
+        await page.fill('input[name="hourly_rate_min"]', '100')
+        await page.fill('input[name="hourly_rate_max"]', '50')
+        await page.blur('input[name="hourly_rate_max"]')
 
         await helpers.verifyElementExists('[data-testid="rate-range-validation-error"]')
         await helpers.verifyTextContent('[data-testid="rate-range-validation-error"]', /minimum rate cannot be greater than maximum/i)
 
         // Fix validation
-        await page.fill('input[name="hourlyRateMax"]', '150')
-        await page.blur('input[name="hourlyRateMax"]')
+        await page.fill('input[name="hourly_rate_max"]', '150')
+        await page.blur('input[name="hourly_rate_max"]')
 
         await helpers.verifyElementNotExists('[data-testid="rate-range-validation-error"]')
 
@@ -503,8 +503,8 @@ test.describe('User Profile Creation & Management', () => {
           title: 'Expert React Developer',
           bio: 'Specialized in building scalable React applications',
           location: 'Remote, Worldwide',
-          hourlyRateMin: 75,
-          hourlyRateMax: 110,
+          hourly_rate_min: 75,
+          hourly_rate_max: 110,
           availability: 'AVAILABLE'
         })
 

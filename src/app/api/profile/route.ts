@@ -8,8 +8,11 @@ export async function GET(req: NextRequest) {
     const { userId } = auth()
     
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      console.error('Profile GET failed: No userId from Clerk auth')
+      return NextResponse.json({ error: 'Unauthorized - No user ID' }, { status: 401 })
     }
+    
+    console.log('Profile GET request for userId:', userId)
 
     const supabase = createServiceSupabaseClient()
 
@@ -55,8 +58,11 @@ export async function PUT(req: NextRequest) {
     const { userId } = auth()
     
     if (!userId) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      console.error('Profile PUT failed: No userId from Clerk auth')
+      return NextResponse.json({ error: 'Unauthorized - No user ID' }, { status: 401 })
     }
+    
+    console.log('Profile PUT request for userId:', userId)
 
     const supabase = createServiceSupabaseClient()
 

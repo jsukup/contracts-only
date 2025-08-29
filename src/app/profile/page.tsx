@@ -5,6 +5,7 @@ import { useUser } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
+import LocationAutocomplete from '@/components/ui/LocationAutocomplete'
 import { User, Mail, Globe, MapPin, DollarSign, Clock, AlertTriangle, Loader2, Save, Camera } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
@@ -18,8 +19,6 @@ interface ProfileFormData {
   linkedin_url: string
   hourly_rate_min: string
   hourly_rate_max: string
-  desired_rate_min: string
-  desired_rate_max: string
   availability: string
   job_alerts_enabled: boolean
 }
@@ -38,8 +37,6 @@ export default function ProfilePage() {
     linkedin_url: '',
     hourly_rate_min: '',
     hourly_rate_max: '',
-    desired_rate_min: '',
-    desired_rate_max: '',
     availability: 'AVAILABLE',
     job_alerts_enabled: true
   })
@@ -100,8 +97,6 @@ export default function ProfilePage() {
         linkedin_url: userProfile.linkedin_url || '',
         hourly_rate_min: userProfile.hourly_rate_min?.toString() || '',
         hourly_rate_max: userProfile.hourly_rate_max?.toString() || '',
-        desired_rate_min: userProfile.desired_rate_min?.toString() || '',
-        desired_rate_max: userProfile.desired_rate_max?.toString() || '',
         availability: userProfile.availability || 'AVAILABLE',
         job_alerts_enabled: userProfile.job_alerts_enabled ?? true
       })
@@ -134,8 +129,6 @@ export default function ProfilePage() {
         linkedin_url: formData.linkedin_url || null,
         hourly_rate_min: formData.hourly_rate_min ? parseInt(formData.hourly_rate_min) : null,
         hourly_rate_max: formData.hourly_rate_max ? parseInt(formData.hourly_rate_max) : null,
-        desired_rate_min: formData.desired_rate_min ? parseInt(formData.desired_rate_min) : null,
-        desired_rate_max: formData.desired_rate_max ? parseInt(formData.desired_rate_max) : null,
         availability: formData.availability,
         job_alerts_enabled: formData.job_alerts_enabled,
         updated_at: new Date().toISOString()
@@ -256,14 +249,10 @@ export default function ProfilePage() {
                     <MapPin className="w-4 h-4 inline mr-1" />
                     Location
                   </label>
-                  <input
-                    id="location"
-                    name="location"
-                    type="text"
+                  <LocationAutocomplete
                     value={formData.location}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="e.g., San Francisco, CA"
+                    onChange={(value) => setFormData(prev => ({ ...prev, location: value }))}
+                    placeholder="e.g., Chicago, IL, USA"
                   />
                 </div>
                 <div>
@@ -340,7 +329,7 @@ export default function ProfilePage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label htmlFor="hourly_rate_min" className="block text-sm font-medium text-gray-900 mb-1">
-                      Current Rate (Min/hr)
+                      Desired Rate (Min/hr)
                     </label>
                     <input
                       id="hourly_rate_min"
@@ -355,7 +344,7 @@ export default function ProfilePage() {
                   </div>
                   <div>
                     <label htmlFor="hourly_rate_max" className="block text-sm font-medium text-gray-900 mb-1">
-                      Current Rate (Max/hr)
+                      Desired Rate (Max/hr)
                     </label>
                     <input
                       id="hourly_rate_max"
@@ -366,38 +355,6 @@ export default function ProfilePage() {
                       onChange={handleChange}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
                       placeholder="100"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="desired_rate_min" className="block text-sm font-medium text-gray-900 mb-1">
-                      Desired Rate (Min/hr)
-                    </label>
-                    <input
-                      id="desired_rate_min"
-                      name="desired_rate_min"
-                      type="number"
-                      min="0"
-                      value={formData.desired_rate_min}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                      placeholder="60"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="desired_rate_max" className="block text-sm font-medium text-gray-900 mb-1">
-                      Desired Rate (Max/hr)
-                    </label>
-                    <input
-                      id="desired_rate_max"
-                      name="desired_rate_max"
-                      type="number"
-                      min="0"
-                      value={formData.desired_rate_max}
-                      onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                      placeholder="120"
                     />
                   </div>
                 </div>
