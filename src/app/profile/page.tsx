@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import LocationAutocomplete from '@/components/ui/LocationAutocomplete'
 import { User, Mail, Globe, MapPin, DollarSign, Clock, AlertTriangle, Loader2, Save, Camera } from 'lucide-react'
-import { supabase } from '@/lib/supabase'
 import toast from 'react-hot-toast'
 
 interface ProfileFormData {
@@ -56,17 +55,19 @@ export default function ProfilePage() {
     
     try {
       setLoading(true)
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('id', user.id)
-        .single()
-        
-      if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
-        throw error
+      const response = await fetch('/api/profile')
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          // User profile doesn't exist yet
+          setUserProfile(null)
+          return
+        }
+        throw new Error(`Failed to fetch profile: ${response.status}`)
       }
       
-      setUserProfile(data)
+      const data = await response.json()
+      setUserProfile(data.user || data)
     } catch (error) {
       console.error('Error fetching user profile:', error)
     } finally {
@@ -114,9 +115,26 @@ export default function ProfilePage() {
     setHasChanges(true)
   }
 
+  // Validation function for rate fields
+  const validateRates = () => {
+    const minRate = parseInt(formData.hourly_rate_min) || 0
+    const maxRate = parseInt(formData.hourly_rate_max) || 0
+    
+    if (minRate > 0 && maxRate > 0 && minRate > maxRate) {
+      toast.error('Minimum rate cannot be higher than maximum rate')
+      return false
+    }
+    return true
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!user) return
+
+    // Validate rates before submission
+    if (!validateRates()) {
+      return
+    }
 
     setIsSubmitting(true)
     try {
@@ -126,27 +144,32 @@ export default function ProfilePage() {
         bio: formData.bio || null,
         location: formData.location || null,
         website: formData.website || null,
-        linkedin_url: formData.linkedin_url || null,
-        hourly_rate_min: formData.hourly_rate_min ? parseInt(formData.hourly_rate_min) : null,
-        hourly_rate_max: formData.hourly_rate_max ? parseInt(formData.hourly_rate_max) : null,
+        linkedinUrl: formData.linkedin_url || null,
+        hourlyRateMin: formData.hourly_rate_min ? parseInt(formData.hourly_rate_min) : null,
+        hourlyRateMax: formData.hourly_rate_max ? parseInt(formData.hourly_rate_max) : null,
         availability: formData.availability,
-        job_alerts_enabled: formData.job_alerts_enabled,
-        updated_at: new Date().toISOString()
+        job_alerts_enabled: formData.job_alerts_enabled
       }
 
-      const { error } = await supabase
-        .from('users')
-        .update(updates)
-        .eq('id', user.id)
+      const response = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updates),
+      })
 
-      if (error) throw error
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to update profile')
+      }
 
       await refreshUserProfile()
       setHasChanges(false)
       toast.success('Profile updated successfully!')
     } catch (error: any) {
       console.error('Error updating profile:', error)
-      toast.error('Failed to update profile. Please try again.')
+      toast.error(error.message || 'Failed to update profile. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
@@ -338,7 +361,12 @@ export default function ProfilePage() {
                       min="0"
                       value={formData.hourly_rate_min}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                      className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${
+                        parseInt(formData.hourly_rate_min) > parseInt(formData.hourly_rate_max) && 
+                        parseInt(formData.hourly_rate_max) > 0 
+                          ? 'border-red-500' 
+                          : 'border-gray-300'
+                      }`}
                       placeholder="50"
                     />
                   </div>
@@ -353,11 +381,23 @@ export default function ProfilePage() {
                       min="0"
                       value={formData.hourly_rate_max}
                       onChange={handleChange}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                      className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${
+                        parseInt(formData.hourly_rate_min) > parseInt(formData.hourly_rate_max) && 
+                        parseInt(formData.hourly_rate_min) > 0 
+                          ? 'border-red-500' 
+                          : 'border-gray-300'
+                      }`}
                       placeholder="100"
                     />
                   </div>
                 </div>
+                {parseInt(formData.hourly_rate_min) > parseInt(formData.hourly_rate_max) && 
+                 parseInt(formData.hourly_rate_min) > 0 && parseInt(formData.hourly_rate_max) > 0 && (
+                  <div className="flex items-center text-red-600 text-sm mt-2">
+                    <AlertTriangle className="w-4 h-4 mr-1" />
+                    Minimum rate cannot be higher than maximum rate
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}

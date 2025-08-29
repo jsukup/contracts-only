@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
-import { createServiceSupabaseClient } from '@/lib/supabase-client'
+import { createServiceSupabaseClient } from '@/lib/supabase'
 
 export async function GET(req: NextRequest) {
   try {
@@ -80,6 +80,14 @@ export async function PUT(req: NextRequest) {
       skills
     } = body
 
+    // Validate rate ranges
+    if (hourlyRateMin && hourlyRateMax && 
+        parseInt(hourlyRateMin) > parseInt(hourlyRateMax)) {
+      return NextResponse.json({ 
+        error: 'Minimum rate cannot be higher than maximum rate' 
+      }, { status: 400 })
+    }
+
     // Update user profile
     const { data: updatedUser, error: updateError } = await supabase
       .from('users')
@@ -109,7 +117,7 @@ export async function PUT(req: NextRequest) {
       const { error: deleteError } = await supabase
         .from('user_skills')
         .delete()
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
 
       if (deleteError) {
         console.error('Error deleting user skills:', deleteError)
