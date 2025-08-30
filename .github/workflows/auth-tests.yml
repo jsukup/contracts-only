@@ -69,15 +69,15 @@ jobs:
         echo "NPM version: $(npm --version)"
         echo "✅ Environment check complete"
     
-    - name: Run Unit Tests  
+    - name: Run Authentication Tests  
       env:
         NODE_ENV: test
         CI: true
         JEST_JUNIT_OUTPUT_DIR: ./
         JEST_JUNIT_OUTPUT_NAME: junit.xml
       run: |
-        # Run unit tests for authentication components  
-        npm run test:ci -- --testPathPatterns=src/.*auth.*test --maxWorkers=2 --testResultsProcessor=jest-junit
+        # Run authentication integration tests
+        npm run test:ci -- --testPathPattern="tests/integration/.*auth.*\\.test\\.ts$|tests/integration/oauth.*\\.test\\.ts$" --maxWorkers=2 --testResultsProcessor=jest-junit
     
     - name: Upload Coverage Reports
       if: success()
