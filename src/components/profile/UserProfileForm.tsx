@@ -7,8 +7,11 @@ import { Button } from '@/components/ui/Button'
 import { Input } from '@/components/ui/Input'
 import { Badge } from '@/components/ui/Badge'
 import LocationAutocomplete from '@/components/ui/LocationAutocomplete'
+import ProfessionalTitleAutocomplete from '@/components/ui/ProfessionalTitleAutocomplete'
 import { User, MapPin, Globe, Linkedin, DollarSign, Calendar, Save, Plus, X } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { useRouter } from 'next/navigation'
+import { isValidUrl, isValidLinkedInUrl, formatUrl, URL_VALIDATION_MESSAGES } from '@/lib/url-validation'
 
 interface UserProfile {
   id: string
@@ -40,12 +43,19 @@ interface Skill {
 
 export default function UserProfileForm() {
   const { user } = useUser()
+  const router = useRouter()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [skills, setSkills] = useState<Skill[]>([])
   const [selectedSkills, setSelectedSkills] = useState<string[]>([])
   const [newSkill, setNewSkill] = useState('')
+  
+  // Form validation errors
+  const [errors, setErrors] = useState({
+    website: '',
+    linkedinUrl: ''
+  })
 
   const [formData, setFormData] = useState({
     name: '',
@@ -115,6 +125,41 @@ export default function UserProfileForm() {
       ...prev,
       [field]: value
     }))
+    
+    // Clear validation errors when user starts typing
+    if (field === 'website' || field === 'linkedinUrl') {
+      setErrors(prev => ({
+        ...prev,
+        [field]: ''
+      }))
+    }
+  }
+
+  // Validate URL fields on blur
+  const handleUrlBlur = (field: 'website' | 'linkedinUrl', value: string) => {
+    if (!value.trim()) {
+      setErrors(prev => ({ ...prev, [field]: '' }))
+      return
+    }
+
+    let isValid = false
+    let errorMessage = ''
+
+    if (field === 'website') {
+      isValid = isValidUrl(value)
+      errorMessage = isValid ? '' : URL_VALIDATION_MESSAGES.INVALID_URL
+    } else if (field === 'linkedinUrl') {
+      isValid = isValidLinkedInUrl(value)
+      errorMessage = isValid ? '' : URL_VALIDATION_MESSAGES.INVALID_LINKEDIN
+    }
+
+    setErrors(prev => ({ ...prev, [field]: errorMessage }))
+
+    // Auto-format URL if valid but missing protocol
+    if (isValid && value && !value.startsWith('http')) {
+      const formattedUrl = formatUrl(value)
+      setFormData(prev => ({ ...prev, [field]: formattedUrl }))
+    }
   }
 
   const handleSkillToggle = (skillId: string) => {
@@ -150,6 +195,27 @@ export default function UserProfileForm() {
   const handleSave = async () => {
     if (!user?.email) return
 
+    // Validate URL fields before saving
+    let hasErrors = false
+    const newErrors = { website: '', linkedinUrl: '' }
+
+    if (formData.website && !isValidUrl(formData.website)) {
+      newErrors.website = URL_VALIDATION_MESSAGES.INVALID_URL
+      hasErrors = true
+    }
+
+    if (formData.linkedinUrl && !isValidLinkedInUrl(formData.linkedinUrl)) {
+      newErrors.linkedinUrl = URL_VALIDATION_MESSAGES.INVALID_LINKEDIN
+      hasErrors = true
+    }
+
+    setErrors(newErrors)
+
+    if (hasErrors) {
+      toast.error('Please fix the validation errors before saving')
+      return
+    }
+
     try {
       setSaving(true)
       
@@ -177,6 +243,11 @@ export default function UserProfileForm() {
       console.log('Profile updated successfully:', result)
 
       toast.success('Profile updated successfully')
+      
+      // Redirect to Browse Jobs page after successful save
+      setTimeout(() => {
+        router.push('/jobs')
+      }, 1500) // Give time for success toast to be seen
     } catch (err) {
       console.error('Profile save error:', err)
       const errorMessage = err instanceof Error ? err.message : 'Failed to update profile'
@@ -230,9 +301,9 @@ export default function UserProfileForm() {
             </div>
             <div>
               <label className="block text-sm font-medium mb-2">Professional Title</label>
-              <Input
+              <ProfessionalTitleAutocomplete
                 value={formData.title}
-                onChange={(e) => handleInputChange('title', e.target.value)}
+                onChange={(value) => handleInputChange('title', value)}
                 placeholder="e.g., Full Stack Developer"
               />
             </div>
@@ -287,8 +358,13 @@ export default function UserProfileForm() {
                 type="url"
                 value={formData.website}
                 onChange={(e) => handleInputChange('website', e.target.value)}
+                onBlur={(e) => handleUrlBlur('website', e.target.value)}
                 placeholder="https://yourwebsite.com"
+                className={errors.website ? 'border-red-500' : ''}
               />
+              {errors.website && (
+                <p className="text-sm text-red-500 mt-1">{errors.website}</p>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium mb-2 flex items-center gap-1">
@@ -299,8 +375,13 @@ export default function UserProfileForm() {
                 type="url"
                 value={formData.linkedinUrl}
                 onChange={(e) => handleInputChange('linkedinUrl', e.target.value)}
+                onBlur={(e) => handleUrlBlur('linkedinUrl', e.target.value)}
                 placeholder="https://linkedin.com/in/yourprofile"
+                className={errors.linkedinUrl ? 'border-red-500' : ''}
               />
+              {errors.linkedinUrl && (
+                <p className="text-sm text-red-500 mt-1">{errors.linkedinUrl}</p>
+              )}
             </div>
           </div>
 

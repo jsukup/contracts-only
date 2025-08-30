@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-// Global cities data - in production this could be replaced with a proper geo API
+// TODO: Replace with Google Places Autocomplete API integration
+// For now using enhanced static data - Google Places API requires API key configuration
 const globalLocations = [
   // United States
   'New York, NY, USA',
