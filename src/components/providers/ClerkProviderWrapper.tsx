@@ -39,7 +39,7 @@ export function ClerkProviderWrapper({ children }: ClerkProviderWrapperProps) {
   // Configure sign-in/up URLs with dynamic base
   const signInUrl = '/sign-in'
   const signUpUrl = '/sign-up'
-  const afterSignInUrl = '/dashboard'
+  const fallbackRedirectUrl = '/dashboard'
   const afterSignUpUrl = '/onboarding'
 
   return (
@@ -69,8 +69,8 @@ export function ClerkProviderWrapper({ children }: ClerkProviderWrapperProps) {
       }}
       signInUrl={signInUrl}
       signUpUrl={signUpUrl}
-      afterSignInUrl={afterSignInUrl}
-      afterSignUpUrl={afterSignUpUrl}
+      signInFallbackRedirectUrl={fallbackRedirectUrl}
+      signUpFallbackRedirectUrl={afterSignUpUrl}
     >
       {children}
     </ClerkProvider>
