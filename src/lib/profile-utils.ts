@@ -66,7 +66,10 @@ export async function ensureUserProfile(userId: string) {
 
     const { data: createdProfile, error: createError } = await supabase
       .from('users')
-      .insert(newUserData)
+      .upsert(newUserData, {
+        onConflict: 'email',
+        ignoreDuplicates: false
+      })
       .select('id, role, created_at')
       .single()
 

@@ -87,7 +87,8 @@ export default function UserProfileForm() {
         // Set selected skills
         setSelectedSkills(data.profile.userSkills.map((us: any) => us.skill.id))
       } catch (err) {
-        toast.error('Failed to load profile')
+        console.error('Profile fetch error:', err)
+        toast.error('Failed to load profile. Please refresh the page.')
       } finally {
         setLoading(false)
       }
@@ -165,13 +166,21 @@ export default function UserProfileForm() {
         body: JSON.stringify(profileData)
       })
 
-      if (!response.ok) throw new Error('Failed to update profile')
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('Profile update error:', errorData)
+        throw new Error(errorData.error || 'Failed to update profile')
+      }
 
       // Note: Session update handled by Supabase auth context
+      const result = await response.json()
+      console.log('Profile updated successfully:', result)
 
       toast.success('Profile updated successfully')
     } catch (err) {
-      toast.error('Failed to update profile')
+      console.error('Profile save error:', err)
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update profile'
+      toast.error(errorMessage)
     } finally {
       setSaving(false)
     }

@@ -158,7 +158,7 @@ export async function POST(req: Request) {
         availability: 'AVAILABLE',
         job_alerts_enabled: true
       }, {
-        onConflict: 'id',
+        onConflict: 'email',
         ignoreDuplicates: false
       })
 
