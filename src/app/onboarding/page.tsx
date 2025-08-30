@@ -171,50 +171,94 @@ export default function OnboardingPage() {
         }
       })
 
-      // Create or update user profile in Supabase with retry logic
-      const maxRetries = 3
-      let retryCount = 0
+      // Create or update user profile in Supabase with enhanced retry logic
+      const roleToCreate = role === 'contractor' ? 'USER' : 'RECRUITER'
+      const onboardingId = Math.random().toString(36).substring(7)
+      console.log(`[ONBOARDING-${onboardingId}] Starting profile creation for role:`, roleToCreate)
+      
       let profileCreated = false
+      let lastError = null
+      
+      // Method 1: Try server action first (most reliable)
+      try {
+        console.log(`[ONBOARDING-${onboardingId}] Attempting server action profile creation...`)
+        const { createUserProfile } = await import('@/lib/actions/profile-actions')
+        const result = await createUserProfile(roleToCreate)
+        
+        if (result.success) {
+          console.log(`[ONBOARDING-${onboardingId}] Server action profile creation successful`)
+          profileCreated = true
+        } else {
+          console.error(`[ONBOARDING-${onboardingId}] Server action failed:`, result.error)
+          lastError = new Error(`Server action failed: ${result.error}`)
+        }
+      } catch (serverActionError) {
+        console.error(`[ONBOARDING-${onboardingId}] Server action error:`, serverActionError)
+        lastError = serverActionError
+      }
+      
+      // Method 2: Fallback to API call with retry logic if server action failed
+      if (!profileCreated) {
+        console.log(`[ONBOARDING-${onboardingId}] Server action failed, trying API call with retry logic...`)
+        
+        const maxRetries = 3
+        let retryCount = 0
 
-      while (retryCount < maxRetries && !profileCreated) {
-        try {
-          const response = await fetch('/api/profile/create', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              role: role === 'contractor' ? 'USER' : 'RECRUITER'
+        while (retryCount < maxRetries && !profileCreated) {
+          try {
+            const response = await fetch('/api/profile/create', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-Request-Id': `${onboardingId}-${retryCount + 1}`,
+                'X-Auth-Source': 'Onboarding',
+                'X-Retry-Attempt': retryCount.toString()
+              },
+              body: JSON.stringify({
+                role: roleToCreate
+              })
             })
-          })
 
-          if (response.ok) {
-            profileCreated = true
-            console.log('Profile created successfully')
-          } else {
-            const errorData = await response.json()
-            console.error('Profile creation failed:', errorData)
-            
-            // If profile already exists, that's fine
-            if (response.status === 409 || errorData.message?.includes('already exists')) {
+            const responseData = await response.json()
+
+            if (response.ok) {
               profileCreated = true
+              console.log(`[ONBOARDING-${onboardingId}] API profile creation successful on attempt ${retryCount + 1}`)
             } else {
-              throw new Error(errorData.error || 'Failed to create profile')
+              console.error(`[ONBOARDING-${onboardingId}] API attempt ${retryCount + 1} failed:`, {
+                status: response.status,
+                error: responseData.error,
+                requestId: responseData.requestId
+              })
+              
+              // If profile already exists, that's fine
+              if (response.status === 409 || responseData.error?.includes('already exists')) {
+                profileCreated = true
+                console.log(`[ONBOARDING-${onboardingId}] Profile already exists, continuing...`)
+              } else {
+                throw new Error(responseData.error || 'Failed to create profile')
+              }
             }
-          }
-        } catch (error) {
-          retryCount++
-          console.error(`Profile creation attempt ${retryCount} failed:`, error)
-          
-          if (retryCount < maxRetries) {
-            // Wait before retrying (exponential backoff)
-            await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000))
+          } catch (error) {
+            retryCount++
+            console.error(`[ONBOARDING-${onboardingId}] API attempt ${retryCount} failed:`, error)
+            lastError = error
+            
+            if (retryCount < maxRetries) {
+              // Exponential backoff with jitter
+              const baseDelay = Math.pow(2, retryCount) * 1000
+              const jitter = Math.random() * 500
+              const delay = baseDelay + jitter
+              console.log(`[ONBOARDING-${onboardingId}] Waiting ${delay}ms before retry ${retryCount + 1}...`)
+              await new Promise(resolve => setTimeout(resolve, delay))
+            }
           }
         }
       }
 
       if (!profileCreated) {
-        throw new Error('Failed to create profile after multiple attempts')
+        console.error(`[ONBOARDING-${onboardingId}] All profile creation methods failed`)
+        throw new Error(`Failed to create profile after multiple attempts: ${lastError?.message || 'Unknown error'}`)
       }
 
       setCompletedSteps(prev => new Set([...prev, 'role-selection']))
