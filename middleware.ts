@@ -11,7 +11,13 @@ const isProtectedRoute = createRouteMatcher([
   '/employer(.*)',
   '/onboarding(.*)',
   '/applications(.*)',
-  '/candidates(.*)'
+  '/candidates(.*)',
+  '/api/profile(.*)',  // Protect profile API routes
+  '/api/profile/create',  // Protect profile creation
+  '/api/jobs/create(.*)',
+  '/api/jobs/update(.*)',
+  '/api/jobs/delete(.*)',
+  '/api/applications(.*)'
 ])
 
 // Define public routes that should bypass authentication

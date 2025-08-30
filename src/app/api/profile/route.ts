@@ -4,11 +4,19 @@ import { createClerkSupabaseServerClient } from '@/lib/supabase-clerk'
 
 export async function GET(req: NextRequest) {
   try {
-    // Get authenticated user from Clerk
-    const { userId } = auth()
+    // Get authenticated user from Clerk with debugging
+    const authResult = auth()
+    console.log('Auth result:', { 
+      hasAuth: !!authResult, 
+      userId: authResult?.userId,
+      sessionId: authResult?.sessionId 
+    })
+    
+    const { userId } = authResult || {}
     
     if (!userId) {
       console.error('Profile GET failed: No userId from Clerk auth')
+      console.error('Headers:', Object.fromEntries(req.headers.entries()))
       return NextResponse.json({ error: 'Unauthorized - No user ID' }, { status: 401 })
     }
     
@@ -55,11 +63,19 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    // Get authenticated user from Clerk
-    const { userId } = auth()
+    // Get authenticated user from Clerk with debugging
+    const authResult = auth()
+    console.log('PUT Auth result:', { 
+      hasAuth: !!authResult, 
+      userId: authResult?.userId,
+      sessionId: authResult?.sessionId 
+    })
+    
+    const { userId } = authResult || {}
     
     if (!userId) {
       console.error('Profile PUT failed: No userId from Clerk auth')
+      console.error('Headers:', Object.fromEntries(req.headers.entries()))
       return NextResponse.json({ error: 'Unauthorized - No user ID' }, { status: 401 })
     }
     

@@ -32,23 +32,61 @@ export const createClerkSupabaseServerClient = async (): Promise<SupabaseClient<
     throw new Error('createClerkSupabaseServerClient should only be used on server-side.')
   }
 
-  // Get the authenticated user from Clerk
-  const { getToken } = auth()
-  
-  const token = await getToken({ template: 'supabase' })
-  
-  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
-    global: {
-      headers: token ? {
-        Authorization: `Bearer ${token}`,
-      } : {},
-    },
-    auth: {
-      autoRefreshToken: false,
-      persistSession: false,
-      detectSessionInUrl: false,
-    },
-  })
+  try {
+    // Get the authenticated user from Clerk
+    const authResult = auth()
+    
+    if (!authResult || !authResult.userId) {
+      console.error('No authenticated user found in Clerk auth()')
+      // Return a basic client without authentication
+      return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+          detectSessionInUrl: false,
+        },
+      })
+    }
+    
+    // Get the Supabase JWT token from Clerk
+    const token = await authResult.getToken({ template: 'supabase' })
+    
+    if (!token) {
+      console.error('Failed to get Supabase token from Clerk - ensure JWT template is configured')
+      // Return basic client if no token
+      return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+          detectSessionInUrl: false,
+        },
+      })
+    }
+    
+    // Create authenticated client with Clerk token
+    return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      },
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false,
+      },
+    })
+  } catch (error) {
+    console.error('Error creating Clerk-Supabase client:', error)
+    // Return basic client on error
+    return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+        detectSessionInUrl: false,
+      },
+    })
+  }
 }
 
 // Hook for client-side components to get authenticated Supabase client
