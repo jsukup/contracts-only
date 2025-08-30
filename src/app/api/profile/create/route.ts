@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
-import { createServiceSupabaseClient } from '@/lib/supabase-clerk'
+import { createServiceSupabaseClient } from '@/lib/supabase-clerk-simple'
 
 export async function POST(req: NextRequest) {
   try {

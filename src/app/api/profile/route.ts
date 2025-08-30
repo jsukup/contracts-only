@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@clerk/nextjs/server'
-import { createClerkSupabaseServerClient } from '@/lib/supabase-clerk'
+import { createServiceSupabaseClient } from '@/lib/supabase-clerk-simple'
 
 export async function GET(req: NextRequest) {
   try {
@@ -22,10 +22,10 @@ export async function GET(req: NextRequest) {
     
     console.log('Profile GET request for userId:', userId)
 
-    // Use Clerk-integrated Supabase client that respects RLS
-    const supabase = await createClerkSupabaseServerClient()
+    // Use service role client and manually filter by user ID
+    const supabase = createServiceSupabaseClient()
 
-    // Get user profile with skills - RLS policies will automatically filter to current user
+    // Get user profile with skills - manually filter by Clerk user ID
     const { data: userProfile, error: profileError } = await supabase
       .from('users')
       .select(`
@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
           )
         )
       `)
-      .eq('id', userId)
+      .eq('id', userId)  // Filter by Clerk user ID
       .maybeSingle() // Use maybeSingle() to prevent 406 errors
 
     if (profileError) {
@@ -81,8 +81,8 @@ export async function PUT(req: NextRequest) {
     
     console.log('Profile PUT request for userId:', userId)
 
-    // Use Clerk-integrated Supabase client that respects RLS
-    const supabase = await createClerkSupabaseServerClient()
+    // Use service role client and manually filter by user ID
+    const supabase = createServiceSupabaseClient()
 
     const body = await req.json()
     const {
