@@ -2,7 +2,7 @@ import { headers } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { Webhook } from 'svix'
 import { WebhookEvent } from '@clerk/nextjs/server'
-import { createServiceSupabaseClient } from '@/lib/supabase-client'
+import { createServiceSupabaseClient } from '@/lib/supabase-clerk-simple'
 
 export async function POST(req: Request) {
   // Get the headers

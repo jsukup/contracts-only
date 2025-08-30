@@ -171,21 +171,58 @@ export default function OnboardingPage() {
         }
       })
 
-      // Create user profile in Supabase
-      await fetch('/api/profile/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          role: role === 'contractor' ? 'USER' : 'RECRUITER'
-        })
-      })
+      // Create or update user profile in Supabase with retry logic
+      const maxRetries = 3
+      let retryCount = 0
+      let profileCreated = false
+
+      while (retryCount < maxRetries && !profileCreated) {
+        try {
+          const response = await fetch('/api/profile/create', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              role: role === 'contractor' ? 'USER' : 'RECRUITER'
+            })
+          })
+
+          if (response.ok) {
+            profileCreated = true
+            console.log('Profile created successfully')
+          } else {
+            const errorData = await response.json()
+            console.error('Profile creation failed:', errorData)
+            
+            // If profile already exists, that's fine
+            if (response.status === 409 || errorData.message?.includes('already exists')) {
+              profileCreated = true
+            } else {
+              throw new Error(errorData.error || 'Failed to create profile')
+            }
+          }
+        } catch (error) {
+          retryCount++
+          console.error(`Profile creation attempt ${retryCount} failed:`, error)
+          
+          if (retryCount < maxRetries) {
+            // Wait before retrying (exponential backoff)
+            await new Promise(resolve => setTimeout(resolve, Math.pow(2, retryCount) * 1000))
+          }
+        }
+      }
+
+      if (!profileCreated) {
+        throw new Error('Failed to create profile after multiple attempts')
+      }
 
       setCompletedSteps(prev => new Set([...prev, 'role-selection']))
       setCurrentStep(1)
     } catch (error) {
       console.error('Error updating user role:', error)
+      // Show user-friendly error message
+      alert('There was an issue setting up your profile. Please try again or contact support.')
     } finally {
       setIsUpdating(false)
     }
