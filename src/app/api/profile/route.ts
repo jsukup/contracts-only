@@ -5,8 +5,8 @@ import { getOrCreateUserProfile, ensureUserProfile } from '@/lib/profile-utils'
 
 export async function GET(req: NextRequest) {
   try {
-    // Get authenticated user from Clerk with debugging
-    const authResult = auth()
+    // Get authenticated user from Clerk with proper server-side auth
+    const authResult = await auth()
     console.log('Auth result:', { 
       hasAuth: !!authResult, 
       userId: authResult?.userId,
@@ -17,7 +17,12 @@ export async function GET(req: NextRequest) {
     
     if (!userId) {
       console.error('Profile GET failed: No userId from Clerk auth')
-      console.error('Headers:', Object.fromEntries(req.headers.entries()))
+      console.error('Request URL:', req.url)
+      console.error('Request method:', req.method)
+      console.error('Clerk auth headers:', {
+        'x-clerk-auth-status': req.headers.get('x-clerk-auth-status'),
+        'x-clerk-auth-token': req.headers.get('x-clerk-auth-token') ? 'present' : 'missing'
+      })
       return NextResponse.json({ error: 'Unauthorized - No user ID' }, { status: 401 })
     }
     
@@ -45,8 +50,8 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    // Get authenticated user from Clerk with debugging
-    const authResult = auth()
+    // Get authenticated user from Clerk with proper server-side auth
+    const authResult = await auth()
     console.log('PUT Auth result:', { 
       hasAuth: !!authResult, 
       userId: authResult?.userId,
@@ -57,7 +62,12 @@ export async function PUT(req: NextRequest) {
     
     if (!userId) {
       console.error('Profile PUT failed: No userId from Clerk auth')
-      console.error('Headers:', Object.fromEntries(req.headers.entries()))
+      console.error('Request URL:', req.url)
+      console.error('Request method:', req.method)
+      console.error('Clerk auth headers:', {
+        'x-clerk-auth-status': req.headers.get('x-clerk-auth-status'),
+        'x-clerk-auth-token': req.headers.get('x-clerk-auth-token') ? 'present' : 'missing'
+      })
       return NextResponse.json({ error: 'Unauthorized - No user ID' }, { status: 401 })
     }
     

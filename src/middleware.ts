@@ -21,6 +21,23 @@ export default clerkMiddleware((auth, req) => {
   
   console.log(`[MIDDLEWARE-${middlewareId}] Processing request: ${req.method} ${path}`)
   
+  // For API routes, ensure auth context is available but don't block
+  if (path.startsWith('/api/')) {
+    console.log(`[MIDDLEWARE-${middlewareId}] API route detected: ${path}`)
+    
+    // Ensure auth context is available for API routes
+    const authInfo = auth()
+    console.log(`[MIDDLEWARE-${middlewareId}] API Auth info:`, {
+      hasUserId: !!authInfo?.userId,
+      userId: authInfo?.userId ? `${authInfo.userId.substring(0, 8)}...` : null,
+      hasSessionId: !!authInfo?.sessionId,
+      sessionId: authInfo?.sessionId ? `${authInfo.sessionId.substring(0, 8)}...` : null
+    })
+    
+    // Don't block API routes - let them handle their own auth
+    return
+  }
+  
   // Only protect page routes, let API routes handle their own auth
   if (isProtectedRoute(req)) {
     console.log(`[MIDDLEWARE-${middlewareId}] Protected route detected: ${path}`)
