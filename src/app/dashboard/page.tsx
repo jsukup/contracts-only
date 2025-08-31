@@ -34,11 +34,25 @@ interface UserStats {
   completedContracts: number
 }
 
+interface UserProfile {
+  id: string
+  email: string
+  name: string | null
+  title: string | null
+  bio: string | null
+  location: string | null
+  website: string | null
+  linkedinUrl: string | null
+  role: 'USER' | 'CONTRACTOR' | 'RECRUITER' | 'ADMIN'
+  availability: 'AVAILABLE' | 'BUSY' | 'UNAVAILABLE'
+}
+
 export default function DashboardPage() {
   const { user } = useUser()
   const router = useRouter()
   const [applications, setApplications] = useState<Application[]>([])
   const [stats, setStats] = useState<UserStats | null>(null)
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -64,6 +78,13 @@ export default function DashboardPage() {
   const fetchDashboardData = async () => {
     setLoading(true)
     try {
+      // Fetch user profile first
+      const profileResponse = await fetch('/api/profile')
+      if (profileResponse.ok) {
+        const profileData = await profileResponse.json()
+        setUserProfile(profileData.profile || profileData)
+      }
+
       // Fetch user applications
       const applicationsResponse = await fetch('/api/applications', {
         headers: {

@@ -167,12 +167,12 @@ export default function OnboardingPage() {
       // Update user metadata with selected role
       await user.update({
         unsafeMetadata: {
-          role: role === 'contractor' ? 'USER' : 'RECRUITER'
+          role: role === 'contractor' ? 'CONTRACTOR' : 'RECRUITER'
         }
       })
 
       // Create or update user profile in Supabase with enhanced retry logic
-      const roleToCreate = role === 'contractor' ? 'USER' : 'RECRUITER'
+      const roleToCreate = role === 'contractor' ? 'CONTRACTOR' : 'RECRUITER'
       const onboardingId = Math.random().toString(36).substring(7)
       console.log(`[ONBOARDING-${onboardingId}] Starting profile creation for role:`, roleToCreate)
       
