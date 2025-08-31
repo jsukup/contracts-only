@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useUser } from '@clerk/nextjs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
@@ -56,6 +56,10 @@ export default function UserProfileForm() {
     website: '',
     linkedinUrl: ''
   })
+
+  // Refs for debouncing URL validation
+  const websiteValidationTimer = useRef<NodeJS.Timeout>()
+  const linkedinValidationTimer = useRef<NodeJS.Timeout>()
 
   const [formData, setFormData] = useState({
     name: '',
@@ -120,46 +124,85 @@ export default function UserProfileForm() {
     fetchSkills()
   }, [user])
 
+  // Cleanup timers on unmount
+  useEffect(() => {
+    return () => {
+      if (websiteValidationTimer.current) {
+        clearTimeout(websiteValidationTimer.current)
+      }
+      if (linkedinValidationTimer.current) {
+        clearTimeout(linkedinValidationTimer.current)
+      }
+    }
+  }, [])
+
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }))
     
-    // Clear validation errors when user starts typing
+    // Clear validation errors when user starts typing and validate in real-time
     if (field === 'website' || field === 'linkedinUrl') {
+      // Clear error immediately when user starts typing
       setErrors(prev => ({
         ...prev,
         [field]: ''
       }))
+      
+      // Clear existing timer
+      const timerRef = field === 'website' ? websiteValidationTimer : linkedinValidationTimer
+      if (timerRef.current) {
+        clearTimeout(timerRef.current)
+      }
+      
+      // Debounced validation for URL fields
+      if (value.trim()) {
+        timerRef.current = setTimeout(() => {
+          validateUrlField(field, value)
+        }, 500)
+      }
     }
   }
 
-  // Validate URL fields on blur
-  const handleUrlBlur = (field: 'website' | 'linkedinUrl', value: string) => {
+  // Centralized URL validation function
+  const validateUrlField = useCallback((field: 'website' | 'linkedinUrl', value: string) => {
     if (!value.trim()) {
       setErrors(prev => ({ ...prev, [field]: '' }))
-      return
+      return true
     }
 
     let isValid = false
     let errorMessage = ''
+    let formattedValue = value
+
+    // Auto-format URL if it doesn't start with http/https
+    if (!value.startsWith('http://') && !value.startsWith('https://')) {
+      formattedValue = formatUrl(value)
+    }
 
     if (field === 'website') {
-      isValid = isValidUrl(value)
+      isValid = isValidUrl(formattedValue)
       errorMessage = isValid ? '' : URL_VALIDATION_MESSAGES.INVALID_URL
     } else if (field === 'linkedinUrl') {
-      isValid = isValidLinkedInUrl(value)
+      isValid = isValidLinkedInUrl(formattedValue)
       errorMessage = isValid ? '' : URL_VALIDATION_MESSAGES.INVALID_LINKEDIN
     }
 
+    // Update error state - only set error if validation fails
     setErrors(prev => ({ ...prev, [field]: errorMessage }))
 
-    // Auto-format URL if valid but missing protocol
-    if (isValid && value && !value.startsWith('http')) {
-      const formattedUrl = formatUrl(value)
-      setFormData(prev => ({ ...prev, [field]: formattedUrl }))
+    // Auto-format URL if valid and different from original
+    if (isValid && formattedValue !== value) {
+      setFormData(prev => ({ ...prev, [field]: formattedValue }))
     }
+
+    return isValid
+  }, [])
+
+  // Validate URL fields on blur
+  const handleUrlBlur = (field: 'website' | 'linkedinUrl', value: string) => {
+    validateUrlField(field, value)
   }
 
   const handleSkillToggle = (skillId: string) => {

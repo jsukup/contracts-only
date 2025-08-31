@@ -56,11 +56,24 @@ export default function LocationAutocomplete({
     setIsLoading(true)
     
     try {
-      const response = await fetch(`/api/locations/search?q=${encodeURIComponent(query)}`)
+      // Try Google Places API first, fallback to enhanced static list
+      const response = await fetch(`/api/locations/google-places?q=${encodeURIComponent(query)}`)
       if (response.ok) {
         const data = await response.json()
         setSuggestions(data.locations || [])
         setIsOpen(data.locations?.length > 0)
+        
+        // Log the data source for debugging
+        console.log('Location search source:', data.source || 'unknown')
+      } else {
+        // Fallback to original static endpoint if Google Places fails
+        const fallbackResponse = await fetch(`/api/locations/search?q=${encodeURIComponent(query)}`)
+        if (fallbackResponse.ok) {
+          const fallbackData = await fallbackResponse.json()
+          setSuggestions(fallbackData.locations || [])
+          setIsOpen(fallbackData.locations?.length > 0)
+          console.log('Using fallback location search')
+        }
       }
     } catch (error) {
       console.error('Location search error:', error)

@@ -54,13 +54,28 @@ export default function ProfessionalTitleAutocomplete({
     }
 
     setIsLoading(true)
+    console.log('Professional title search starting for:', query)
     
     try {
-      const response = await fetch(`/api/professional-titles/search?q=${encodeURIComponent(query)}`)
+      const url = `/api/professional-titles/search?q=${encodeURIComponent(query)}`
+      console.log('Fetching from URL:', url)
+      
+      const response = await fetch(url)
+      console.log('Response status:', response.status, response.statusText)
+      
       if (response.ok) {
         const data = await response.json()
-        setSuggestions(data.titles || [])
-        setIsOpen(data.titles?.length > 0)
+        console.log('Response data:', data)
+        
+        const titles = data.titles || []
+        setSuggestions(titles)
+        setIsOpen(titles.length > 0)
+        
+        console.log('Setting suggestions:', titles, 'dropdown open:', titles.length > 0)
+      } else {
+        console.error('API response not ok:', response.status, response.statusText)
+        setSuggestions([])
+        setIsOpen(false)
       }
     } catch (error) {
       console.error('Professional title search error:', error)
@@ -145,6 +160,13 @@ export default function ProfessionalTitleAutocomplete({
 
       {error && (
         <p className="text-sm text-red-500 mt-1">{error}</p>
+      )}
+
+      {/* Debug info - remove in production */}
+      {process.env.NODE_ENV === 'development' && (
+        <div className="text-xs text-gray-400 mt-1">
+          Debug: isOpen={isOpen.toString()}, suggestions={suggestions.length}, loading={isLoading.toString()}
+        </div>
       )}
 
       {isOpen && suggestions.length > 0 && (

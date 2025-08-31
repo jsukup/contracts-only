@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import LocationAutocomplete from '@/components/ui/LocationAutocomplete'
+import ProfessionalTitleAutocomplete from '@/components/ui/ProfessionalTitleAutocomplete'
+import { isValidUrl, isValidLinkedInUrl, formatUrl, URL_VALIDATION_MESSAGES } from '@/lib/url-validation'
 import { User, Mail, Globe, MapPin, DollarSign, Clock, AlertTriangle, Loader2, Save, Camera } from 'lucide-react'
 import toast from 'react-hot-toast'
 
@@ -41,6 +43,10 @@ export default function ProfilePage() {
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
+  const [errors, setErrors] = useState({
+    website: '',
+    linkedin_url: ''
+  })
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -113,6 +119,46 @@ export default function ProfilePage() {
       [name]: type === 'checkbox' ? checked : value
     }))
     setHasChanges(true)
+
+    // Clear validation errors when user starts typing for URL fields
+    if (name === 'website' || name === 'linkedin_url') {
+      setErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }))
+    }
+  }
+
+  // Handle URL validation on blur
+  const handleUrlBlur = (field: 'website' | 'linkedin_url', value: string) => {
+    if (!value.trim()) {
+      setErrors(prev => ({ ...prev, [field]: '' }))
+      return
+    }
+
+    let isValid = false
+    let errorMessage = ''
+    let formattedValue = value
+
+    // Auto-format URL if it doesn't start with http/https
+    if (!value.startsWith('http://') && !value.startsWith('https://')) {
+      formattedValue = formatUrl(value)
+    }
+
+    if (field === 'website') {
+      isValid = isValidUrl(formattedValue)
+      errorMessage = isValid ? '' : URL_VALIDATION_MESSAGES.INVALID_URL
+    } else if (field === 'linkedin_url') {
+      isValid = isValidLinkedInUrl(formattedValue)
+      errorMessage = isValid ? '' : URL_VALIDATION_MESSAGES.INVALID_LINKEDIN
+    }
+
+    setErrors(prev => ({ ...prev, [field]: errorMessage }))
+
+    // Auto-format URL if valid and different from original
+    if (isValid && formattedValue !== value) {
+      setFormData(prev => ({ ...prev, [field]: formattedValue }))
+    }
   }
 
   // Validation function for rate fields
@@ -133,6 +179,27 @@ export default function ProfilePage() {
 
     // Validate rates before submission
     if (!validateRates()) {
+      return
+    }
+
+    // Validate URL fields before saving
+    let hasErrors = false
+    const newErrors = { website: '', linkedin_url: '' }
+
+    if (formData.website && !isValidUrl(formData.website)) {
+      newErrors.website = URL_VALIDATION_MESSAGES.INVALID_URL
+      hasErrors = true
+    }
+
+    if (formData.linkedin_url && !isValidLinkedInUrl(formData.linkedin_url)) {
+      newErrors.linkedin_url = URL_VALIDATION_MESSAGES.INVALID_LINKEDIN
+      hasErrors = true
+    }
+
+    setErrors(newErrors)
+
+    if (hasErrors) {
+      toast.error('Please fix the validation errors before saving')
       return
     }
 
@@ -167,6 +234,11 @@ export default function ProfilePage() {
       await refreshUserProfile()
       setHasChanges(false)
       toast.success('Profile updated successfully!')
+      
+      // Redirect to Browse Jobs page after successful save
+      setTimeout(() => {
+        router.push('/jobs')
+      }, 1500) // Give time for success toast to be seen
     } catch (error: any) {
       console.error('Error updating profile:', error)
       toast.error(error.message || 'Failed to update profile. Please try again.')
@@ -239,15 +311,27 @@ export default function ProfilePage() {
                   <label htmlFor="title" className="block text-sm font-medium text-gray-900 mb-1">
                     {isRecruiter ? 'Position at Company' : 'Professional Title'}
                   </label>
-                  <input
-                    id="title"
-                    name="title"
-                    type="text"
-                    value={formData.title}
-                    onChange={handleChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                    placeholder="e.g., Senior Software Engineer"
-                  />
+                  {isRecruiter ? (
+                    <input
+                      id="title"
+                      name="title"
+                      type="text"
+                      value={formData.title}
+                      onChange={handleChange}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                      placeholder="e.g., Senior Talent Acquisition Manager"
+                    />
+                  ) : (
+                    <ProfessionalTitleAutocomplete
+                      value={formData.title}
+                      onChange={(value) => {
+                        setFormData(prev => ({ ...prev, title: value }))
+                        setHasChanges(true)
+                      }}
+                      placeholder="e.g., Senior Software Engineer"
+                      className="w-full"
+                    />
+                  )}
                 </div>
               </div>
 
@@ -318,9 +402,15 @@ export default function ProfilePage() {
                   type="url"
                   value={formData.website}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  onBlur={(e) => handleUrlBlur('website', e.target.value)}
+                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${
+                    errors.website ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder={isRecruiter ? "https://company-careers.com" : "https://yourwebsite.com"}
                 />
+                {errors.website && (
+                  <p className="text-sm text-red-500 mt-1">{errors.website}</p>
+                )}
               </div>
               <div>
                 <label htmlFor="linkedin_url" className="block text-sm font-medium text-gray-900 mb-1">
@@ -332,9 +422,15 @@ export default function ProfilePage() {
                   type="url"
                   value={formData.linkedin_url}
                   onChange={handleChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  onBlur={(e) => handleUrlBlur('linkedin_url', e.target.value)}
+                  className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 ${
+                    errors.linkedin_url ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="https://linkedin.com/in/yourprofile"
                 />
+                {errors.linkedin_url && (
+                  <p className="text-sm text-red-500 mt-1">{errors.linkedin_url}</p>
+                )}
               </div>
             </CardContent>
           </Card>
