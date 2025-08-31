@@ -16,14 +16,22 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if Google Places API key is configured
-    const apiKey = process.env.GOOGLE_PLACES_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY
+    const apiKey = process.env.GOOGLE_PLACES_API_KEY || process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY
 
     if (!apiKey) {
-      console.warn('Google Places API key not configured, falling back to static list')
+      console.error('⚠️ Google Places API key not configured')
+      console.log('Please set GOOGLE_PLACES_API_KEY or NEXT_PUBLIC_GOOGLE_MAPS_API_KEY in environment variables')
       
-      // Fallback to enhanced static list when API key not available
-      return fallbackLocationSearch(query)
+      // Return error response instead of silent fallback
+      return NextResponse.json({ 
+        locations: [],
+        source: 'error',
+        error: 'Google Places API key not configured. Please contact support.',
+        note: 'API key required for location search functionality'
+      }, { status: 503 })
     }
+
+    console.log('✅ Google Places API key found, making API request')
 
     try {
       // Use Google Places Autocomplete API as specifically requested
