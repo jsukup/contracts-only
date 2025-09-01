@@ -7,7 +7,7 @@ import { createServiceSupabaseClient } from '@/lib/supabase-clerk-simple'
  * Server action for creating user profiles
  * This bypasses API route issues and uses direct server-side auth
  */
-export async function createUserProfile(role: 'USER' | 'RECRUITER') {
+export async function createUserProfile(role: 'USER' | 'RECRUITER' | 'CONTRACTOR') {
   const actionId = Math.random().toString(36).substring(7)
   const startTime = Date.now()
   
@@ -53,12 +53,12 @@ export async function createUserProfile(role: 'USER' | 'RECRUITER') {
     console.log(`[ACTION-${actionId}] Using user ID: ${userId.substring(0, 8)}...`)
     
     // Validate role
-    if (!role || !['USER', 'RECRUITER'].includes(role)) {
+    if (!role || !['USER', 'RECRUITER', 'CONTRACTOR'].includes(role)) {
       console.error(`[ACTION-${actionId}] Invalid role provided:`, { role })
       return { 
         error: 'Invalid role',
         actionId,
-        validRoles: ['USER', 'RECRUITER']
+        validRoles: ['USER', 'RECRUITER', 'CONTRACTOR']
       }
     }
     

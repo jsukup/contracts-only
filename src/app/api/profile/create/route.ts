@@ -95,12 +95,12 @@ export async function POST(req: NextRequest) {
       requestBodySize: JSON.stringify(body).length
     })
 
-    if (!role || !['USER', 'RECRUITER'].includes(role)) {
-      console.error(`[${requestId}] Invalid role provided:`, { role, validRoles: ['USER', 'RECRUITER'] })
+    if (!role || !['USER', 'RECRUITER', 'CONTRACTOR'].includes(role)) {
+      console.error(`[${requestId}] Invalid role provided:`, { role, validRoles: ['USER', 'RECRUITER', 'CONTRACTOR'] })
       return NextResponse.json({ 
         error: 'Invalid role',
         requestId,
-        debugInfo: { providedRole: role, validRoles: ['USER', 'RECRUITER'] }
+        debugInfo: { providedRole: role, validRoles: ['USER', 'RECRUITER', 'CONTRACTOR'] }
       }, { status: 400 })
     }
 
@@ -156,7 +156,7 @@ export async function POST(req: NextRequest) {
       email_verified: clerkUser.email_addresses[0]?.verification?.status === 'verified' 
         ? new Date().toISOString() 
         : null,
-      role: role as 'USER' | 'RECRUITER',
+      role: role as 'USER' | 'RECRUITER' | 'CONTRACTOR',
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
       availability: 'AVAILABLE' as const,
