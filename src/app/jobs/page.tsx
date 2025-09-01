@@ -58,7 +58,7 @@ export default function JobsPage() {
     total: 0,
     totalPages: 0
   })
-  const [sortBy, setSortBy] = useState('createdAt')
+  const [sortBy, setSortBy] = useState('created_at')
   const [sortOrder, setSortOrder] = useState('desc')
 
   const fetchJobs = async (newFilters = filters, page = 1) => {

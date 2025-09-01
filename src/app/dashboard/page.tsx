@@ -57,7 +57,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!user) {
-      redirect('/auth/signin')
+      redirect('/sign-in')
     }
   }, [user])
 

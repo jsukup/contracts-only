@@ -47,7 +47,7 @@ export default function NotificationsPage() {
 
   useEffect(() => {
     if (!user) {
-      redirect('/auth/signin')
+      redirect('/sign-in')
     }
   }, [user])
 

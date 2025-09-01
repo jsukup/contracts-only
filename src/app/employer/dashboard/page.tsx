@@ -53,7 +53,7 @@ export default function EmployerDashboardPage() {
 
   useEffect(() => {
     if (!user) {
-      redirect('/auth/signin?callbackUrl=/employer/dashboard')
+      redirect('/sign-in?callbackUrl=/employer/dashboard')
     }
   }, [user])
 

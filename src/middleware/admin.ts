@@ -9,7 +9,7 @@ export async function adminMiddleware(request: NextRequest) {
   const { data: { user }, error } = await supabase.auth.getUser()
   
   if (error || !user) {
-    return NextResponse.redirect(new URL('/auth/signin', request.url))
+    return NextResponse.redirect(new URL('/sign-in', request.url))
   }
 
   // Check if user has admin role

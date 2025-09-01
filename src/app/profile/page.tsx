@@ -51,7 +51,7 @@ export default function ProfilePage() {
   // Redirect if not authenticated
   useEffect(() => {
     if (isLoaded && !user) {
-      router.push('/auth/signin?callbackUrl=/profile')
+      router.push('/sign-in?callbackUrl=/profile')
     }
   }, [user, isLoaded, router])
 

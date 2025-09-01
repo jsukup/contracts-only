@@ -68,7 +68,7 @@ export default function PostJobPage() {
   })
 
   if (!user) {
-    redirect('/auth/signin?callbackUrl=/jobs/post')
+    redirect('/sign-in?callbackUrl=/jobs/post')
   }
 
   const handleInputChange = (field: keyof JobFormData, value: string | number | boolean | string[]) => {

@@ -56,7 +56,7 @@ export default function SettingsPage() {
   // Redirect if not authenticated
   useEffect(() => {
     if (isLoaded && !user) {
-      router.push('/auth/signin?callbackUrl=/profile/settings')
+      router.push('/sign-in?callbackUrl=/profile/settings')
     }
   }, [user, isLoaded, router])
 

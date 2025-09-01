@@ -48,7 +48,7 @@ export default function CandidatesPage() {
 
   useEffect(() => {
     if (!user) {
-      redirect('/auth/signin?callbackUrl=/candidates')
+      redirect('/sign-in?callbackUrl=/candidates')
     }
     
     // Only recruiters should access this page

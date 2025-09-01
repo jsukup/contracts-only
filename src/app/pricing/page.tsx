@@ -16,7 +16,7 @@ export default function PricingPage() {
 
   const handleSubscribe = async (planId: string) => {
     if (!user) {
-      window.location.href = '/auth/signin?callbackUrl=/pricing'
+      window.location.href = '/sign-in?callbackUrl=/pricing'
       return
     }
 

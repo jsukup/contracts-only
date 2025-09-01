@@ -75,7 +75,7 @@ export default function AnalyticsPage() {
 
   useEffect(() => {
     if (!user) {
-      redirect('/auth/signin')
+      redirect('/sign-in')
     }
   }, [user])
 

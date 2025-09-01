@@ -117,7 +117,7 @@ export default function JobDetailsPage() {
 
   const handleApply = async () => {
     if (!user) {
-      router.push('/auth/signin')
+      router.push('/sign-in')
       return
     }
 
@@ -374,7 +374,7 @@ export default function JobDetailsPage() {
 
             {!user && (
               <Button asChild className="w-full">
-                <Link href="/auth/signin">Sign in to Apply</Link>
+                <Link href="/sign-in">Sign in to Apply</Link>
               </Button>
             )}
 
