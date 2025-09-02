@@ -17,7 +17,8 @@ export enum EmailJobStatus {
 export enum UserRole {
   USER = 'USER',
   ADMIN = 'ADMIN',
-  RECRUITER = 'RECRUITER'
+  RECRUITER = 'RECRUITER',
+  CONTRACTOR = 'CONTRACTOR'
 }
 
 export enum JobType {

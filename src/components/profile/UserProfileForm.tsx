@@ -25,6 +25,7 @@ interface UserProfile {
   hourlyRateMin: number | null
   hourlyRateMax: number | null
   availability: 'AVAILABLE' | 'BUSY' | 'NOT_LOOKING'
+  role: 'USER' | 'RECRUITER' | 'CONTRACTOR'
   userSkills: Array<{
     id: string
     skill: {
@@ -266,6 +267,8 @@ export default function UserProfileForm() {
         ...formData,
         hourlyRateMin: formData.hourlyRateMin ? parseInt(formData.hourlyRateMin) : null,
         hourlyRateMax: formData.hourlyRateMax ? parseInt(formData.hourlyRateMax) : null,
+        // Only contractors use availability field, set default for others
+        availability: profile?.role === 'CONTRACTOR' ? formData.availability : 'AVAILABLE',
         skills: selectedSkills
       }
 
@@ -375,20 +378,22 @@ export default function UserProfileForm() {
                 placeholder="e.g., Chicago, IL, USA"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Availability Status</label>
-              <select
-                className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                value={formData.availability}
-                onChange={(e) => handleInputChange('availability', e.target.value)}
-              >
-                {availabilityOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {profile?.role === 'CONTRACTOR' && (
+              <div>
+                <label className="block text-sm font-medium mb-2">Availability Status</label>
+                <select
+                  className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  value={formData.availability}
+                  onChange={(e) => handleInputChange('availability', e.target.value)}
+                >
+                  {availabilityOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
