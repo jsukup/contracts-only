@@ -103,11 +103,20 @@ export default function SettingsPage() {
   // Load notification settings
   useEffect(() => {
     if (userProfile) {
-      setNotifications({
+      // Load contractor notifications from new structure or fallback to legacy
+      const contractorNotifs = userProfile.contractor_notifications || {
         job_alerts_enabled: userProfile.job_alerts_enabled ?? true,
         application_updates: true,
         weekly_digest: true,
         marketing_emails: false
+      }
+      
+      
+      setNotifications({
+        job_alerts_enabled: contractorNotifs.job_alerts_enabled ?? true,
+        application_updates: contractorNotifs.application_updates ?? true,
+        weekly_digest: contractorNotifs.weekly_digest ?? true,
+        marketing_emails: contractorNotifs.marketing_emails ?? false
       })
       
       // Load recruiter notifications if user is a recruiter
@@ -140,22 +149,32 @@ export default function SettingsPage() {
 
     setIsSubmitting(true)
     try {
-      const updateData: any = {
-        job_alerts_enabled: notifications.job_alerts_enabled,
-        updated_at: new Date().toISOString()
+      // Use the profile API endpoint to save notification preferences
+      const updateData: any = {}
+
+      // Save contractor notifications for all users (contractors and others)
+      if (userProfile?.role !== 'RECRUITER') {
+        updateData.contractorNotifications = notifications
       }
 
       // Add recruiter notifications if user is a recruiter
       if (userProfile?.role === 'RECRUITER') {
-        updateData.recruiter_notifications = recruiterNotifications
+        updateData.recruiterNotifications = {
+          ...recruiterNotifications,
+          marketing_emails: notifications.marketing_emails
+        }
       }
 
-      const { error } = await supabase
-        .from('users')
-        .update(updateData)
-        .eq('id', user.id)
+      const response = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateData)
+      })
 
-      if (error) throw error
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to save preferences')
+      }
 
       await refreshUserProfile()
       toast.success('Notification preferences saved!')

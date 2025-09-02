@@ -87,7 +87,9 @@ export async function PUT(req: NextRequest) {
       hourlyRateMin,
       hourlyRateMax,
       availability,
-      skills
+      skills,
+      contractorNotifications,
+      recruiterNotifications
     } = body
 
     // Validate rate ranges
@@ -109,20 +111,34 @@ export async function PUT(req: NextRequest) {
       }, { status: 500 })
     }
 
+    // Prepare update data
+    const updateData: any = {
+      name,
+      title,
+      bio,
+      location,
+      website,
+      linkedin_url: linkedinUrl,
+      hourly_rate_min: hourlyRateMin,
+      hourly_rate_max: hourlyRateMax,
+      availability
+    }
+
+    // Handle notification preferences
+    if (contractorNotifications) {
+      updateData.contractor_notifications = contractorNotifications
+      // Also update the legacy job_alerts_enabled field for backward compatibility
+      updateData.job_alerts_enabled = contractorNotifications.job_alerts_enabled
+    }
+
+    if (recruiterNotifications) {
+      updateData.recruiter_notifications = recruiterNotifications
+    }
+
     // Update user profile
     const { data: updatedUser, error: updateError } = await supabase
       .from('users')
-      .update({
-        name,
-        title,
-        bio,
-        location,
-        website,
-        linkedin_url: linkedinUrl,
-        hourly_rate_min: hourlyRateMin,
-        hourly_rate_max: hourlyRateMax,
-        availability
-      })
+      .update(updateData)
       .eq('id', userId)
       .select()
       .single()
