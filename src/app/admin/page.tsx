@@ -72,10 +72,6 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true)
   const [timeRange, setTimeRange] = useState('7d')
 
-  useEffect(() => {
-    fetchDashboardStats()
-  }, [fetchDashboardStats])
-
   const fetchDashboardStats = useCallback(async () => {
     setLoading(true)
     try {
@@ -91,6 +87,10 @@ export default function AdminDashboard() {
       setLoading(false)
     }
   }, [timeRange])
+
+  useEffect(() => {
+    fetchDashboardStats()
+  }, [fetchDashboardStats])
 
   const getMockDashboardStats = (): DashboardStats => ({
     users: {

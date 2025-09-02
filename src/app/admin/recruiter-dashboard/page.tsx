@@ -35,7 +35,7 @@ interface RecruiterDashboardData extends RecruiterAnalytics {
 }
 
 export default function RecruiterDashboard() {
-  const { user } = useUser() // User authentication
+  const { user } = useUser() // User authentication - ensuring access control
   const [data, setData] = useState<RecruiterDashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [dateRange, setDateRange] = useState<string>('30days')

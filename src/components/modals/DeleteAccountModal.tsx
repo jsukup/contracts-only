@@ -9,9 +9,18 @@ import { AlertTriangle, Loader2, X } from 'lucide-react'
 interface DeleteAccountModalProps {
   isOpen: boolean
   onClose: () => void
+  userProfile?: any
+  loading?: boolean
+  onDelete?: () => Promise<void>
 }
 
-export default function DeleteAccountModal({ isOpen, onClose }: DeleteAccountModalProps) {
+export default function DeleteAccountModal({ 
+  isOpen, 
+  onClose, 
+  userProfile, 
+  loading = false,
+  onDelete 
+}: DeleteAccountModalProps) {
   const router = useRouter()
   const { user } = useUser()
   const { signOut } = useClerk()
@@ -29,7 +38,12 @@ export default function DeleteAccountModal({ isOpen, onClose }: DeleteAccountMod
       setIsDeleting(true)
       setError(null)
       
-      await deleteUserProfile()
+      // Use the onDelete prop if provided, otherwise show an error
+      if (onDelete) {
+        await onDelete()
+      } else {
+        throw new Error('Delete functionality not implemented')
+      }
       
       // Redirect to home page after successful deletion
       router.push('/?deleted=true')

@@ -52,6 +52,39 @@ export default function SettingsPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [showPasswords, setShowPasswords] = useState(false)
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false)
+  const [userProfile, setUserProfile] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  // Fetch user profile data
+  const fetchUserProfile = async () => {
+    if (!user?.id) return
+    
+    try {
+      setLoading(true)
+      const response = await fetch('/api/profile')
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          // User profile doesn't exist yet
+          setUserProfile(null)
+          return
+        }
+        throw new Error(`Failed to fetch profile: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      setUserProfile(data.user || data)
+    } catch (error) {
+      console.error('Error fetching user profile:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Refresh user profile data
+  const refreshUserProfile = async () => {
+    await fetchUserProfile()
+  }
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -59,6 +92,13 @@ export default function SettingsPage() {
       router.push('/sign-in?callbackUrl=/profile/settings')
     }
   }, [user, isLoaded, router])
+
+  // Fetch profile data when user is available
+  useEffect(() => {
+    if (user?.id) {
+      fetchUserProfile()
+    }
+  }, [user?.id])
 
   // Load notification settings
   useEffect(() => {

@@ -49,9 +49,18 @@ export async function GET(request: NextRequest) {
         throw new Error(`Google API error: ${data.status}`)
       }
 
+      interface GooglePlacesPrediction {
+        description: string
+        place_id: string
+        structured_formatting?: {
+          main_text: string
+          secondary_text: string
+        }
+      }
+
       // Transform Google Places response to our format
       const locations = (data.predictions || [])
-        .map((prediction: any) => prediction.description)
+        .map((prediction: GooglePlacesPrediction) => prediction.description)
         .slice(0, 10) // Limit to 10 results
 
       return NextResponse.json({ 

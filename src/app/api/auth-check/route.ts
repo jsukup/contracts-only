@@ -57,7 +57,33 @@ export async function GET(req: NextRequest) {
   }
 }
 
-function getRecommendations(config: any): string[] {
+interface AuthConfig {
+  environment: {
+    NODE_ENV?: string
+    VERCEL_ENV: string
+    VERCEL_URL: string
+    NEXT_PUBLIC_APP_URL: string
+  }
+  clerk: {
+    hasPublishableKey: boolean
+    hasSecretKey: boolean
+    signInUrl: string
+    signUpUrl: string
+  }
+  computed: {
+    appUrl: string
+    currentUrl: string
+    origin: string
+    host: string
+  }
+  auth: {
+    isAuthenticated: boolean
+    userId: string
+    sessionId: string
+  }
+}
+
+function getRecommendations(config: AuthConfig): string[] {
   const recommendations: string[] = []
   
   // Check for production URL mismatch

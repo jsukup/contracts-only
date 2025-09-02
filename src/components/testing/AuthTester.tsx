@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useUser, useClerk } from '@clerk/nextjs'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/Button'
@@ -22,6 +22,28 @@ export default function AuthTester() {
   const { signOut } = useClerk()
   const [tests, setTests] = useState<TestResult[]>([])
   const [isRunning, setIsRunning] = useState(false)
+  const [userProfile, setUserProfile] = useState<any>(null)
+
+  // Fetch user profile for testing
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      if (!user?.id) return
+      
+      try {
+        const response = await fetch('/api/profile')
+        if (response.ok) {
+          const data = await response.json()
+          setUserProfile(data.user || data)
+        }
+      } catch (error) {
+        console.error('Error fetching profile for testing:', error)
+      }
+    }
+
+    if (user?.id) {
+      fetchUserProfile()
+    }
+  }, [user?.id])
 
   const addTestResult = (name: string, status: 'success' | 'error', message: string) => {
     setTests(prev => [

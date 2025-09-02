@@ -21,7 +21,6 @@ interface ProfileFormData {
   hourly_rate_min: string
   hourly_rate_max: string
   availability: string
-  job_alerts_enabled: boolean
 }
 
 export default function ProfilePage() {
@@ -38,8 +37,7 @@ export default function ProfilePage() {
     linkedin_url: '',
     hourly_rate_min: '',
     hourly_rate_max: '',
-    availability: 'AVAILABLE',
-    job_alerts_enabled: true
+    availability: 'AVAILABLE'
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [hasChanges, setHasChanges] = useState(false)
@@ -104,8 +102,7 @@ export default function ProfilePage() {
         linkedin_url: userProfile.linkedin_url || '',
         hourly_rate_min: userProfile.hourly_rate_min?.toString() || '',
         hourly_rate_max: userProfile.hourly_rate_max?.toString() || '',
-        availability: userProfile.availability || 'AVAILABLE',
-        job_alerts_enabled: userProfile.job_alerts_enabled ?? true
+        availability: userProfile.availability || 'AVAILABLE'
       })
     }
   }, [userProfile])
@@ -214,8 +211,7 @@ export default function ProfilePage() {
         linkedinUrl: formData.linkedin_url || null,
         hourlyRateMin: formData.hourly_rate_min ? parseInt(formData.hourly_rate_min) : null,
         hourlyRateMax: formData.hourly_rate_max ? parseInt(formData.hourly_rate_max) : null,
-        availability: formData.availability,
-        job_alerts_enabled: formData.job_alerts_enabled
+        availability: formData.availability
       }
 
       const response = await fetch('/api/profile', {
@@ -498,27 +494,6 @@ export default function ProfilePage() {
             </Card>
           )}
 
-          {/* Preferences */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Preferences</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center">
-                <input
-                  id="job_alerts_enabled"
-                  name="job_alerts_enabled"
-                  type="checkbox"
-                  checked={formData.job_alerts_enabled}
-                  onChange={handleChange}
-                  className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
-                />
-                <label htmlFor="job_alerts_enabled" className="ml-2 block text-sm text-gray-900">
-                  Receive job alerts via email
-                </label>
-              </div>
-            </CardContent>
-          </Card>
 
           {/* Submit Button */}
           <div className="flex justify-end space-x-3">

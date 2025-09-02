@@ -1,10 +1,17 @@
 // Google Analytics configuration for ContractsOnly
 // Focused on recruiter value metrics and job application tracking
 
+interface GtagEvent {
+  event_category?: string
+  event_label?: string
+  value?: number
+  [key: string]: unknown
+}
+
 declare global {
   interface Window {
-    gtag: (...args: any[]) => void
-    dataLayer: any[]
+    gtag: (command: string, targetId?: string, config?: GtagEvent) => void
+    dataLayer: unknown[]
   }
 }
 
@@ -15,8 +22,8 @@ export function initGA() {
   if (!GA_TRACKING_ID) return
 
   window.dataLayer = window.dataLayer || []
-  window.gtag = function gtag() {
-    window.dataLayer.push(arguments)
+  window.gtag = function gtag(...args: unknown[]) {
+    window.dataLayer.push(args)
   }
   
   window.gtag('js', new Date())
@@ -44,7 +51,7 @@ export function trackPageView(url: string) {
 }
 
 // Track custom events - focused on recruiter KPIs
-export function trackEvent(action: string, category: string, label?: string, value?: number, customParameters?: Record<string, any>) {
+export function trackEvent(action: string, category: string, label?: string, value?: number, customParameters?: Record<string, unknown>) {
   if (!GA_TRACKING_ID) return
 
   window.gtag('event', action, {

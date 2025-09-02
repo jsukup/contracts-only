@@ -1,9 +1,8 @@
-import { createServerSupabaseClient, createServiceSupabaseClient } from '@/lib/supabase'
+import { createServerSupabaseClient } from '@/lib/supabase'
 import { db } from '@/lib/database'
 import { EmailType, EmailJobStatus } from '@/lib/types'
 import { EmailTemplateEngine, EmailTemplateData } from './templates'
 import { sendEmail } from './sender'
-import { JobMatchingEngine } from '@/lib/matching'
 
 export type EmailAutomationType = 
   | 'welcome'

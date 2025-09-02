@@ -57,12 +57,6 @@ export default function AnalyticsPage() {
     end: new Date().toISOString().split('T')[0]
   })
 
-  useEffect(() => {
-    if (user?.publicMetadata?.role === 'ADMIN') {
-      fetchAnalytics()
-    }
-  }, [user, selectedView, dateRange, fetchAnalytics])
-
   const fetchAnalytics = useCallback(async () => {
     setLoading(true)
     try {
@@ -84,6 +78,12 @@ export default function AnalyticsPage() {
       setLoading(false)
     }
   }, [selectedView, dateRange])
+
+  useEffect(() => {
+    if (user?.publicMetadata?.role === 'ADMIN') {
+      fetchAnalytics()
+    }
+  }, [user, selectedView, dateRange, fetchAnalytics])
 
   const handleRefresh = async () => {
     setRefreshing(true)

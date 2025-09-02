@@ -5,10 +5,18 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = createPublicSupabaseClient(request)
     
+    interface TestResult {
+      test: string
+      status: 'PASS' | 'FAIL' | 'ERROR'
+      error?: string
+      count?: number
+      message?: string
+    }
+
     // Test multiple database operations
     const results = {
       connection: 'OK',
-      tests: [] as any[]
+      tests: [] as TestResult[]
     }
 
     // Test 1: Fetch skills (should work publicly)

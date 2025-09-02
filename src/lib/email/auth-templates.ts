@@ -1,4 +1,4 @@
-import { sendEmail, EmailOptions } from './sender'
+import { sendEmail } from './sender'
 
 /**
  * Email verification template for new user registration

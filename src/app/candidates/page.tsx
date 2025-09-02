@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useUser } from '@clerk/nextjs'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Card, CardContent } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { Input } from '@/components/ui/Input'
@@ -19,6 +19,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import Image from 'next/image'
 
 interface Candidate {
   id: string
@@ -45,6 +46,42 @@ export default function CandidatesPage() {
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState('')
   const [skillFilter, setSkillFilter] = useState('')
+  interface UserProfile {
+    id: string
+    role: 'USER' | 'ADMIN' | 'RECRUITER'
+    name?: string
+    email: string
+  }
+
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
+
+  // Fetch user profile data
+  const fetchUserProfile = async () => {
+    if (!user?.id) return
+    
+    try {
+      const response = await fetch('/api/profile')
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          setUserProfile(null)
+          return
+        }
+        throw new Error(`Failed to fetch profile: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      setUserProfile(data.user || data)
+    } catch (error) {
+      console.error('Error fetching user profile:', error)
+    }
+  }
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchUserProfile()
+    }
+  }, [user?.id])
 
   useEffect(() => {
     if (!user) {
@@ -174,9 +211,11 @@ export default function CandidatesPage() {
                       {/* Avatar */}
                       <div className="flex-shrink-0">
                         {candidate.image ? (
-                          <img 
+                          <Image 
                             src={candidate.image} 
                             alt={candidate.name}
+                            width={48}
+                            height={48}
                             className="w-12 h-12 rounded-full object-cover"
                           />
                         ) : (
