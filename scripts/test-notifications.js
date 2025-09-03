@@ -5,8 +5,8 @@
  * with the test data created by seed-test-notifications.js
  */
 
-const fetch = require('node-fetch')
 require('dotenv').config()
+// Using built-in fetch (Node.js 18+)
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 const ADMIN_SECRET = process.env.ADMIN_SECRET || 'Cn6JBJE+XRwsJCCKayQid7SylKlA+N2riKkyqmKNm1M='
