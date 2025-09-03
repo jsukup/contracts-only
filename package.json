@@ -95,6 +95,7 @@
     "jest": "^30.0.5",
     "jest-environment-jsdom": "^30.0.5",
     "jest-junit": "^16.0.0",
+    "node-mocks-http": "^1.17.2",
     "playwright": "^1.55.0",
     "puppeteer": "^24.17.1",
     "supertest": "^7.1.4",

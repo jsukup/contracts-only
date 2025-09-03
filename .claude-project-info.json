@@ -1,0 +1,10 @@
+{
+  "projectName": "ContractsOnly",
+  "prdPath": "/root/contracts-only/.claude/requirements/history/2025-09-02-1416-user-notifications/",
+  "taskBreakdownPath": "/root/contracts-only/.claude/requirements/history/2025-09-02-1416-user-notifications/08-task-breakdown.md",
+  "implementationPlanPath": "/root/contracts-only/.claude/requirements/history/2025-09-02-1416-user-notifications/09-implementation-plan.md",
+  "unifiedPlanPath": "/root/contracts-only/docs/notification-system-unified-implementation-plan.md",
+  "created": "2025-09-02T14:16:00.000Z",
+  "lastUpdated": "2025-09-02T15:00:00.000Z",
+  "currentFeature": "User Notification System"
+}

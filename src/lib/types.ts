@@ -270,3 +270,36 @@ export interface GroupByResult {
     [key: string]: number
   }
 }
+
+// Database type for Supabase TypeScript integration
+export interface Database {
+  public: {
+    Tables: {
+      users: {
+        Row: UserWithIncludes
+        Insert: Omit<UserWithIncludes, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<UserWithIncludes, 'id' | 'created_at' | 'updated_at'>>
+      }
+      jobs: {
+        Row: JobWithIncludes
+        Insert: Omit<JobWithIncludes, 'id' | 'created_at' | 'updated_at' | 'view_count'>
+        Update: Partial<Omit<JobWithIncludes, 'id' | 'created_at' | 'updated_at'>>
+      }
+      job_applications: {
+        Row: ApplicationWithIncludes
+        Insert: Omit<ApplicationWithIncludes, 'id' | 'created_at' | 'updated_at'>
+        Update: Partial<Omit<ApplicationWithIncludes, 'id' | 'created_at' | 'updated_at'>>
+      }
+    }
+    Views: {}
+    Functions: {}
+    Enums: {
+      user_role: UserRole
+      job_type: JobType
+      application_status: ApplicationStatus
+      availability_status: AvailabilityStatus
+      proficiency_level: ProficiencyLevel
+      experience_level: ExperienceLevel
+    }
+  }
+}

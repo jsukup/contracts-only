@@ -4,10 +4,10 @@ import { getServerSession } from '@/lib/auth'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { jobId: string } }
+  { params }: { params: Promise<{ jobId: string }> }
 ) {
+  const { jobId } = await params
   try {
-    const { jobId } = params
     const body = await request.json()
     const { externalUrl, referrerUrl } = body
 

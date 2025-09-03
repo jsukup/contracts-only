@@ -6,8 +6,9 @@ import { createServerSupabaseClient } from '@/lib/supabase'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { jobId: string } }
+  { params }: { params: Promise<{ jobId: string }> }
 ) {
+  const { jobId } = await params
   try {
     const session = await getServerSession()
     
@@ -24,7 +25,7 @@ export async function GET(
         *,
         users!jobs_poster_id_fkey(id, name, role)
       `)
-      .eq('id', params.jobId)
+      .eq('id', jobId)
       .single()
 
     if (jobError || !job) {
@@ -95,8 +96,9 @@ export async function GET(
 // Invite candidates to apply for a job
 export async function POST(
   request: NextRequest,
-  { params }: { params: { jobId: string } }
+  { params }: { params: Promise<{ jobId: string }> }
 ) {
+  const { jobId } = await params
   try {
     const session = await getServerSession()
     
@@ -113,7 +115,7 @@ export async function POST(
         *,
         users!jobs_poster_id_fkey(id, name)
       `)
-      .eq('id', params.jobId)
+      .eq('id', jobId)
       .single()
 
     if (jobError || !job) {

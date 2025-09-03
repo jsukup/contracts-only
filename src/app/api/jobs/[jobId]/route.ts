@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createPublicSupabaseClient } from '@/lib/auth-server'
+import { createServerSupabaseClient } from '@/lib/supabase'
 
 export async function GET(
   req: NextRequest,
@@ -42,8 +43,9 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { jobId: string } }
+  { params }: { params: Promise<{ jobId: string }> }
 ) {
+  const { jobId } = await params
   try {
     const supabase = createServerSupabaseClient()
     
@@ -142,7 +144,7 @@ export async function PUT(
       const { error: deleteError } = await supabase
         .from('job_skills')
         .delete()
-        .eq('job_id', params.jobId)
+        .eq('job_id', jobId)
       
       if (deleteError) {
         console.error('Error deleting job skills:', deleteError)
@@ -201,8 +203,9 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { jobId: string } }
+  { params }: { params: Promise<{ jobId: string }> }
 ) {
+  const { jobId } = await params
   try {
     const supabase = createServerSupabaseClient()
     

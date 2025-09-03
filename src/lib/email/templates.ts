@@ -28,6 +28,9 @@ export interface EmailTemplateData {
   unsubscribeUrl?: string
   dashboardUrl?: string
   companyName?: string
+  applicationStatus?: string
+  applicationId?: string
+  jobId?: string
 }
 
 export class EmailTemplateEngine {
@@ -503,6 +506,179 @@ View full dashboard: ${data.dashboardUrl || 'https://contractsonly.com/dashboard
 ${data.unsubscribeUrl ? `Unsubscribe: ${data.unsubscribeUrl}` : ''}
       `
     }
+  }
+
+  /**
+   * Generate application status update email
+   */
+  static generateApplicationStatusUpdateEmail(data: EmailTemplateData): EmailTemplate {
+    const { user, job, applicationStatus } = data
+    
+    if (!job || !applicationStatus) {
+      throw new Error('Job and application status data required for status update email')
+    }
+
+    const statusConfig = this.getStatusConfig(applicationStatus)
+
+    return {
+      subject: `Application Update: ${job.title} at ${job.company}`,
+      
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Application Status Update</title>
+        </head>
+        <body style="font-family: 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #374151; margin: 0; padding: 0; background-color: #f9fafb;">
+          <div style="max-width: 600px; margin: 20px auto; background-color: white; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+            
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, ${statusConfig.color} 0%, ${statusConfig.darkColor} 100%); padding: 30px; text-align: center;">
+              <h1 style="color: white; margin: 0; font-size: 24px; font-weight: bold;">${statusConfig.icon} Application Update</h1>
+              <p style="color: rgba(255, 255, 255, 0.9); margin: 10px 0 0; font-size: 16px;">
+                Your application status has been updated
+              </p>
+            </div>
+
+            <!-- Content -->
+            <div style="padding: 30px;">
+              <p style="margin-bottom: 20px; font-size: 16px;">
+                Hi ${user.name},
+              </p>
+              
+              <p style="margin-bottom: 25px; font-size: 16px;">
+                Good news! There's an update on your application:
+              </p>
+
+              <div style="border: 1px solid #D1D5DB; border-radius: 8px; padding: 25px; margin-bottom: 25px; background-color: #F9FAFB;">
+                <h3 style="margin: 0 0 10px; color: #1F2937; font-size: 20px;">${job.title}</h3>
+                <p style="margin: 5px 0; color: #6B7280; font-size: 16px;">
+                  <strong>${job.company}</strong>
+                </p>
+                <div style="margin-top: 15px; padding: 15px; background-color: ${statusConfig.bgColor}; border-radius: 6px; border-left: 4px solid ${statusConfig.color};">
+                  <p style="margin: 0; color: ${statusConfig.textColor}; font-size: 16px; font-weight: bold;">
+                    Status: ${statusConfig.label}
+                  </p>
+                </div>
+              </div>
+
+              <div style="background-color: #EFF6FF; border-left: 4px solid ${this.BRAND_COLOR}; padding: 20px; margin-bottom: 25px;">
+                <h4 style="margin: 0 0 10px; color: #1E40AF; font-size: 16px;">${statusConfig.nextStepsTitle}</h4>
+                <div style="color: #1E40AF; font-size: 14px;">
+                  ${statusConfig.nextSteps}
+                </div>
+              </div>
+
+              <div style="text-align: center; margin: 25px 0;">
+                <a href="${data.dashboardUrl || '#'}" style="background-color: ${this.BRAND_COLOR}; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px; display: inline-block;">
+                  View Application Details
+                </a>
+              </div>
+
+              <p style="margin-top: 25px; font-size: 14px; color: #6B7280; text-align: center;">
+                ${statusConfig.encouragement}
+              </p>
+            </div>
+
+            <!-- Footer -->
+            <div style="background-color: #F9FAFB; padding: 20px 30px; text-align: center; border-top: 1px solid #E5E7EB;">
+              <p style="margin: 0; font-size: 12px; color: #6B7280;">
+                Questions about this application? Contact <a href="mailto:${this.SUPPORT_EMAIL}" style="color: ${this.BRAND_COLOR};">${this.SUPPORT_EMAIL}</a>
+              </p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+
+      text: `
+Application Status Update
+
+Hi ${user.name},
+
+Your application for "${job.title}" at ${job.company} has been updated.
+
+Status: ${statusConfig.label}
+
+${statusConfig.nextStepsTitle}
+${statusConfig.nextStepsText}
+
+View application details: ${data.dashboardUrl || 'https://contractsonly.com/dashboard'}
+
+${statusConfig.encouragement}
+
+Questions? Contact us at ${this.SUPPORT_EMAIL}
+      `
+    }
+  }
+
+  /**
+   * Get status configuration for application status emails
+   */
+  private static getStatusConfig(status: string) {
+    const configs = {
+      'INTERVIEW': {
+        icon: '🎯',
+        label: 'Interview Scheduled',
+        color: '#3B82F6',
+        darkColor: '#1E40AF',
+        bgColor: '#EFF6FF',
+        textColor: '#1E40AF',
+        nextStepsTitle: 'What to do next:',
+        nextSteps: `
+          <ul style="margin: 0; padding-left: 20px;">
+            <li style="margin-bottom: 5px;">Check your email for interview details</li>
+            <li style="margin-bottom: 5px;">Prepare for the interview by reviewing the job requirements</li>
+            <li style="margin-bottom: 5px;">Research the company and prepare questions</li>
+            <li>Be ready to discuss your relevant experience</li>
+          </ul>
+        `,
+        nextStepsText: '• Check email for interview details\n• Prepare by reviewing job requirements\n• Research the company\n• Prepare questions about the role',
+        encouragement: 'Great job getting to the interview stage! 🎉'
+      },
+      'ACCEPTED': {
+        icon: '🎉',
+        label: 'Offer Extended',
+        color: '#10B981',
+        darkColor: '#059669',
+        bgColor: '#ECFDF5',
+        textColor: '#047857',
+        nextStepsTitle: 'Congratulations! Next steps:',
+        nextSteps: `
+          <ul style="margin: 0; padding-left: 20px;">
+            <li style="margin-bottom: 5px;">Review the job offer carefully</li>
+            <li style="margin-bottom: 5px;">Negotiate terms if needed</li>
+            <li style="margin-bottom: 5px;">Ask questions about start date and logistics</li>
+            <li>Respond to the employer promptly</li>
+          </ul>
+        `,
+        nextStepsText: '• Review the job offer carefully\n• Negotiate terms if needed\n• Ask questions about logistics\n• Respond promptly to the employer',
+        encouragement: 'Congratulations on landing the offer! 🎊'
+      },
+      'REJECTED': {
+        icon: '📋',
+        label: 'Not Selected',
+        color: '#6B7280',
+        darkColor: '#374151',
+        bgColor: '#F9FAFB',
+        textColor: '#4B5563',
+        nextStepsTitle: 'Keep going strong:',
+        nextSteps: `
+          <ul style="margin: 0; padding-left: 20px;">
+            <li style="margin-bottom: 5px;">Don't take it personally - it's part of the process</li>
+            <li style="margin-bottom: 5px;">Consider asking for feedback if appropriate</li>
+            <li style="margin-bottom: 5px;">Continue applying to other opportunities</li>
+            <li>Keep improving your skills and profile</li>
+          </ul>
+        `,
+        nextStepsText: '• Don\'t take it personally\n• Consider asking for feedback\n• Continue applying to other jobs\n• Keep improving your skills',
+        encouragement: 'Keep your head up! The right opportunity is out there. 💪'
+      }
+    }
+
+    return configs[status as keyof typeof configs] || configs['REJECTED']
   }
 
   /**

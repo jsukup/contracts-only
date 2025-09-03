@@ -4,8 +4,9 @@ import { EmailService } from '@/lib/email'
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { jobId: string } }
+  { params }: { params: Promise<{ jobId: string }> }
 ) {
+  const { jobId } = await params
   try {
     const supabase = createServerSupabaseClient()
     
@@ -23,8 +24,6 @@ export async function POST(
     if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized - Invalid token' }, { status: 401 })
     }
-
-    const { jobId } = params
     const body = await req.json()
     const { coverLetter: _coverLetter, expectedRate: _expectedRate, availableStartDate } = body
 

@@ -1,0 +1,19 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/notifications",
+      "schedule": "0 9 * * 1"
+    }
+  ],
+  "functions": {
+    "src/app/api/cron/notifications/route.ts": {
+      "maxDuration": 300
+    },
+    "src/app/api/notifications/weekly-digest/route.ts": {
+      "maxDuration": 180
+    },
+    "src/app/api/notifications/weekly-reports/route.ts": {
+      "maxDuration": 180
+    }
+  }
+}

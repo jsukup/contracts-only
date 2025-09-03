@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createPublicSupabaseClient } from '@/lib/auth-server'
+import { JobMatchingEngine } from '@/lib/matching'
+import { createBatchNotifications, NotificationTypeEnum } from '@/lib/notifications'
 
 export async function GET(req: NextRequest) {
   try {
@@ -167,6 +169,14 @@ export async function POST(req: NextRequest) {
       console.error('Error creating job:', jobError)
       throw jobError
     }
+
+    // After successful job creation, trigger job alert notifications
+    try {
+      await triggerJobAlertNotifications(job.id, job)
+    } catch (notificationError) {
+      // Log but don't fail the job creation
+      console.error('Error triggering job alert notifications:', notificationError)
+    }
     
     return NextResponse.json(job, { status: 201 })
   } catch (error) {
@@ -187,5 +197,54 @@ export async function POST(req: NextRequest) {
       { error: 'Failed to create job' },
       { status: 500 }
     )
+  }
+}
+
+/**
+ * Trigger job alert notifications for matching contractors
+ */
+async function triggerJobAlertNotifications(jobId: string, jobData: any) {
+  try {
+    console.log(`Triggering job alerts for job ${jobId}: ${jobData.title}`)
+    
+    // Use job matching engine to find candidates with 70+ score threshold
+    const matches = await JobMatchingEngine.getCandidatesForJob(jobId, 50, 70)
+    
+    if (matches.length === 0) {
+      console.log(`No matching candidates found for job ${jobId} with 70+ score`)
+      return
+    }
+
+    console.log(`Found ${matches.length} matching candidates for job ${jobId}`)
+
+    // Create notifications for each matching user
+    const notifications = matches.map(match => ({
+      userId: match.userId,
+      type: NotificationTypeEnum.JOB_MATCH,
+      title: 'New Job Match!',
+      message: `${jobData.title} at ${jobData.company} matches your skills (${match.overallScore}% match)`,
+      data: {
+        jobId: jobId,
+        matchScore: match.overallScore,
+        url: `/jobs/${jobId}`,
+        company: jobData.company,
+        title: jobData.title,
+        hourlyRate: `$${jobData.hourly_rate_min}-$${jobData.hourly_rate_max}/hr`
+      },
+      sendEmail: true // This will be checked against user preferences
+    }))
+
+    // Create notifications in batch
+    const result = await createBatchNotifications(notifications)
+    
+    console.log(`Job alert notifications created: ${result.successful} successful, ${result.failed} failed`)
+    
+    if (result.failed > 0) {
+      console.error('Some job alert notifications failed:', result.errors)
+    }
+
+  } catch (error) {
+    console.error('Error in triggerJobAlertNotifications:', error)
+    throw error
   }
 }

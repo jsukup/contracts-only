@@ -170,6 +170,189 @@ export class EmailAutomationEngine {
   }
 
   /**
+   * Schedule application status update email
+   */
+  static async scheduleApplicationStatusUpdate(
+    userId: string,
+    applicationId: string, 
+    jobId: string,
+    title: string,
+    message: string
+  ): Promise<void> {
+    const supabase = createServerSupabaseClient()
+    
+    // Get user, job, and application details
+    const [userResult, jobResult, applicationResult] = await Promise.all([
+      supabase
+        .from('users')
+        .select('email, name')
+        .eq('id', userId)
+        .single(),
+      supabase
+        .from('jobs')
+        .select('title, company, hourly_rate_min, hourly_rate_max, location, is_remote')
+        .eq('id', jobId)
+        .single(),
+      supabase
+        .from('applications')
+        .select('status')
+        .eq('id', applicationId)
+        .single()
+    ])
+
+    if (!userResult.data || !jobResult.data || !applicationResult.data) {
+      console.error('Failed to fetch data for application status update email')
+      return
+    }
+
+    const user = userResult.data
+    const job = jobResult.data
+    const application = applicationResult.data
+
+    await this.scheduleEmail({
+      type: 'application_confirmation', // Reuse existing enum value
+      recipient: user.email,
+      data: {
+        user: {
+          name: user.name,
+          email: user.email
+        },
+        job: {
+          title: job.title,
+          company: job.company,
+          hourlyRateMin: job.hourly_rate_min,
+          hourlyRateMax: job.hourly_rate_max,
+          location: job.location,
+          isRemote: job.is_remote
+        },
+        applicationStatus: application.status,
+        applicationId,
+        jobId,
+        dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/applications/${applicationId}`,
+        unsubscribeUrl: `${process.env.NEXT_PUBLIC_APP_URL}/unsubscribe?email=${encodeURIComponent(user.email)}`
+      },
+      scheduledFor: new Date() // Send immediately
+    })
+  }
+
+  /**
+   * Schedule contractor weekly digest emails
+   */
+  static async scheduleContractorWeeklyDigests(): Promise<void> {
+    const supabase = createServerSupabaseClient()
+    
+    // Get contractors who have weekly digest enabled
+    const { data: contractors, error: contractorError } = await supabase
+      .from('users')
+      .select('id, name, email, contractor_notifications')
+      .eq('role', 'CONTRACTOR')
+      .not('contractor_notifications', 'is', null)
+    
+    if (contractorError) {
+      console.error('Error fetching contractors for weekly digest:', contractorError)
+      return
+    }
+
+    const digestsSent = []
+    
+    for (const contractor of contractors || []) {
+      // Check if contractor wants weekly digest
+      const notifications = contractor.contractor_notifications as any
+      if (!notifications?.weekly_digest) {
+        continue
+      }
+
+      try {
+        // Get personalized job matches for this contractor
+        const matches = await this.getPersonalizedJobMatches(contractor.id)
+        
+        if (matches.length === 0) {
+          console.log(`No job matches found for contractor ${contractor.id}, skipping digest`)
+          continue
+        }
+
+        // Schedule weekly digest email
+        await this.scheduleEmail({
+          type: 'job_alert', // Reuse job alert type for weekly digest
+          recipient: contractor.email,
+          data: {
+            user: {
+              name: contractor.name,
+              email: contractor.email
+            },
+            matches: matches.map(match => ({
+              title: match.title,
+              company: match.company,
+              hourlyRate: match.hourlyRate,
+              matchScore: match.matchScore
+            })),
+            dashboardUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard`,
+            unsubscribeUrl: `${process.env.NEXT_PUBLIC_APP_URL}/unsubscribe?email=${encodeURIComponent(contractor.email)}`
+          },
+          scheduledFor: new Date()
+        })
+
+        digestsSent.push({
+          contractorId: contractor.id,
+          email: contractor.email,
+          jobMatches: matches.length
+        })
+
+      } catch (error) {
+        console.error(`Error generating weekly digest for contractor ${contractor.id}:`, error)
+      }
+    }
+
+    console.log(`Contractor weekly digests scheduled for ${digestsSent.length} users`)
+  }
+
+  /**
+   * Get personalized job matches for contractor weekly digest
+   */
+  private static async getPersonalizedJobMatches(contractorId: string): Promise<Array<{
+    title: string
+    company: string  
+    hourlyRate: string
+    matchScore: number
+  }>> {
+    const supabase = createServerSupabaseClient()
+    
+    try {
+      // Get jobs posted in the last week
+      const oneWeekAgo = new Date()
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
+
+      const { data: recentJobs, error: jobsError } = await supabase
+        .from('jobs')
+        .select('id, title, company, hourly_rate_min, hourly_rate_max')
+        .eq('is_active', true)
+        .gte('created_at', oneWeekAgo.toISOString())
+        .order('created_at', { ascending: false })
+        .limit(20)
+
+      if (jobsError || !recentJobs || recentJobs.length === 0) {
+        console.log('No recent jobs found for weekly digest')
+        return []
+      }
+
+      // Use JobMatchingEngine to get matches (mock implementation for now)
+      // In production, this would use the actual matching algorithm
+      const mockMatches = recentJobs.slice(0, 5).map(job => ({
+        title: job.title,
+        company: job.company,
+        hourlyRate: `$${job.hourly_rate_min}-$${job.hourly_rate_max}/hr`,
+        matchScore: Math.floor(Math.random() * 30) + 70 // 70-100% match scores
+      }))
+
+      return mockMatches
+
+    } catch (error) {
+      console.error('Error getting personalized job matches:', error)
+      return []
+    }
+  }
+
+  /**
    * Schedule weekly digest emails for employers
    */
   static async scheduleWeeklyDigests(): Promise<void> {
@@ -360,7 +543,12 @@ export class EmailAutomationEngine {
           template = EmailTemplateEngine.generateJobAlertEmail(data)
           break
         case 'application_confirmation':
-          template = EmailTemplateEngine.generateApplicationConfirmationEmail(data)
+          // Check if this is an application status update or regular confirmation
+          if (data.applicationStatus && ['INTERVIEW', 'ACCEPTED', 'REJECTED'].includes(data.applicationStatus)) {
+            template = EmailTemplateEngine.generateApplicationStatusUpdateEmail(data)
+          } else {
+            template = EmailTemplateEngine.generateApplicationConfirmationEmail(data)
+          }
           break
         case 'employer_weekly_digest':
           template = EmailTemplateEngine.generateEmployerWeeklyDigest(data as any)

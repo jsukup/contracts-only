@@ -4,8 +4,9 @@ import { JobMatchingEngine } from '@/lib/matching'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
+  const { userId } = await params
   try {
     const supabase = createServerSupabaseClient()
     
@@ -92,8 +93,9 @@ export async function GET(
 // Update user matching preferences
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { userId: string } }
+  { params }: { params: Promise<{ userId: string }> }
 ) {
+  const { userId } = await params
   try {
     const supabase = createServerSupabaseClient()
     
@@ -138,7 +140,7 @@ export async function PUT(
         availability,
         updated_at: new Date().toISOString()
       })
-      .eq('id', params.userId)
+      .eq('id', userId)
       .select()
       .single()
 
