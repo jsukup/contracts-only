@@ -229,6 +229,7 @@ async function setupTestUsers() {
   
   if (!existingUsers?.find(u => u.email === contractor1Email)) {
     usersToCreate.push({
+      id: `user_test_contractor_1_${Date.now()}`, // Clerk-style user ID
       email: contractor1Email,
       name: 'Test Contractor One',
       role: 'CONTRACTOR',
@@ -245,6 +246,7 @@ async function setupTestUsers() {
   
   if (!existingUsers?.find(u => u.email === contractor2Email)) {
     usersToCreate.push({
+      id: `user_test_contractor_2_${Date.now() + 1}`, // Clerk-style user ID
       email: contractor2Email,
       name: 'Test Contractor Two',
       role: 'CONTRACTOR',
@@ -261,25 +263,33 @@ async function setupTestUsers() {
   
   if (!existingUsers?.find(u => u.email === recruiter1Email)) {
     usersToCreate.push({
+      id: `user_test_recruiter_1_${Date.now() + 2}`, // Clerk-style user ID
       email: recruiter1Email,
       name: 'Test Recruiter One',
       role: 'RECRUITER',
       title: 'Technical Recruiter',
       bio: 'Helping companies find top tech talent',
       location: 'New York, NY',
-      company: 'TechCorp Solutions'
+      availability: 'AVAILABLE', // Required field
+      job_alerts_enabled: false, // Recruiters don't need job alerts
+      email_verified: new Date().toISOString()
+      // Note: company info is stored in jobs table, not users
     })
   }
   
   if (!existingUsers?.find(u => u.email === recruiter2Email)) {
     usersToCreate.push({
+      id: `user_test_recruiter_2_${Date.now() + 3}`, // Clerk-style user ID
       email: recruiter2Email,
       name: 'Test Recruiter Two',
       role: 'RECRUITER',
       title: 'Talent Acquisition Manager',
       bio: 'Building great engineering teams',
       location: 'Seattle, WA',
-      company: 'CloudScale Inc'
+      availability: 'AVAILABLE', // Required field
+      job_alerts_enabled: false, // Recruiters don't need job alerts
+      email_verified: new Date().toISOString()
+      // Note: company info is stored in jobs table, not users
     })
   }
   
@@ -517,15 +527,29 @@ async function createJobClicks(jobs) {
       const clickDate = new Date()
       clickDate.setDate(clickDate.getDate() - Math.floor(Math.random() * 7))
       
-      await supabase
-        .from('job_clicks')
+      // Generate example external URLs for the companies
+      const externalUrls = [
+        'https://techcorp-solutions.com/careers',
+        'https://cloudscale.com/jobs',
+        'https://startupxyz.io/careers',
+        'https://enterprise-systems.com/jobs',
+        'https://api-masters.dev/careers'
+      ]
+      
+      const { error } = await supabase
+        .from('job_external_link_clicks')
         .insert({
           job_id: job.id,
-          ip_address: `192.168.1.${Math.floor(Math.random() * 255)}`,
+          external_url: externalUrls[Math.floor(Math.random() * externalUrls.length)],
+          ip_address: null, // Using null instead of invalid IP format
           user_agent: 'Mozilla/5.0 Test Browser',
           referrer_url: Math.random() > 0.5 ? 'https://google.com' : 'https://linkedin.com',
-          created_at: clickDate.toISOString()
+          clicked_at: clickDate.toISOString()
         })
+      
+      if (error) {
+        console.error('Error creating job click:', error)
+      }
     }
   }
   
@@ -566,10 +590,10 @@ async function main() {
     console.log(`    - ${TEST_USERS.recruiter2?.email}`)
     
     console.log('\n📊 Data Summary:')
-    console.log(`  - ${jobs.filter(j => j.daysAgo === 0).length} jobs posted today`)
-    console.log(`  - ${jobs.filter(j => j.daysAgo > 0 && j.daysAgo <= 7).length} jobs posted this week`)
-    console.log(`  - ${jobs.filter(j => j.daysAgo > 7 && j.daysAgo <= 14).length} jobs posted last week`)
-    console.log(`  - ${jobs.filter(j => j.daysAgo > 14).length} older jobs (should not appear in weekly digest)`)
+    console.log(`  - ${JOB_TEMPLATES.filter(j => j.daysAgo === 0).length} jobs posted today`)
+    console.log(`  - ${JOB_TEMPLATES.filter(j => j.daysAgo > 0 && j.daysAgo <= 7).length} jobs posted this week`)
+    console.log(`  - ${JOB_TEMPLATES.filter(j => j.daysAgo > 7 && j.daysAgo <= 14).length} jobs posted last week`)
+    console.log(`  - ${JOB_TEMPLATES.filter(j => j.daysAgo > 14).length} older jobs (should not appear in weekly digest)`)
     
     console.log('\n🧪 Ready for testing! Use the test-notifications.js script to trigger emails.')
     

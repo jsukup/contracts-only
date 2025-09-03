@@ -32,16 +32,18 @@ First, create dummy job postings and test users:
 node scripts/seed-test-notifications.js
 ```
 
+**⚠️ Note**: If you encounter database schema errors, ensure your local database is up to date with the latest migrations.
+
 This creates:
 - **4 Test Users**:
-  - 2 Contractors with different skill sets
-  - 2 Recruiters from different companies
+  - 2 Contractors with different skill sets and matching preferences
+  - 2 Recruiters (company info is stored with their job postings)
 - **9 Job Postings**:
   - Jobs posted today (0 days old)
   - Jobs from this week (1-6 days old)
   - Older jobs (7-30 days old)
 - **Sample Applications** with different statuses
-- **Click Analytics** for recruiter reports
+- **Click Analytics** stored in `job_external_link_clicks` table for recruiter reports
 
 ### Test Data Characteristics
 
@@ -209,6 +211,9 @@ Set `testMode: true` in the API calls to:
 | Wrong jobs in digest | Check job posting dates and skill matching |
 | Missing test users | Run seed script again |
 | Server not reachable | Ensure `npm run dev` is running |
+| "company column not found" | ✅ Fixed - company info is stored in jobs, not users |
+| "job_clicks table not found" | ✅ Fixed - now uses job_external_link_clicks table |
+| Database schema mismatch | Run latest migrations or check table structure |
 
 ### Debug Mode
 
