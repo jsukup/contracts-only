@@ -77,7 +77,7 @@ jobs:
         JEST_JUNIT_OUTPUT_NAME: junit.xml
       run: |
         # Run authentication integration tests
-        npm run test:ci -- --testPathPattern="tests/integration/.*auth.*\\.test\\.ts$|tests/integration/oauth.*\\.test\\.ts$" --maxWorkers=2 --testResultsProcessor=jest-junit
+        npm run test:ci -- --testPathPatterns="tests/integration/.*auth.*\\.test\\.ts$|tests/integration/oauth.*\\.test\\.ts$" --maxWorkers=2 --testResultsProcessor=jest-junit
     
     - name: Upload Coverage Reports
       if: success()
