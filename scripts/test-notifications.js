@@ -50,11 +50,16 @@ async function testEndpoint(name, url, options = {}) {
       if (data.emailsSent !== undefined) log(`   Emails sent: ${data.emailsSent}`, 'green')
       if (data.results) {
         log(`   Results:`, 'yellow')
-        data.results.slice(0, 3).forEach(r => {
-          log(`     - ${JSON.stringify(r)}`, 'yellow')
-        })
-        if (data.results.length > 3) {
-          log(`     ... and ${data.results.length - 3} more`, 'yellow')
+        // Handle both array and object results
+        if (Array.isArray(data.results)) {
+          data.results.slice(0, 3).forEach(r => {
+            log(`     - ${JSON.stringify(r)}`, 'yellow')
+          })
+          if (data.results.length > 3) {
+            log(`     ... and ${data.results.length - 3} more`, 'yellow')
+          }
+        } else {
+          log(`     - ${JSON.stringify(data.results)}`, 'yellow')
         }
       }
     } else {
@@ -139,12 +144,12 @@ async function runTests() {
         log('\n🔔 This simulates updating an application status', 'yellow')
         log('   The applicant will receive an email notification', 'yellow')
         
-        // You'll need to get an actual application ID from your database
-        // This is just an example
-        const applicationId = 'YOUR_APPLICATION_ID_HERE'
+        // Using actual application ID from database
+        // You can change this to test different applications
+        const applicationId = '7ae40e6c-e655-42f8-9a87-9eabd63b8cfb' // Status: INTERVIEW
         
-        if (applicationId === 'YOUR_APPLICATION_ID_HERE') {
-          log('   ⚠️  Skipped: Replace YOUR_APPLICATION_ID_HERE with actual ID', 'yellow')
+        if (!applicationId) {
+          log('   ⚠️  Skipped: No application ID available', 'yellow')
           return
         }
         
@@ -198,8 +203,10 @@ async function runTests() {
               'Authorization': `Bearer ${ADMIN_SECRET}`
             },
             body: {
+              name: 'Feature Announcement Campaign',
               subject: 'New Features in ContractsOnly!',
               content: 'Check out our latest platform updates...',
+              templateType: 'announcement', // required field
               targetAudience: 'all', // or 'contractors', 'recruiters'
               testMode: true
             }
@@ -230,11 +237,12 @@ async function runTests() {
       run: async () => {
         log('\n🎯 Testing job matching for specific user', 'yellow')
         
-        // Replace with actual user ID from your test data
-        const userId = 'YOUR_TEST_USER_ID'
+        // Using actual user ID from test data
+        // This contractor has React/TypeScript skills
+        const userId = 'user_test_contractor_1_1756883796831'
         
-        if (userId === 'YOUR_TEST_USER_ID') {
-          log('   ⚠️  Skipped: Replace YOUR_TEST_USER_ID with actual ID', 'yellow')
+        if (!userId) {
+          log('   ⚠️  Skipped: No user ID available', 'yellow')
           return
         }
         
