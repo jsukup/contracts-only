@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ClerkProviderWrapper } from '@/components/providers/ClerkProviderWrapper';
 import { Navigation } from "@/components/layout/Navigation";
+import { Footer } from "@/components/layout/Footer";
 import { WebSocketProvider } from "@/components/providers/WebSocketProvider";
 import { PerformanceMonitor } from "@/components/performance/LazyComponents";
 import MonitoringProvider from "@/components/monitoring/MonitoringProvider";
@@ -159,6 +160,7 @@ export default function RootLayout({
                   <main className="flex-1">
                     {children}
                   </main>
+                  <Footer />
                 </div>
                 
                 {/* Performance monitoring in development */}
