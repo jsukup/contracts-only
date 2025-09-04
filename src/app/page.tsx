@@ -35,7 +35,18 @@ export default async function HomePage() {
     if (jobsError) {
       console.error('Error fetching recent jobs:', jobsError)
     } else {
-      recentJobs = jobs || []
+      // Transform database fields to match client interface
+      recentJobs = (jobs || []).map(job => ({
+        id: job.id,
+        title: job.title,
+        company: job.company,
+        location: job.location,
+        isRemote: job.is_remote,
+        jobType: job.job_type,
+        hourlyRateMin: job.hourly_rate_min,
+        hourlyRateMax: job.hourly_rate_max,
+        externalUrl: job.external_url
+      }))
       console.log('Recent jobs found:', recentJobs.length)
     }
   } catch (error) {
