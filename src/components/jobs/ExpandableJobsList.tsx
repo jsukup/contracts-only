@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
-import { useSupabaseClient } from '@/lib/supabase-client'
+import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 
 interface Job {
@@ -27,7 +27,6 @@ export function ExpandableJobsList({ initialJobs, totalJobs }: ExpandableJobsLis
   const [expanded, setExpanded] = useState(false)
   const [allJobs, setAllJobs] = useState<Job[]>([])
   const [loadingMore, setLoadingMore] = useState(false)
-  const supabase = useSupabaseClient()
 
   const handleToggleExpanded = async () => {
     if (!expanded && allJobs.length === 0) {
