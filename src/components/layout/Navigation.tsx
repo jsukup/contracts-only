@@ -112,6 +112,11 @@ export function Navigation() {
           {/* Logo */}
           <div className="flex items-center space-x-8">
             <Link href="/" className="flex items-center space-x-2">
+              <img 
+                src="/images/icons/android-chrome-192x192-light.png" 
+                alt="ContractsOnly"
+                className="h-8 w-8"
+              />
               <div className="text-xl font-bold text-indigo-600">
                 ContractsOnly
               </div>

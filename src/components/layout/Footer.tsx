@@ -18,6 +18,11 @@ export function Footer() {
             {/* Left side - Company info */}
             <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-6 text-center md:text-left">
               <div className="flex items-center space-x-2">
+                <img 
+                  src="/images/icons/android-chrome-192x192-light.png" 
+                  alt="ContractsOnly"
+                  className="h-6 w-6"
+                />
                 <span className="text-xl font-bold text-gray-900">ContractsOnly</span>
               </div>
               <div className="text-sm text-gray-600">

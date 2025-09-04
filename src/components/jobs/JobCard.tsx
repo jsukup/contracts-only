@@ -70,7 +70,7 @@ export function JobCard({ job, showActions = true }: JobCardProps) {
 
   return (
     <Card 
-      className="hover:shadow-lg transition-shadow" 
+      className="hover:shadow-xl transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02]" 
       data-job-id={job.id}
     >
       <CardHeader>
