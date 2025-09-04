@@ -31,6 +31,17 @@ export async function GET(
       return NextResponse.json({ error: 'Job not found' }, { status: 404 })
     }
     
+    // Handle system-posted jobs (external jobs from Indeed)
+    const isSystemJob = job.poster_id === 'system-job-poster-001'
+    const posterData = isSystemJob ? {
+      id: 'system-job-poster-001',
+      name: 'ContractsOnly Job Feed',
+      email: 'jobs@contractsonly.com',
+      image: null,
+      title: 'External Job Listing',
+      bio: 'This job is aggregated from external job boards'
+    } : job.poster
+    
     // Transform database fields to match frontend interface
     const transformedJob = {
       id: job.id,
@@ -60,7 +71,7 @@ export async function GET(
       externalUrl: job.external_url,
       clickTrackingEnabled: job.click_tracking_enabled,
       posterId: job.poster_id,
-      poster: job.poster,
+      postedBy: posterData, // Use postedBy instead of poster for consistency
       jobSkills: job.job_skills?.map(js => ({
         skill: js.skill
       })),

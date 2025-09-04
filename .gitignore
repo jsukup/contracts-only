@@ -42,3 +42,10 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
+# python virtual environments
+job-scraper-env/
+venv/
+env/
+.venv/
+.env/
+

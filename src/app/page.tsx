@@ -5,26 +5,38 @@ import type { SupabaseJob } from "@/lib/supabase"
 export default async function HomePage() {
   const supabase = createServerSupabaseClient()
   
-  let recentJobs: SupabaseJob[] = []
+  let recentJobs: any[] = []
   let totalJobs: number = 0
   
   // Get recent jobs from database with error handling
   try {
-    const [jobsResult, countResult] = await Promise.all([
-      supabase
-        .from('jobs')
-        .select('*')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .limit(6),
-      supabase
-        .from('jobs')
-        .select('*', { count: 'exact', head: true })
-        .eq('is_active', true)
-    ])
+    // First get the count
+    const { count, error: countError } = await supabase
+      .from('jobs')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_active', true)
+    
+    if (countError) {
+      console.error('Error fetching job count:', countError)
+    } else {
+      totalJobs = count || 0
+      console.log('Total active jobs found:', totalJobs)
+    }
 
-    recentJobs = jobsResult.data || []
-    totalJobs = countResult.count || 0
+    // Then get recent jobs
+    const { data: jobs, error: jobsError } = await supabase
+      .from('jobs')
+      .select('*')
+      .eq('is_active', true)
+      .order('created_at', { ascending: false })
+      .limit(6)
+
+    if (jobsError) {
+      console.error('Error fetching recent jobs:', jobsError)
+    } else {
+      recentJobs = jobs || []
+      console.log('Recent jobs found:', recentJobs.length)
+    }
   } catch (error) {
     console.error('Database connection error:', error)
   }
@@ -93,7 +105,7 @@ export default async function HomePage() {
             {recentJobs.length > 0 ? (
               recentJobs.map((job) => (
                 <div key={job.id} className="bg-white rounded-lg shadow p-6 hover:shadow-md transition-shadow">
-                  <div className="flex justify-between items-start">
+                  <div className="flex justify-between items-start mb-2">
                     <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">
                       {job.title}
                     </h3>
@@ -107,14 +119,25 @@ export default async function HomePage() {
                   </p>
                   <div className="mt-4 flex justify-between items-center">
                     <span className="text-lg font-bold text-indigo-600">
-                      ${job.hourly_rate_min}-${job.hourly_rate_max}/{job.currency === 'USD' ? 'hr' : job.currency}
+                      ${job.hourly_rate_min}-${job.hourly_rate_max}/hr
                     </span>
-                    <Link
-                      href={`/jobs/${job.id}`}
-                      className="text-indigo-600 hover:text-indigo-900 font-medium text-sm"
-                    >
-                      View Details →
-                    </Link>
+                    {job.external_url ? (
+                      <a
+                        href={job.external_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-indigo-600 hover:text-indigo-900 font-medium text-sm"
+                      >
+                        Apply on Indeed →
+                      </a>
+                    ) : (
+                      <Link
+                        href={`/jobs/${job.id}`}
+                        className="text-indigo-600 hover:text-indigo-900 font-medium text-sm"
+                      >
+                        View Details →
+                      </Link>
+                    )}
                   </div>
                 </div>
               ))

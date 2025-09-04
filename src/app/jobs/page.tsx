@@ -11,6 +11,7 @@ import Link from 'next/link'
 interface Job {
   id: string
   title: string
+  description?: string
   company: string
   location?: string
   isRemote: boolean
@@ -21,6 +22,8 @@ interface Job {
   contractDuration?: string
   hoursPerWeek?: number
   createdAt: string
+  externalUrl?: string
+  clickTrackingEnabled?: boolean
   jobSkills?: Array<{
     skill: {
       id: string

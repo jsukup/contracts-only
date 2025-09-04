@@ -1,4 +1,7 @@
-import { Clock, MapPin, DollarSign, Users, Calendar, Building } from 'lucide-react'
+'use client'
+
+import { useState } from 'react'
+import { Clock, MapPin, DollarSign, Users, Calendar, Building, ChevronDown, ChevronUp, ExternalLink } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
@@ -8,6 +11,7 @@ interface JobCardProps {
   job: {
     id: string
     title: string
+    description?: string
     company: string
     location?: string
     isRemote: boolean
@@ -18,6 +22,8 @@ interface JobCardProps {
     contractDuration?: string
     hoursPerWeek?: number
     createdAt: string
+    externalUrl?: string
+    clickTrackingEnabled?: boolean
     jobSkills?: Array<{
       skill: {
         id: string
@@ -32,6 +38,7 @@ interface JobCardProps {
 }
 
 export function JobCard({ job, showActions = true }: JobCardProps) {
+  const [expanded, setExpanded] = useState(false)
   const formatRate = (min: number, max: number, currency: string) => {
     const symbol = currency === 'USD' ? '$' : currency
     return `${symbol}${min}-${symbol}${max}/hr`
@@ -141,6 +148,17 @@ export function JobCard({ job, showActions = true }: JobCardProps) {
             )}
           </div>
         )}
+
+        {/* Expandable Description Section */}
+        {expanded && job.description && (
+          <div className="mt-4 pt-4 border-t">
+            <h4 className="font-semibold text-sm text-gray-900 mb-2">Job Description</h4>
+            <div className="text-sm text-gray-700 whitespace-pre-wrap max-h-96 overflow-y-auto">
+              {job.description.substring(0, 1500)}
+              {job.description.length > 1500 && '...'}
+            </div>
+          </div>
+        )}
       </CardContent>
 
       {showActions && (
@@ -149,17 +167,47 @@ export function JobCard({ job, showActions = true }: JobCardProps) {
             Posted {formatDate(job.createdAt)}
           </span>
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" asChild>
-              <Link href={`/jobs/${job.id}`}>View Details</Link>
-            </Button>
-            <Button size="sm" asChild>
-              <Link 
-                href={`/jobs/${job.id}/apply`} 
-                data-track="apply-job"
+            {job.description && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setExpanded(!expanded)}
               >
-                Apply Now
-              </Link>
-            </Button>
+                {expanded ? (
+                  <>
+                    <ChevronUp className="h-4 w-4 mr-1" />
+                    Show Less
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-4 w-4 mr-1" />
+                    Show More
+                  </>
+                )}
+              </Button>
+            )}
+            {job.externalUrl ? (
+              <Button size="sm" asChild>
+                <a 
+                  href={job.externalUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  data-track="apply-external-job"
+                >
+                  Apply on Indeed
+                  <ExternalLink className="h-3 w-3 ml-1" />
+                </a>
+              </Button>
+            ) : (
+              <Button size="sm" asChild>
+                <Link 
+                  href={`/jobs/${job.id}/apply`} 
+                  data-track="apply-job"
+                >
+                  Apply Now
+                </Link>
+              </Button>
+            )}
           </div>
         </CardFooter>
       )}

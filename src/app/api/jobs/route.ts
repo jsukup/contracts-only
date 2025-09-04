@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
         jobSkills:job_skills (
           skill:skill_id (id, name)
         )
-      `)
+      `, { count: 'exact' })
       .eq('is_active', true)
       .or(`application_deadline.is.null,application_deadline.gte.${new Date().toISOString()}`)
     
@@ -77,6 +77,7 @@ export async function GET(req: NextRequest) {
     const transformedJobs = (jobs || []).map(job => ({
       id: job.id,
       title: job.title,
+      description: job.description,
       company: job.company,
       location: job.location,
       isRemote: job.is_remote,
@@ -87,6 +88,8 @@ export async function GET(req: NextRequest) {
       contractDuration: job.contract_duration,
       hoursPerWeek: job.hours_per_week,
       createdAt: job.created_at,
+      externalUrl: job.external_url,
+      clickTrackingEnabled: job.click_tracking_enabled,
       jobSkills: job.jobSkills?.map(js => ({
         skill: js.skill
       })),

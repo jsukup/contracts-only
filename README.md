@@ -30,6 +30,7 @@ ContractsOnly connects businesses with contractors for short-term projects, feat
 
 - Node.js 18+ 
 - npm or yarn
+- Python 3.12+ (for job scraper scripts)
 - PostgreSQL database (Supabase recommended)
 
 ### Installation
@@ -52,7 +53,22 @@ ContractsOnly connects businesses with contractors for short-term projects, feat
    # Types generated automatically by Supabase CLI
    ```
 
-5. Run the development server:
+5. Set up Python environment for job scraper (optional):
+   ```bash
+   # Create virtual environment
+   python -m venv job-scraper-env
+   
+   # Activate virtual environment
+   # On Windows:
+   job-scraper-env\Scripts\activate
+   # On macOS/Linux:
+   source job-scraper-env/bin/activate
+   
+   # Install Python dependencies
+   pip install -r requirements.txt
+   ```
+
+6. Run the development server:
    ```bash
    npm run dev
    ```
@@ -68,7 +84,9 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 │   ├── lib/             # Utilities and configurations
 │   └── types/           # TypeScript type definitions
 ├── database/            # Supabase types and migrations
+├── scripts/             # Python job scraper utilities
 ├── public/              # Static assets
+├── requirements.txt     # Python dependencies
 ├── PRD.md              # Product Requirements Document
 ├── IMPLEMENTATION.md    # Task breakdown and implementation guide
 └── DEVELOPMENT_PLAN.md  # Step-by-step development plan
@@ -116,12 +134,18 @@ Cost optimization through free tier usage (Vercel, Supabase) during launch perio
 ## 🔧 Development Commands
 
 ```bash
+# Next.js Commands
 npm run dev          # Start development server
 npm run build        # Build for production
 npm run lint         # Run ESLint
 npm run type-check   # Run TypeScript checks
 npm run db:migrate   # Run database migrations
 npm run db:seed      # Seed database with sample data
+
+# Python Job Scraper Commands (after activating venv)
+python scripts/jobspy-scraper.py        # Run job scraper
+python scripts/analyze-scraped-jobs.py  # Analyze scraped data
+python scripts/test-jobspy.py          # Test scraper functionality
 ```
 
 ## 🤝 Contributing
