@@ -146,7 +146,7 @@ export function ContactModal({ isOpen, onClose }: ContactModalProps) {
   if (submissionState === 'success') {
     return (
       <div className="fixed inset-0 bg-gray-900 bg-opacity-40 flex items-center justify-center z-50 p-4">
-        <Card className="max-w-md w-full">
+        <Card className="max-w-md w-full bg-white">
           <CardContent className="p-8 text-center">
             <div className="bg-green-100 p-3 rounded-full w-12 h-12 flex items-center justify-center mx-auto mb-4">
               <CheckCircle className="h-6 w-6 text-green-600" />
@@ -166,7 +166,7 @@ export function ContactModal({ isOpen, onClose }: ContactModalProps) {
 
   return (
     <div className="fixed inset-0 bg-gray-900 bg-opacity-40 flex items-center justify-center z-50 p-4">
-      <Card className="max-w-lg w-full max-h-[90vh] overflow-y-auto">
+      <Card className="max-w-lg w-full max-h-[90vh] overflow-y-auto bg-white">
         <CardHeader className="pb-4">
           <div className="flex justify-between items-start">
             <div className="flex items-center space-x-2">
