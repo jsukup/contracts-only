@@ -106,8 +106,31 @@ export default function RootLayout({
           content="width=device-width, initial-scale=1, maximum-scale=5, user-scalable=yes, viewport-fit=cover" 
         />
         
-        {/* Apple touch icon */}
-        <link rel="apple-touch-icon" href="/images/icons/apple-touch-icon-light.png" />
+        {/* Favicon - ICO format for broad browser support */}
+        <link rel="icon" href="/images/icons/favicon-16x16-dark.ico" type="image/x-icon" />
+        
+        {/* Modern favicon formats with theme support */}
+        <link rel="icon" href="/images/icons/favicon-16x16-light.png" sizes="16x16" type="image/png" media="(prefers-color-scheme: light)" />
+        <link rel="icon" href="/images/icons/favicon-32x32-light.png" sizes="32x32" type="image/png" media="(prefers-color-scheme: light)" />
+        <link rel="icon" href="/images/icons/favicon-16x16-dark.png" sizes="16x16" type="image/png" media="(prefers-color-scheme: dark)" />
+        <link rel="icon" href="/images/icons/favicon-32x32-dark.png" sizes="32x32" type="image/png" media="(prefers-color-scheme: dark)" />
+        
+        {/* Fallback favicons for browsers that don't support media queries */}
+        <link rel="shortcut icon" href="/images/icons/favicon-16x16-light.png" type="image/png" />
+        
+        {/* Apple touch icons with theme support */}
+        <link rel="apple-touch-icon" href="/images/icons/apple-touch-icon-light.png" media="(prefers-color-scheme: light)" />
+        <link rel="apple-touch-icon" href="/images/icons/apple-touch-icon-dark.png" media="(prefers-color-scheme: dark)" />
+        <link rel="apple-touch-icon" sizes="120x120" href="/images/icons/apple-touch-icon-light-120x120.png" media="(prefers-color-scheme: light)" />
+        <link rel="apple-touch-icon" sizes="120x120" href="/images/icons/apple-touch-icon-dark-120x120.png" media="(prefers-color-scheme: dark)" />
+        <link rel="apple-touch-icon" sizes="152x152" href="/images/icons/apple-touch-icon-light-152x152.png" media="(prefers-color-scheme: light)" />
+        <link rel="apple-touch-icon" sizes="152x152" href="/images/icons/apple-touch-icon-dark-152x152.png" media="(prefers-color-scheme: dark)" />
+        
+        {/* Android Chrome icons */}
+        <link rel="icon" href="/images/icons/android-chrome-192x192-light.png" sizes="192x192" type="image/png" media="(prefers-color-scheme: light)" />
+        <link rel="icon" href="/images/icons/android-chrome-512x512-light.png" sizes="512x512" type="image/png" media="(prefers-color-scheme: light)" />
+        <link rel="icon" href="/images/icons/android-chrome-192x192-dark.png" sizes="192x192" type="image/png" media="(prefers-color-scheme: dark)" />
+        <link rel="icon" href="/images/icons/android-chrome-512x512-dark.png" sizes="512x512" type="image/png" media="(prefers-color-scheme: dark)" />
         
         {/* Manifest for PWA */}
         <link rel="manifest" href="/manifest.json" />
