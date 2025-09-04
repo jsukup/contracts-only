@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
-import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 
 interface Job {
@@ -11,11 +10,11 @@ interface Job {
   title: string
   company: string
   location: string | null
-  is_remote: boolean
-  job_type: string
-  hourly_rate_min: number
-  hourly_rate_max: number
-  external_url?: string
+  isRemote: boolean
+  jobType: string
+  hourlyRateMin: number
+  hourlyRateMax: number
+  externalUrl?: string
 }
 
 interface ExpandableJobsListProps {
@@ -33,19 +32,16 @@ export function ExpandableJobsList({ initialJobs, totalJobs }: ExpandableJobsLis
       // First time expanding - fetch all jobs
       setLoadingMore(true)
       try {
-        const { data: jobs, error } = await supabase
-          .from('jobs')
-          .select('*')
-          .eq('is_active', true)
-          .order('created_at', { ascending: false })
-
-        if (error) {
-          console.error('Error fetching all jobs:', error)
-        } else {
-          setAllJobs(jobs || [])
+        const response = await fetch('/api/jobs?limit=1000') // Fetch all jobs
+        
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`)
         }
+        
+        const data = await response.json()
+        setAllJobs(data.jobs || [])
       } catch (error) {
-        console.error('Database connection error:', error)
+        console.error('Error fetching all jobs:', error)
       } finally {
         setLoadingMore(false)
       }
@@ -65,20 +61,20 @@ export function ExpandableJobsList({ initialJobs, totalJobs }: ExpandableJobsLis
                   {job.title}
                 </h3>
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  {job.job_type}
+                  {job.jobType}
                 </span>
               </div>
               <p className="mt-2 text-sm text-gray-600">{job.company}</p>
               <p className="mt-1 text-sm text-gray-500">
-                {job.location || (job.is_remote ? 'Remote' : 'Location TBD')}
+                {job.location || (job.isRemote ? 'Remote' : 'Location TBD')}
               </p>
               <div className="mt-4 flex justify-between items-center">
                 <span className="text-lg font-bold text-indigo-600">
-                  ${job.hourly_rate_min}-${job.hourly_rate_max}/hr
+                  ${job.hourlyRateMin}-${job.hourlyRateMax}/hr
                 </span>
-                {job.external_url ? (
+                {job.externalUrl ? (
                   <a
-                    href={job.external_url}
+                    href={job.externalUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-indigo-600 hover:text-indigo-900 font-medium text-sm"
@@ -129,20 +125,20 @@ export function ExpandableJobsList({ initialJobs, totalJobs }: ExpandableJobsLis
                     {job.title}
                   </h3>
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    {job.job_type}
+                    {job.jobType}
                   </span>
                 </div>
                 <p className="mt-2 text-sm text-gray-600">{job.company}</p>
                 <p className="mt-1 text-sm text-gray-500">
-                  {job.location || (job.is_remote ? 'Remote' : 'Location TBD')}
+                  {job.location || (job.isRemote ? 'Remote' : 'Location TBD')}
                 </p>
                 <div className="mt-4 flex justify-between items-center">
                   <span className="text-lg font-bold text-indigo-600">
-                    ${job.hourly_rate_min}-${job.hourly_rate_max}/hr
+                    ${job.hourlyRateMin}-${job.hourlyRateMax}/hr
                   </span>
-                  {job.external_url ? (
+                  {job.externalUrl ? (
                     <a
-                      href={job.external_url}
+                      href={job.externalUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-indigo-600 hover:text-indigo-900 font-medium text-sm"
