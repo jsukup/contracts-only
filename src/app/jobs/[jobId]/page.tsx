@@ -236,7 +236,7 @@ export default function JobDetailsPage() {
               
               <div className="flex gap-2">
                 <Badge variant="default">
-                  {job.jobType.replace('_', ' ')}
+                  {(job.jobType || 'CONTRACT').replace('_', ' ')}
                 </Badge>
                 {isExpired && (
                   <Badge variant="destructive">Expired</Badge>

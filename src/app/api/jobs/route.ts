@@ -32,7 +32,10 @@ export async function GET(req: NextRequest) {
       .select(`
         *,
         poster:poster_id (id, name, image),
-        applications:job_applications (count)
+        applications:job_applications (count),
+        jobSkills:job_skills (
+          skill:skill_id (id, name)
+        )
       `)
       .eq('is_active', true)
       .or(`application_deadline.is.null,application_deadline.gte.${new Date().toISOString()}`)
@@ -69,9 +72,31 @@ export async function GET(req: NextRequest) {
       console.error('Error fetching jobs:', error)
       throw error
     }
+
+    // Transform database fields to match frontend interface
+    const transformedJobs = (jobs || []).map(job => ({
+      id: job.id,
+      title: job.title,
+      company: job.company,
+      location: job.location,
+      isRemote: job.is_remote,
+      jobType: job.job_type,
+      hourlyRateMin: job.hourly_rate_min,
+      hourlyRateMax: job.hourly_rate_max,
+      currency: job.currency,
+      contractDuration: job.contract_duration,
+      hoursPerWeek: job.hours_per_week,
+      createdAt: job.created_at,
+      jobSkills: job.jobSkills?.map(js => ({
+        skill: js.skill
+      })),
+      _count: {
+        applications: job.applications?.[0]?.count || 0
+      }
+    }))
     
     return NextResponse.json({
-      jobs: jobs || [],
+      jobs: transformedJobs,
       pagination: {
         page,
         limit,

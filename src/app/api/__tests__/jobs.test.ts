@@ -1,8 +1,9 @@
 // NextRequest and NextResponse are mocked globally in jest.setup.js
+import { NextRequest } from 'next/server'
 
 // Note: Auth and Supabase are mocked globally in jest.setup.js
 
-const mockSupabase = (global as { __mockSupabase: unknown }).__mockSupabase
+const mockSupabase = (global as { __mockSupabase: any }).__mockSupabase
 
 // Import after mocking to avoid ESM issues
 import { GET, POST } from '../jobs/route'

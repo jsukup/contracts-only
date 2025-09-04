@@ -50,10 +50,6 @@ export default function AdminUsersPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
 
-  useEffect(() => {
-    fetchUsers()
-  }, [currentPage, filterRole, filterStatus, fetchUsers])
-
   const fetchUsers = useCallback(async () => {
     setLoading(true)
     try {
@@ -80,6 +76,10 @@ export default function AdminUsersPage() {
       setLoading(false)
     }
   }, [currentPage, filterRole, filterStatus, searchQuery])
+
+  useEffect(() => {
+    fetchUsers()
+  }, [fetchUsers])
 
   const getMockUsers = (): User[] => [
     {

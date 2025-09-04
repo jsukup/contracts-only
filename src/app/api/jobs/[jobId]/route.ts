@@ -31,7 +31,45 @@ export async function GET(
       return NextResponse.json({ error: 'Job not found' }, { status: 404 })
     }
     
-    return NextResponse.json(job)
+    // Transform database fields to match frontend interface
+    const transformedJob = {
+      id: job.id,
+      title: job.title,
+      description: job.description,
+      company: job.company,
+      location: job.location,
+      isRemote: job.is_remote,
+      jobType: job.job_type,
+      hourlyRateMin: job.hourly_rate_min,
+      hourlyRateMax: job.hourly_rate_max,
+      currency: job.currency,
+      contractDuration: job.contract_duration,
+      hoursPerWeek: job.hours_per_week,
+      startDate: job.start_date,
+      applicationUrl: job.application_url,
+      applicationEmail: job.application_email,
+      applicationDeadline: job.application_deadline,
+      requirements: job.requirements,
+      responsibilities: job.responsibilities,
+      benefits: job.benefits,
+      isActive: job.is_active,
+      experienceLevel: job.experience_level,
+      viewCount: job.view_count,
+      createdAt: job.created_at,
+      updatedAt: job.updated_at,
+      externalUrl: job.external_url,
+      clickTrackingEnabled: job.click_tracking_enabled,
+      posterId: job.poster_id,
+      poster: job.poster,
+      jobSkills: job.job_skills?.map(js => ({
+        skill: js.skill
+      })),
+      _count: {
+        applications: job.applications?.[0]?.count || 0
+      }
+    }
+    
+    return NextResponse.json(transformedJob)
   } catch (error) {
     console.error('Error fetching job:', error)
     return NextResponse.json(
@@ -157,7 +195,7 @@ export async function PUT(
           .from('job_skills')
           .insert(
             skills.map((skillId: string) => ({
-              job_id: params.jobId,
+              job_id: jobId,
               skill_id: skillId
             }))
           )

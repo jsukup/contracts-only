@@ -71,18 +71,10 @@ export default async function HomePage() {
             <h2 className="text-3xl font-bold text-gray-900">
               Join Thousands of Professionals
             </h2>
-            <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
-              <div className="bg-white rounded-lg p-6 shadow">
-                <div className="text-3xl font-bold text-indigo-600">{totalJobs}</div>
-                <div className="text-sm text-gray-500">Active Jobs</div>
-              </div>
-              <div className="bg-white rounded-lg p-6 shadow">
-                <div className="text-3xl font-bold text-indigo-600">10K+</div>
-                <div className="text-sm text-gray-500">Registered Users</div>
-              </div>
-              <div className="bg-white rounded-lg p-6 shadow">
-                <div className="text-3xl font-bold text-indigo-600">500+</div>
-                <div className="text-sm text-gray-500">Companies</div>
+            <div className="mt-8 flex justify-center">
+              <div className="bg-white rounded-lg p-8 shadow-lg">
+                <div className="text-4xl font-bold text-indigo-600">{totalJobs}</div>
+                <div className="text-lg text-gray-500 mt-2">Active Jobs</div>
               </div>
             </div>
           </div>

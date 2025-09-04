@@ -90,8 +90,8 @@ export function JobCard({ job, showActions = true }: JobCardProps) {
               </span>
             </CardDescription>
           </div>
-          <Badge variant={getJobTypeBadgeVariant(job.jobType)}>
-            {job.jobType.replace('_', ' ')}
+          <Badge variant={getJobTypeBadgeVariant(job.jobType || 'CONTRACT')}>
+            {(job.jobType || 'CONTRACT').replace('_', ' ')}
           </Badge>
         </div>
       </CardHeader>
