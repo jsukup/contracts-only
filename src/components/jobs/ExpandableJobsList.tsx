@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import Link from 'next/link'
+import { AdPlaceholder } from '@/components/ads/AdPlaceholder'
 
 interface Job {
   id: string
@@ -23,75 +24,133 @@ interface ExpandableJobsListProps {
 }
 
 export function ExpandableJobsList({ initialJobs, totalJobs }: ExpandableJobsListProps) {
-  const [expanded, setExpanded] = useState(false)
   const [allJobs, setAllJobs] = useState<Job[]>([])
   const [loadingMore, setLoadingMore] = useState(false)
+  const [showAll, setShowAll] = useState(false)
+
+  // Check if auth is disabled to show all jobs by default
+  const authDisabled = process.env.NEXT_PUBLIC_AUTH_ENABLED === 'false'
+
+  useEffect(() => {
+    // If auth is disabled, load all jobs automatically
+    if (authDisabled && allJobs.length === 0) {
+      fetchAllJobs()
+    }
+  }, [authDisabled])
+
+  const fetchAllJobs = async () => {
+    setLoadingMore(true)
+    try {
+      const response = await fetch('/api/jobs?limit=1000') // Fetch all jobs
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+      
+      const data = await response.json()
+      setAllJobs(data.jobs || [])
+    } catch (error) {
+      console.error('Error fetching all jobs:', error)
+    } finally {
+      setLoadingMore(false)
+    }
+  }
 
   const handleToggleExpanded = async () => {
-    if (!expanded && allJobs.length === 0) {
-      // First time expanding - fetch all jobs
-      setLoadingMore(true)
-      try {
-        const response = await fetch('/api/jobs?limit=1000') // Fetch all jobs
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`)
-        }
-        
-        const data = await response.json()
-        setAllJobs(data.jobs || [])
-      } catch (error) {
-        console.error('Error fetching all jobs:', error)
-      } finally {
-        setLoadingMore(false)
-      }
+    if (!showAll && allJobs.length === 0) {
+      await fetchAllJobs()
     }
-    setExpanded(!expanded)
+    setShowAll(!showAll)
+  }
+
+  // Determine which jobs to display
+  const jobsToShow = authDisabled ? allJobs : (showAll ? allJobs : initialJobs)
+  const isInitialLoad = authDisabled && loadingMore && allJobs.length === 0
+
+  // Function to create job cards with ads interspersed
+  const createJobsWithAds = (jobs: Job[]) => {
+    const elements: JSX.Element[] = []
+    
+    jobs.forEach((job, index) => {
+      // Add job card
+      elements.push(
+        <div key={job.id} className="bg-white rounded-lg shadow p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02]">
+          <div className="flex justify-between items-start mb-2">
+            <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">
+              {job.title}
+            </h3>
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              {job.jobType}
+            </span>
+          </div>
+          <p className="mt-2 text-sm text-gray-600">{job.company}</p>
+          <p className="mt-1 text-sm text-gray-500">
+            {job.location || (job.isRemote ? 'Remote' : 'Location TBD')}
+          </p>
+          <div className="mt-4 flex justify-between items-center">
+            <span className="text-lg font-bold text-indigo-600">
+              ${job.hourlyRateMin}-${job.hourlyRateMax}/hr
+            </span>
+            {job.externalUrl ? (
+              <a
+                href={job.externalUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-indigo-600 hover:text-indigo-900 font-medium text-sm"
+              >
+                Apply on Indeed →
+              </a>
+            ) : (
+              <Link
+                href={`/jobs/${job.id}`}
+                className="text-indigo-600 hover:text-indigo-900 font-medium text-sm"
+              >
+                View Details →
+              </Link>
+            )}
+          </div>
+        </div>
+      )
+      
+      // Add ad after every 9 jobs (0-based index, so after index 8, 17, 26, etc.)
+      if ((index + 1) % 9 === 0 && index < jobs.length - 1) {
+        elements.push(
+          <div key={`ad-${index}`} className="col-span-full">
+            <AdPlaceholder 
+              className="my-4"
+              adSlot={`ad-slot-${Math.floor(index / 9) + 1}`}
+            />
+          </div>
+        )
+      }
+    })
+    
+    return elements
   }
 
   return (
     <>
-      {/* Initial Jobs Display */}
+      {/* Jobs Display */}
       <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {initialJobs.length > 0 ? (
-          initialJobs.map((job) => (
-            <div key={job.id} className="bg-white rounded-lg shadow p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02]">
+        {isInitialLoad ? (
+          // Loading state for auth-disabled mode
+          Array.from({ length: 12 }).map((_, index) => (
+            <div key={`loading-${index}`} className="bg-white rounded-lg shadow p-6 animate-pulse">
               <div className="flex justify-between items-start mb-2">
-                <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">
-                  {job.title}
-                </h3>
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                  {job.jobType}
-                </span>
+                <div className="h-6 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-5 bg-gray-200 rounded w-16"></div>
               </div>
-              <p className="mt-2 text-sm text-gray-600">{job.company}</p>
-              <p className="mt-1 text-sm text-gray-500">
-                {job.location || (job.isRemote ? 'Remote' : 'Location TBD')}
-              </p>
+              <div className="h-4 bg-gray-200 rounded w-1/2 mt-2"></div>
+              <div className="h-4 bg-gray-200 rounded w-1/3 mt-1"></div>
               <div className="mt-4 flex justify-between items-center">
-                <span className="text-lg font-bold text-indigo-600">
-                  ${job.hourlyRateMin}-${job.hourlyRateMax}/hr
-                </span>
-                {job.externalUrl ? (
-                  <a
-                    href={job.externalUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-indigo-600 hover:text-indigo-900 font-medium text-sm"
-                  >
-                    Apply on Indeed →
-                  </a>
-                ) : (
-                  <Link
-                    href={`/jobs/${job.id}`}
-                    className="text-indigo-600 hover:text-indigo-900 font-medium text-sm"
-                  >
-                    View Details →
-                  </Link>
-                )}
+                <div className="h-6 bg-gray-200 rounded w-24"></div>
+                <div className="h-4 bg-gray-200 rounded w-20"></div>
               </div>
             </div>
           ))
+        ) : jobsToShow.length > 0 ? (
+          // Render jobs with ads interspersed
+          createJobsWithAds(jobsToShow)
         ) : (
           <div className="col-span-full text-center py-12">
             <p className="text-gray-500">No jobs available at the moment. Check back soon!</p>
@@ -99,69 +158,9 @@ export function ExpandableJobsList({ initialJobs, totalJobs }: ExpandableJobsLis
         )}
       </div>
 
-      {/* Expanded Jobs Section */}
-      {expanded && (
-        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 transition-all duration-500">
-          {loadingMore ? (
-            Array.from({ length: 6 }).map((_, index) => (
-              <div key={`loading-${index}`} className="bg-white rounded-lg shadow p-6 animate-pulse">
-                <div className="flex justify-between items-start mb-2">
-                  <div className="h-6 bg-gray-200 rounded w-3/4"></div>
-                  <div className="h-5 bg-gray-200 rounded w-16"></div>
-                </div>
-                <div className="h-4 bg-gray-200 rounded w-1/2 mt-2"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/3 mt-1"></div>
-                <div className="mt-4 flex justify-between items-center">
-                  <div className="h-6 bg-gray-200 rounded w-24"></div>
-                  <div className="h-4 bg-gray-200 rounded w-20"></div>
-                </div>
-              </div>
-            ))
-          ) : (
-            allJobs.slice(6).map((job) => ( // Skip first 6 as they're already shown
-              <div key={job.id} className="bg-white rounded-lg shadow p-6 hover:shadow-xl transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02]">
-                <div className="flex justify-between items-start mb-2">
-                  <h3 className="text-lg font-semibold text-gray-900 line-clamp-2">
-                    {job.title}
-                  </h3>
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                    {job.jobType}
-                  </span>
-                </div>
-                <p className="mt-2 text-sm text-gray-600">{job.company}</p>
-                <p className="mt-1 text-sm text-gray-500">
-                  {job.location || (job.isRemote ? 'Remote' : 'Location TBD')}
-                </p>
-                <div className="mt-4 flex justify-between items-center">
-                  <span className="text-lg font-bold text-indigo-600">
-                    ${job.hourlyRateMin}-${job.hourlyRateMax}/hr
-                  </span>
-                  {job.externalUrl ? (
-                    <a
-                      href={job.externalUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-indigo-600 hover:text-indigo-900 font-medium text-sm"
-                    >
-                      Apply on Indeed →
-                    </a>
-                  ) : (
-                    <Link
-                      href={`/jobs/${job.id}`}
-                      className="text-indigo-600 hover:text-indigo-900 font-medium text-sm"
-                    >
-                      View Details →
-                    </Link>
-                  )}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      )}
 
-      {/* Show More/Less Button */}
-      {initialJobs.length > 0 && totalJobs > 6 && (
+      {/* Show More/Less Button - only show when auth is enabled */}
+      {!authDisabled && initialJobs.length > 0 && totalJobs > 6 && (
         <div className="mt-8 text-center">
           <Button
             onClick={handleToggleExpanded}
@@ -173,7 +172,7 @@ export function ExpandableJobsList({ initialJobs, totalJobs }: ExpandableJobsLis
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600 mr-2"></div>
                 Loading...
               </>
-            ) : expanded ? (
+            ) : showAll ? (
               <>
                 Show Fewer Jobs
                 <ChevronUp className="ml-2 h-4 w-4" />

@@ -75,15 +75,133 @@ const nextConfig = {
     ]
   },
 
-  // Redirects for performance
+  // Redirects for single-page website
   async redirects() {
-    return [
+    const singlePageMode = process.env.NEXT_PUBLIC_AUTH_ENABLED === 'false'
+    
+    const baseRedirects = [
       {
         source: '/home',
         destination: '/',
         permanent: true,
       },
     ]
+    
+    // If in single-page mode, redirect all routes to homepage except API routes
+    const singlePageRedirects = singlePageMode ? [
+      {
+        source: '/jobs',
+        destination: '/',
+        permanent: false,
+      },
+      {
+        source: '/jobs/:path*',
+        destination: '/',
+        permanent: false,
+      },
+      {
+        source: '/dashboard',
+        destination: '/',
+        permanent: false,
+      },
+      {
+        source: '/dashboard/:path*',
+        destination: '/',
+        permanent: false,
+      },
+      {
+        source: '/profile',
+        destination: '/',
+        permanent: false,
+      },
+      {
+        source: '/profile/:path*',
+        destination: '/',
+        permanent: false,
+      },
+      {
+        source: '/sign-in',
+        destination: '/',
+        permanent: false,
+      },
+      {
+        source: '/sign-in/:path*',
+        destination: '/',
+        permanent: false,
+      },
+      {
+        source: '/sign-up',
+        destination: '/',
+        permanent: false,
+      },
+      {
+        source: '/sign-up/:path*',
+        destination: '/',
+        permanent: false,
+      },
+      {
+        source: '/onboarding',
+        destination: '/',
+        permanent: false,
+      },
+      {
+        source: '/admin',
+        destination: '/',
+        permanent: false,
+      },
+      {
+        source: '/admin/:path*',
+        destination: '/',
+        permanent: false,
+      },
+      {
+        source: '/employer',
+        destination: '/',
+        permanent: false,
+      },
+      {
+        source: '/employer/:path*',
+        destination: '/',
+        permanent: false,
+      },
+      {
+        source: '/candidates',
+        destination: '/',
+        permanent: false,
+      },
+      {
+        source: '/applications',
+        destination: '/',
+        permanent: false,
+      },
+      {
+        source: '/applications/:path*',
+        destination: '/',
+        permanent: false,
+      },
+      {
+        source: '/notifications',
+        destination: '/',
+        permanent: false,
+      },
+      {
+        source: '/analytics',
+        destination: '/',
+        permanent: false,
+      },
+      {
+        source: '/pricing',
+        destination: '/',
+        permanent: false,
+      },
+      {
+        source: '/debug/:path*',
+        destination: '/',
+        permanent: false,
+      },
+    ] : []
+    
+    return [...baseRedirects, ...singlePageRedirects]
   },
 
   // Bundle analyzer (Turbopack compatible)

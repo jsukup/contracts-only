@@ -17,28 +17,17 @@ require('dotenv').config();
 // Configuration
 const CONFIG = {
   SYSTEM_POSTER_ID: 'system-job-poster-001',
-  MAX_JOBS_PER_SEARCH: 50,
-  MAX_TOTAL_JOBS: 300,
+  MAX_TOTAL_JOBS: 500,
   MIN_CONTRACT_SCORE: 0.3,
   PYTHON_ENV: path.join(__dirname, '..', 'job-scraper-env'),
-  SEARCH_TERMS: [
-    'software contractor',
-    'contract developer remote',
-    'contract programmer',
-    'contract-to-hire developer',
-    'independent contractor programming',
-    'contract software engineer',
-    'W2 contract developer',
-    '1099 contractor developer'
-  ],
-  CONTRACT_KEYWORDS: [
-    'contract', 'contractor', 'contract-to-hire', 'c2h', 'independent contractor',
-    'contract position', 'contract role', 'contracting', 'contract work'
-  ],
-  EXCLUDE_KEYWORDS: [
-    'full-time', 'permanent', 'employee', 'w-2 only', 'salary', 'benefits package',
-    'permanent position', 'staff position'
-  ]
+  STALE_JOB_DAYS: 30,
+  DUPLICATE_CHECK_FIELDS: ['job_url', 'title_company_hash'],
+  SUPPORTED_SOURCES: ['indeed', 'linkedin', 'zip_recruiter'],
+  RATE_LIMITS: {
+    indeed: { delay: 1000, max_concurrent: 3 },
+    linkedin: { delay: 3000, max_concurrent: 1 },
+    zip_recruiter: { delay: 2000, max_concurrent: 2 }
+  }
 };
 
 // Initialize Supabase client
@@ -87,28 +76,44 @@ class JobSeeder {
   }
 
   /**
-   * Scrape contract jobs using JobSpy
+   * Scrape contract jobs using enhanced multi-source JobSpy
    */
   async scrapeJobs() {
-    console.log('📡 Scraping contract jobs from Indeed...');
+    console.log('📡 Scraping contract jobs from multiple sources...');
     
     const tempFile = path.join(__dirname, 'temp-scraped-jobs.json');
     const pythonScript = path.join(__dirname, 'jobspy-scraper.py');
     
-    // Create Python scraper script
-    this.createPythonScraper(pythonScript);
+    // Clean up any existing temp files
+    if (fs.existsSync(tempFile)) {
+      fs.unlinkSync(tempFile);
+    }
     
     try {
-      // Execute Python scraper using virtual environment directly
+      // Execute enhanced Python scraper using virtual environment
       const pythonBinary = path.join(CONFIG.PYTHON_ENV, 'bin', 'python');
-      const pythonCommand = `${pythonBinary} ${pythonScript} ${this.limit}`;
+      const pythonCommand = `${pythonBinary} ${pythonScript} ${this.limit} ${CONFIG.MIN_CONTRACT_SCORE}`;
+      
+      console.log(`Executing: ${pythonCommand}`);
       execSync(pythonCommand, { stdio: 'inherit' });
       
       // Read results
       if (fs.existsSync(tempFile)) {
         const scrapedData = JSON.parse(fs.readFileSync(tempFile, 'utf8'));
         this.scrapedJobs = scrapedData;
-        console.log(`✅ Scraped ${this.scrapedJobs.length} jobs from Indeed`);
+        console.log(`✅ Scraped ${this.scrapedJobs.length} jobs from multiple sources`);
+        
+        // Show source breakdown
+        const sourceStats = {};
+        this.scrapedJobs.forEach(job => {
+          const source = job.source_platform || 'unknown';
+          sourceStats[source] = (sourceStats[source] || 0) + 1;
+        });
+        
+        console.log('📊 Source breakdown:');
+        Object.entries(sourceStats).forEach(([source, count]) => {
+          console.log(`   ${source}: ${count} jobs`);
+        });
         
         // Cleanup temp file
         fs.unlinkSync(tempFile);
@@ -122,80 +127,6 @@ class JobSeeder {
     }
   }
 
-  /**
-   * Create Python scraper script
-   */
-  createPythonScraper(scriptPath) {
-    const pythonCode = `#!/usr/bin/env python3
-import sys
-import json
-from jobspy import scrape_jobs
-from datetime import datetime
-import pandas as pd
-
-def main():
-    limit = int(sys.argv[1]) if len(sys.argv) > 1 else ${CONFIG.MAX_TOTAL_JOBS}
-    jobs_per_search = min(${CONFIG.MAX_JOBS_PER_SEARCH}, limit // ${CONFIG.SEARCH_TERMS.length})
-    
-    search_terms = ${JSON.stringify(CONFIG.SEARCH_TERMS)}
-    all_jobs = []
-    
-    for term in search_terms:
-        print(f"Searching for: {term}")
-        try:
-            jobs = scrape_jobs(
-                site_name=["indeed"],
-                search_term=term,
-                location="United States",
-                results_wanted=jobs_per_search,
-                hours_old=168  # Last week
-                # Note: job_type="contract" filter removed as it's not reliable
-            )
-            
-            if len(jobs) > 0:
-                jobs_dict = jobs.to_dict('records')
-                all_jobs.extend(jobs_dict)
-                print(f"Found {len(jobs)} jobs for '{term}'")
-            
-        except Exception as e:
-            print(f"Error scraping '{term}': {e}")
-    
-    # Remove duplicates by job_url
-    seen_urls = set()
-    unique_jobs = []
-    for job in all_jobs:
-        if job.get('job_url') not in seen_urls:
-            seen_urls.add(job.get('job_url'))
-            unique_jobs.append(job)
-    
-    print(f"Total unique jobs: {len(unique_jobs)}")
-    
-    # Clean up NaN values and save to temp file
-    import numpy as np
-    
-    def clean_job_data(job):
-        """Replace NaN values with None for JSON compatibility"""
-        cleaned = {}
-        for key, value in job.items():
-            if pd.isna(value) or (isinstance(value, float) and np.isnan(value)):
-                cleaned[key] = None
-            else:
-                cleaned[key] = value
-        return cleaned
-    
-    unique_jobs_cleaned = [clean_job_data(job) for job in unique_jobs]
-    
-    with open('${path.join(__dirname, 'temp-scraped-jobs.json')}', 'w') as f:
-        json.dump(unique_jobs_cleaned, f, indent=2, default=str)
-    
-    print("Scraping completed successfully")
-
-if __name__ == "__main__":
-    main()
-`;
-
-    fs.writeFileSync(scriptPath, pythonCode);
-  }
 
   /**
    * Process and filter scraped jobs
@@ -240,8 +171,9 @@ if __name__ == "__main__":
    * Transform JobSpy job to ContractsOnly schema
    */
   transformJob(job) {
-    // Extract rates from salary info
-    const { minRate, maxRate } = this.extractRates(job);
+    // Use rates extracted by Python scraper or fall back to extraction
+    const minRate = job.hourly_rate_min || this.extractRates(job).minRate || 25;
+    const maxRate = job.hourly_rate_max || this.extractRates(job).maxRate || 150;
     
     return {
       title: job.title || 'Contract Position',
@@ -250,8 +182,8 @@ if __name__ == "__main__":
       location: this.normalizeLocation(job.location),
       is_remote: job.is_remote || false,
       job_type: 'CONTRACT',
-      hourly_rate_min: minRate || 25, // Default minimum for contracts
-      hourly_rate_max: maxRate || 150, // Default maximum for contracts
+      hourly_rate_min: minRate,
+      hourly_rate_max: maxRate,
       currency: job.currency || 'USD',
       external_url: job.job_url,
       click_tracking_enabled: true,
@@ -261,14 +193,22 @@ if __name__ == "__main__":
       view_count: 0,
       experience_level: 'MID', // Default experience level
       requirements: job.description || '',
-      contract_duration: this.extractDuration(job.description || '')
+      contract_duration: job.contract_duration || this.extractDuration(job.description || ''),
+      source_platform: job.source_platform || 'indeed',
+      last_verified_at: new Date().toISOString()
     };
   }
 
   /**
-   * Calculate contract relevance score
+   * Calculate contract relevance score (or use from Python scraper)
    */
   calculateContractScore(job) {
+    // Use score from Python scraper if available
+    if (job.contract_score !== undefined && job.contract_score !== null) {
+      return job.contract_score;
+    }
+    
+    // Fallback to JavaScript calculation if Python scraper didn't provide score
     const description = (job.description || '').toLowerCase();
     const title = (job.title || '').toLowerCase();
     const text = description + ' ' + title;

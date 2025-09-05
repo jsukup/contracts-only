@@ -28,6 +28,9 @@ export function Navigation() {
   const [signingOut, setSigningOut] = useState(false)
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  
+  // Check if authentication is enabled
+  const authEnabled = process.env.NEXT_PUBLIC_AUTH_ENABLED !== 'false'
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -58,6 +61,11 @@ export function Navigation() {
     const baseItems = [
       { name: 'Home', href: '/', icon: Home, public: true }
     ]
+
+    // If auth is disabled, only show public navigation
+    if (!authEnabled) {
+      return baseItems // Only show Home for single-page website
+    }
 
     if (!user) {
       return [
@@ -147,7 +155,7 @@ export function Navigation() {
 
           {/* Desktop Auth Section */}
           <div className="hidden md:flex items-center space-x-4">
-            {user ? (
+            {authEnabled && user ? (
               <div className="flex items-center space-x-2">
                 {/* Notifications */}
                 <Button variant="ghost" size="sm" asChild>
@@ -206,9 +214,9 @@ export function Navigation() {
                   </div>
                 </div>
               </div>
-            ) : !isLoaded ? (
+            ) : authEnabled && !isLoaded ? (
               <div className="w-8 h-8 bg-gray-200 rounded-full animate-pulse" />
-            ) : (
+            ) : authEnabled ? (
               <div className="flex items-center space-x-2">
                 <Button variant="ghost" asChild className="text-gray-700 hover:text-indigo-600">
                   <Link href="/sign-in">Sign In</Link>
@@ -217,7 +225,7 @@ export function Navigation() {
                   <Link href="/sign-up">Get Started</Link>
                 </Button>
               </div>
-            )}
+            ) : null}
           </div>
 
           {/* Mobile Menu Button */}
@@ -262,7 +270,7 @@ export function Navigation() {
               
               {/* Mobile Auth Section */}
               <div className="pt-4 mt-4 border-t">
-                {user ? (
+                {authEnabled && user ? (
                   <div className="space-y-2">
                     <div className="px-3 py-2">
                       <div className="flex items-center space-x-2">
@@ -303,7 +311,7 @@ export function Navigation() {
                       <span>{signingOut ? 'Signing Out...' : 'Sign Out'}</span>
                     </button>
                   </div>
-                ) : (
+                ) : authEnabled ? (
                   <div className="space-y-2">
                     <Link
                       href="/sign-in"
@@ -320,7 +328,7 @@ export function Navigation() {
                       Get Started
                     </Link>
                   </div>
-                )}
+                ) : null}
               </div>
             </div>
           </div>

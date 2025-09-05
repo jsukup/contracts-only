@@ -1,0 +1,22 @@
+{
+  "timestamp": "2025-09-05T01:49:18.856Z",
+  "mode": "dry_run",
+  "config": {
+    "staleDays": 30,
+    "batchSize": 100
+  },
+  "stats": {
+    "total": 185,
+    "stale": 0,
+    "invalidUrl": 0,
+    "missingData": 0,
+    "cleaned": 0
+  },
+  "cleanedJobs": 0,
+  "failedUrlChecks": 0,
+  "cleanupReasons": {
+    "stale": 0,
+    "invalidUrl": 0,
+    "missingData": 0
+  }
+}

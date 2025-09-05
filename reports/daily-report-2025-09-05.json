@@ -1,0 +1,50 @@
+{
+  "reportDate": "Friday, September 5, 2025",
+  "generatedAt": "2025-09-05T01:49:39.064Z",
+  "format": "json",
+  "jobStatistics": {
+    "totalActive": 185,
+    "addedToday": 0,
+    "sourceBreakdown": {
+      "manual": 185
+    },
+    "averageRates": {
+      "min": 39,
+      "max": 68
+    },
+    "rateDataPoints": 185
+  },
+  "scrapingMetrics": {
+    "lastRun": null,
+    "jobsProcessed": 0,
+    "jobsAdded": 0,
+    "duplicatesFound": 0,
+    "rejectedJobs": 0,
+    "averageContractScore": 0
+  },
+  "performanceMetrics": {
+    "clicksThisWeek": 0,
+    "topClickedJobs": []
+  },
+  "sourceAnalysis": {
+    "manual": {
+      "jobsThisWeek": 185,
+      "dailyBreakdown": {
+        "2025-09-04": 185
+      }
+    }
+  },
+  "qualityMetrics": {
+    "dataQuality": {
+      "missingCompany": 0,
+      "missingRates": 0,
+      "missingLocation": 0,
+      "totalJobs": 185
+    },
+    "urlHealth": {
+      "sampleSize": 10,
+      "workingUrls": 10,
+      "healthRate": 100
+    }
+  }
+}

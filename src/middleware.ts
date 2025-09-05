@@ -21,6 +21,15 @@ export default clerkMiddleware((auth, req) => {
   
   console.log(`[MIDDLEWARE-${middlewareId}] Processing request: ${req.method} ${path}`)
   
+  // Check if authentication is enabled
+  const authEnabled = process.env.NEXT_PUBLIC_AUTH_ENABLED !== 'false'
+  
+  // If auth is disabled, allow all routes
+  if (!authEnabled) {
+    console.log(`[MIDDLEWARE-${middlewareId}] Auth disabled, allowing all routes: ${path}`)
+    return
+  }
+  
   // For API routes, ensure auth context is available but don't block
   if (path.startsWith('/api/')) {
     console.log(`[MIDDLEWARE-${middlewareId}] API route detected: ${path}`)
