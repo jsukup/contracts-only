@@ -4,7 +4,7 @@ import { useState, useCallback } from 'react'
 import { Search, MapPin, DollarSign, X } from 'lucide-react'
 import { Input } from '@/components/ui/Input'
 import { Button } from '@/components/ui/Button'
-import GooglePlacesAutocomplete from '@/components/ui/GooglePlacesAutocomplete'
+import LocationInput from '@/components/ui/LocationInput'
 import { debounce } from 'lodash'
 
 export interface JobFilterValues {
@@ -113,12 +113,11 @@ export function HomeJobFilters({ onFiltersChange, loading = false }: HomeJobFilt
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none z-10">
               <MapPin className="h-4 w-4 text-gray-400" />
             </div>
-            <GooglePlacesAutocomplete
+            <LocationInput
               value={location}
               onChange={handleLocationChange}
-              placeholder="Enter location..."
+              placeholder="Enter city or region..."
               className="pl-10 h-10 w-full rounded-md border border-gray-300 focus:border-indigo-500 focus:ring-indigo-500"
-              types={['(cities)', '(regions)']}
             />
           </div>
 
