@@ -16,6 +16,8 @@ export async function GET(req: NextRequest) {
     
     // Filters
     const search = searchParams.get('search')
+    const location = searchParams.get('location')
+    const hourlyRate = searchParams.get('hourlyRate')
     const jobType = searchParams.get('jobType')
     const isRemote = searchParams.get('isRemote')
     const minRate = searchParams.get('minRate')
@@ -42,7 +44,19 @@ export async function GET(req: NextRequest) {
     
     // Apply filters
     if (search) {
-      query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%,company.ilike.%${search}%,location.ilike.%${search}%`)
+      // Search specifically in job titles for the keyword search
+      query = query.ilike('title', `%${search}%`)
+    }
+    
+    if (location) {
+      // Location filter - search in the location field
+      query = query.ilike('location', `%${location}%`)
+    }
+    
+    if (hourlyRate) {
+      // Hourly rate filter - find jobs where the user's rate falls within the job's range
+      const rate = parseInt(hourlyRate)
+      query = query.lte('hourly_rate_min', rate).gte('hourly_rate_max', rate)
     }
     
     if (jobType) {

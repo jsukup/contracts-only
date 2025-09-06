@@ -1,10 +1,11 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { ChevronDown, ChevronUp } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import Link from 'next/link'
 import { AdPlaceholder } from '@/components/ads/AdPlaceholder'
+import { HomeJobFilters, JobFilterValues } from './HomeJobFilters'
 
 interface Job {
   id: string
@@ -21,55 +22,111 @@ interface Job {
 interface ExpandableJobsListProps {
   initialJobs: Job[]
   totalJobs: number
+  showFilters?: boolean
 }
 
-export function ExpandableJobsList({ initialJobs, totalJobs }: ExpandableJobsListProps) {
+export function ExpandableJobsList({ initialJobs, totalJobs, showFilters = false }: ExpandableJobsListProps) {
   const [allJobs, setAllJobs] = useState<Job[]>([])
+  const [filteredJobs, setFilteredJobs] = useState<Job[]>([])
   const [loadingMore, setLoadingMore] = useState(false)
   const [showAll, setShowAll] = useState(false)
+  const [filters, setFilters] = useState<JobFilterValues>({})
+  const [filterLoading, setFilterLoading] = useState(false)
+  const [filteredTotal, setFilteredTotal] = useState(totalJobs)
 
   // Check if auth is disabled to show all jobs by default
   const authDisabled = process.env.NEXT_PUBLIC_AUTH_ENABLED === 'false'
 
   useEffect(() => {
     // If auth is disabled, load all jobs automatically
-    if (authDisabled && allJobs.length === 0) {
+    if (authDisabled && allJobs.length === 0 && Object.keys(filters).length === 0) {
       fetchAllJobs()
     }
   }, [authDisabled])
 
-  const fetchAllJobs = async () => {
+  const buildQueryString = (filters: JobFilterValues, limit: number = 1000) => {
+    const params = new URLSearchParams()
+    params.append('limit', limit.toString())
+    
+    if (filters.search) {
+      params.append('search', filters.search)
+    }
+    if (filters.location) {
+      params.append('location', filters.location)
+    }
+    if (filters.hourlyRate) {
+      params.append('hourlyRate', filters.hourlyRate.toString())
+    }
+    
+    return params.toString()
+  }
+
+  const fetchAllJobs = async (applyFilters?: JobFilterValues) => {
     setLoadingMore(true)
     try {
-      const response = await fetch('/api/jobs?limit=1000') // Fetch all jobs
+      const queryString = buildQueryString(applyFilters || {})
+      const response = await fetch(`/api/jobs?${queryString}`)
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`)
       }
       
       const data = await response.json()
-      setAllJobs(data.jobs || [])
+      
+      if (applyFilters && Object.keys(applyFilters).length > 0) {
+        setFilteredJobs(data.jobs || [])
+        setFilteredTotal(data.pagination?.total || 0)
+      } else {
+        setAllJobs(data.jobs || [])
+        setFilteredJobs([])
+        setFilteredTotal(totalJobs)
+      }
     } catch (error) {
-      console.error('Error fetching all jobs:', error)
+      console.error('Error fetching jobs:', error)
     } finally {
       setLoadingMore(false)
     }
   }
 
   const handleToggleExpanded = async () => {
-    if (!showAll && allJobs.length === 0) {
-      await fetchAllJobs()
+    if (!showAll && allJobs.length === 0 && filteredJobs.length === 0) {
+      await fetchAllJobs(filters)
     }
     setShowAll(!showAll)
   }
 
+  const handleFiltersChange = useCallback(async (newFilters: JobFilterValues) => {
+    setFilters(newFilters)
+    setFilterLoading(true)
+    
+    // If filters are applied, fetch filtered results
+    if (Object.keys(newFilters).length > 0) {
+      await fetchAllJobs(newFilters)
+      setShowAll(true) // Auto-expand when filtering
+    } else {
+      // Clear filters - reset to initial state
+      setFilteredJobs([])
+      setFilteredTotal(totalJobs)
+      setShowAll(false)
+      if (authDisabled) {
+        await fetchAllJobs()
+      }
+    }
+    
+    setFilterLoading(false)
+  }, [authDisabled, totalJobs])
+
   // Determine which jobs to display
-  const jobsToShow = authDisabled ? allJobs : (showAll ? allJobs : initialJobs)
-  const isInitialLoad = authDisabled && loadingMore && allJobs.length === 0
+  const hasActiveFilters = Object.keys(filters).length > 0
+  const jobsToShow = hasActiveFilters 
+    ? filteredJobs 
+    : (authDisabled ? allJobs : (showAll ? allJobs : initialJobs))
+  const currentTotal = hasActiveFilters ? filteredTotal : totalJobs
+  const isInitialLoad = authDisabled && loadingMore && allJobs.length === 0 && !hasActiveFilters
 
   // Function to create job cards with ads interspersed
   const createJobsWithAds = (jobs: Job[]) => {
-    const elements: JSX.Element[] = []
+    const elements: React.ReactElement[] = []
     
     jobs.forEach((job, index) => {
       // Add job card
@@ -130,6 +187,25 @@ export function ExpandableJobsList({ initialJobs, totalJobs }: ExpandableJobsLis
 
   return (
     <>
+      {/* Filters Section */}
+      {showFilters && (
+        <HomeJobFilters 
+          onFiltersChange={handleFiltersChange}
+          loading={filterLoading || loadingMore}
+        />
+      )}
+
+      {/* Results Count */}
+      {hasActiveFilters && (
+        <div className="mb-4 text-sm text-gray-600">
+          {filteredTotal === 0 ? (
+            <span>No jobs found matching your filters</span>
+          ) : (
+            <span>Found {filteredTotal} job{filteredTotal !== 1 ? 's' : ''} matching your filters</span>
+          )}
+        </div>
+      )}
+
       {/* Jobs Display */}
       <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {isInitialLoad ? (
@@ -159,8 +235,8 @@ export function ExpandableJobsList({ initialJobs, totalJobs }: ExpandableJobsLis
       </div>
 
 
-      {/* Show More/Less Button - only show when auth is enabled */}
-      {!authDisabled && initialJobs.length > 0 && totalJobs > 6 && (
+      {/* Show More/Less Button - only show when auth is enabled and no filters active */}
+      {!authDisabled && !hasActiveFilters && initialJobs.length > 0 && totalJobs > 6 && (
         <div className="mt-8 text-center">
           <Button
             onClick={handleToggleExpanded}

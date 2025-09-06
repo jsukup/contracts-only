@@ -95,10 +95,11 @@ export default async function HomePage() {
             <p className="mt-2 text-gray-600">Fresh contract jobs posted this week</p>
           </div>
           
-          {/* Use the expandable jobs list component */}
+          {/* Use the expandable jobs list component with filters */}
           <ExpandableJobsList 
             initialJobs={recentJobs} 
-            totalJobs={totalJobs} 
+            totalJobs={totalJobs}
+            showFilters={true}
           />
         </div>
       </section>
