@@ -128,7 +128,7 @@ export function HomeJobFilters({ onFiltersChange, loading = false }: HomeJobFilt
             </div>
             <Input
               type="number"
-              placeholder="Hourly rate (e.g., 75)"
+              placeholder="Min hourly rate (e.g., $75+)"
               value={hourlyRate}
               onChange={(e) => handleHourlyRateChange(e.target.value)}
               className="pl-10 h-10"
@@ -173,7 +173,7 @@ export function HomeJobFilters({ onFiltersChange, loading = false }: HomeJobFilt
 
       {/* Help Text */}
       <div className="mt-3 text-xs text-gray-500">
-        <p>Search by job title keywords, filter by location, or find jobs that match your hourly rate.</p>
+        <p>Search by job title keywords, filter by location, or set minimum hourly rate requirements.</p>
       </div>
     </div>
   )

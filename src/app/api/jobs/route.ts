@@ -66,9 +66,9 @@ export async function GET(req: NextRequest) {
     }
     
     if (hourlyRate) {
-      // Hourly rate filter - find jobs where the user's rate falls within the job's range
-      const rate = parseInt(hourlyRate)
-      query = query.lte('hourly_rate_min', rate).gte('hourly_rate_max', rate)
+      // Minimum hourly rate filter - find jobs where the minimum offered rate meets or exceeds the user's requirement
+      const minRate = parseInt(hourlyRate)
+      query = query.gte('hourly_rate_min', minRate)
     }
     
     if (jobType) {
