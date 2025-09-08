@@ -75,6 +75,9 @@ jobs:
         CI: true
         JEST_JUNIT_OUTPUT_DIR: ./
         JEST_JUNIT_OUTPUT_NAME: junit.xml
+        NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.TEST_SUPABASE_URL }}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.TEST_SUPABASE_ANON_KEY }}
+        SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.TEST_SUPABASE_SERVICE_ROLE_KEY }}
       run: |
         # Run authentication integration tests
         npm run test:ci -- --testPathPatterns="tests/integration/.*auth.*\\.test\\.ts$|tests/integration/oauth.*\\.test\\.ts$" --maxWorkers=2 --testResultsProcessor=jest-junit

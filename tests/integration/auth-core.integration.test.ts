@@ -2,8 +2,10 @@ import { createClient } from '@supabase/supabase-js'
 import * as dotenv from 'dotenv'
 import * as path from 'path'
 
-// Load test environment variables
-dotenv.config({ path: path.join(process.cwd(), '.env.test.local') })
+// Load test environment variables (skip in CI, use env vars from workflow)
+if (!process.env.CI) {
+  dotenv.config({ path: path.join(process.cwd(), '.env.test.local') })
+}
 
 // Test configuration
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
