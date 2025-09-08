@@ -1,0 +1,181 @@
+[0;34m[INFO][0m Starting pre-flight checks...
+[0;32m[SUCCESS][0m Pre-flight checks completed
+[0;34m[INFO][0m Executing daily update process...
+[0;34m[INFO][0m Command: node /root/contracts-only/scripts/manual-daily-update.js  --limit=200
+[dotenv@17.2.1] injecting env (32) from .env -- tip: ⚙️  enable debug logging with { debug: true }
+[dotenv@17.2.1] injecting env (0) from .env -- tip: 📡 observe env with Radar: https://dotenvx.com/radar
+[dotenv@17.2.1] injecting env (0) from .env -- tip: 🛠️  run anywhere with `dotenvx run -- yourcommand`
+🚀 ContractsOnly Manual Daily Update
+=====================================
+Mode: 🔴 LIVE UPDATE
+Job Limit: 200 jobs
+Started: 3:31:21 PM
+
+📡 STEP 1: Scraping New Jobs
+────────────────────────────────────────
+🚀 ContractsOnly Job Seeder Starting...
+Mode: LIVE IMPORT
+Target: 200 jobs maximum
+
+📡 Scraping contract jobs from multiple sources...
+Executing: /root/contracts-only/job-scraper-env/bin/python /root/contracts-only/scripts/jobspy-scraper.py 200 0.3
+2025-09-08 15:31:56,779 - INFO - JobSpy:Linkedin - finished scraping
+2025-09-08 15:32:46,661 - ERROR - JobSpy:ZipRecruiter - 429 Response - Blocked by ZipRecruiter for too many requests
+2025-09-08 15:32:49,527 - ERROR - JobSpy:ZipRecruiter - 429 Response - Blocked by ZipRecruiter for too many requests
+2025-09-08 15:32:52,303 - ERROR - JobSpy:ZipRecruiter - 429 Response - Blocked by ZipRecruiter for too many requests
+2025-09-08 15:32:55,047 - ERROR - JobSpy:ZipRecruiter - 429 Response - Blocked by ZipRecruiter for too many requests
+🚀 Multi-Source Job Scraper Starting
+📋 Target: 200 jobs maximum
+🎯 Min contract score: 0.3
+
+📡 Scraping from INDEED
+  🔍 Searching: 'software contractor'
+    ✅ Found 50 jobs
+  🔍 Searching: 'contract developer remote'
+    ✅ Found 50 jobs
+  🔍 Searching: 'contract programmer'
+    ✅ Found 50 jobs
+  🔍 Searching: 'contract-to-hire developer'
+    ✅ Found 5 jobs
+  🔍 Searching: 'independent contractor programming'
+    ✅ Found 50 jobs
+  🔍 Searching: 'contract software engineer'
+    ✅ Found 50 jobs
+  🔍 Searching: 'W2 contract developer'
+    ✅ Found 50 jobs
+  🔍 Searching: '1099 contractor developer'
+    ✅ Found 6 jobs
+📊 Total from indeed: 311 jobs
+
+📡 Scraping from LINKEDIN
+  🔍 Searching: 'contract developer'
+    ✅ Found 25 jobs
+  🔍 Searching: 'contractor software'
+    ✅ Found 25 jobs
+  🔍 Searching: 'contract-to-hire'
+    ✅ Found 25 jobs
+  🔍 Searching: 'independent contractor tech'
+    ✅ Found 25 jobs
+📊 Total from linkedin: 100 jobs
+
+📡 Scraping from ZIP_RECRUITER
+  🔍 Searching: 'software contractor'
+    ❌ No jobs found
+  🔍 Searching: 'contract developer'
+    ❌ No jobs found
+  🔍 Searching: 'contract programmer'
+    ❌ No jobs found
+  🔍 Searching: 'freelance developer'
+    ❌ No jobs found
+📊 Total from zip_recruiter: 0 jobs
+
+🔄 Processing 411 raw jobs...
+📋 After deduplication: 382 unique jobs
+✅ After filtering: 210 contract-relevant jobs
+
+📊 SCRAPING SUMMARY
+   Total jobs scraped: 411
+   After processing: 210
+   Contract relevance: 51.1%
+
+📋 BY SOURCE:
+   indeed: 209 jobs
+   linkedin: 1 jobs
+
+💾 Results saved to: /root/contracts-only/scripts/temp-scraped-jobs.json
+✅ Scraping completed successfully
+✅ Scraped 210 jobs from multiple sources
+📊 Source breakdown:
+   indeed: 209 jobs
+   linkedin: 1 jobs
+🔍 Processing scraped jobs...
+✅ Processed 210 jobs:
+   - 202 jobs ready for import
+   - 0 jobs rejected
+   - 8 duplicate jobs
+📥 Importing 202 jobs to database...
+✅ Successfully imported 202 jobs
+
+==================================================
+📊 JOB SEEDING RESULTS
+==================================================
+Mode: LIVE IMPORT
+Scraped: 210 jobs
+Ready for import: 202 jobs
+Rejected: 0 jobs
+Duplicates: 8 jobs
+
+📈 CONTRACT SCORE DISTRIBUTION:
+Average: 55.2%
+Range: 30.0% - 100.0%
+==================================================
+✅ Job seeding completed successfully!
+🎯 Next steps: Monitor click-through rates and job quality
+✅ Job scraping completed in 106s
+   📊 Results: 202 imported, 8 duplicates, 0 rejected
+
+🧹 STEP 2: Cleaning Stale Jobs
+────────────────────────────────────────
+🧹 ContractsOnly Stale Job Cleanup Starting...
+Mode: LIVE CLEANUP
+Stale threshold: 30 days
+Batch size: 50
+
+📊 Getting current job statistics...
+✅ Current active jobs: 387
+📋 By source:
+   manual: 185 jobs
+   indeed: 201 jobs
+   linkedin: 1 jobs
+
+🔍 Finding stale jobs (older than 30 days)...
+📋 Found 0 jobs older than 30 days
+
+✅ No jobs to clean up
+
+==================================================
+🧹 JOB CLEANUP RESULTS
+==================================================
+Mode: LIVE CLEANUP
+Stale threshold: 30 days
+Total active jobs: 387
+Jobs identified for cleanup: 0
+
+📈 Cleanup rate: 0.0% of active jobs
+==================================================
+✅ No cleanup needed - all jobs are current!
+✅ Cleanup completed in 0s
+   🗑️  Results: 0 cleaned, 0 stale, 0 invalid URLs
+
+📊 STEP 3: Generating Daily Report
+────────────────────────────────────────
+📊 Generating daily report for Monday, September 8, 2025...
+📋 Collecting job statistics...
+🤖 Collecting scraping metrics...
+⚡ Collecting performance metrics...
+📈 Analyzing source performance...
+🎯 Collecting quality metrics...
+📄 JSON report saved: /root/contracts-only/reports/daily-report-2025-09-08.json
+📄 Markdown report saved: /root/contracts-only/reports/daily-report-2025-09-08.md
+✅ Daily report generated successfully!
+✅ Report generated in 1s
+   📄 Files: daily-report-2025-09-08.json, daily-report-2025-09-08.md
+
+🎯 SUMMARY
+══════════════════════════════════════════════════
+⏱️  Total Time: 108s (2m 48s)
+🎮 Mode: LIVE UPDATE
+📈 Status: ✅ Success
+📡 Scraping: ✅ 202 new jobs imported
+🧹 Cleanup: ✅ 0 jobs cleaned
+📊 Report: ✅ Daily report generated
+══════════════════════════════════════════════════
+💡 RECOMMENDATIONS:
+   🎉 Great! 202 new jobs added to the platform.
+   📊 Review your daily report: reports/daily-report-2025-09-08.md
+
+🚀 Daily update complete! Run again tomorrow or as needed.
+[0;32m[SUCCESS][0m Daily update completed successfully! ✅
+[0;34m[INFO][0m Total duration: 1m 48s
+[0;34m[INFO][0m Quick report preview:
+[0;34m[INFO][0m Session log saved to: /root/contracts-only/logs/manual-update-20250908_153121.log
