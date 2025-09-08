@@ -1,0 +1,110 @@
+{
+  "timestamp": "2025-09-08T02:15:00Z",
+  "projectPath": "/root/contracts-only",
+  "issuesFound": 186,
+  "criticalCount": 0,
+  "highCount": 32,
+  "mediumCount": 154,
+  "categories": {
+    "typescript": 186,
+    "build": 0,
+    "runtime": 0,
+    "structure": 0
+  },
+  "summary": {
+    "buildStatus": "SUCCESS",
+    "devServerStatus": "SUCCESS",
+    "typeCheckStatus": "WARNINGS",
+    "structureStatus": "OK"
+  },
+  "mainIssueGroups": [
+    {
+      "category": "Clerk API Changes",
+      "count": 28,
+      "severity": "high",
+      "description": "Multiple TypeScript errors related to Clerk auth() API changes - properties like userId, sessionId are now Promises",
+      "locations": [
+        "src/app/api/auth-check/route.ts",
+        "src/app/api/debug/auth/route.ts",
+        "src/app/api/profile/create/route.ts",
+        "src/app/api/webhooks/clerk/route.ts"
+      ],
+      "suggestedFix": "Update all auth() calls to use await since they now return Promises",
+      "estimatedEffort": "45 minutes"
+    },
+    {
+      "category": "Test Matchers Missing",
+      "count": 94,
+      "severity": "medium",
+      "description": "Jest DOM matchers not properly configured (toBeInTheDocument, toHaveAttribute, etc.)",
+      "locations": [
+        "src/components/__tests__/*.test.tsx",
+        "src/components/jobs/__tests__/*.test.tsx"
+      ],
+      "suggestedFix": "Import '@testing-library/jest-dom' in jest.setup.js or add proper type definitions",
+      "estimatedEffort": "15 minutes"
+    },
+    {
+      "category": "UserResource Type Issues",
+      "count": 12,
+      "severity": "medium",
+      "description": "Clerk UserResource type doesn't have 'email' and 'name' properties directly",
+      "locations": [
+        "src/app/dashboard/page.tsx",
+        "src/app/profile/settings/page.tsx",
+        "src/components/admin/AdminHeader.tsx"
+      ],
+      "suggestedFix": "Access email via user.emailAddresses[0].emailAddress and name via user.firstName/lastName",
+      "estimatedEffort": "30 minutes"
+    },
+    {
+      "category": "Badge Variant Type Mismatch",
+      "count": 4,
+      "severity": "low",
+      "description": "Badge component variant 'success' not in allowed types",
+      "locations": [
+        "src/app/applications/[applicationId]/page.tsx",
+        "src/app/dashboard/page.tsx",
+        "src/app/employer/dashboard/page.tsx"
+      ],
+      "suggestedFix": "Change 'success' variant to 'default' or update Badge component types",
+      "estimatedEffort": "10 minutes"
+    },
+    {
+      "category": "Route Params as Promises",
+      "count": 8,
+      "severity": "high",
+      "description": "Next.js 15 route params are now Promises and need await",
+      "locations": [
+        "src/app/api/applications/[applicationId]/route.ts",
+        "src/app/api/matching/job/[jobId]/route.ts",
+        "src/app/api/matching/user/[userId]/route.ts"
+      ],
+      "suggestedFix": "Add await when accessing params.applicationId, params.jobId, etc.",
+      "estimatedEffort": "20 minutes"
+    },
+    {
+      "category": "Type Safety Issues",
+      "count": 30,
+      "severity": "low",
+      "description": "Various implicit 'any' types and missing type annotations",
+      "locations": [
+        "src/app/api/jobs/route.ts",
+        "src/app/api/jobs/[jobId]/route.ts",
+        "src/app/jobs/[jobId]/metadata.tsx"
+      ],
+      "suggestedFix": "Add proper type annotations for parameters",
+      "estimatedEffort": "20 minutes"
+    }
+  ],
+  "recommendations": [
+    "Priority 1: Fix Clerk auth() Promise issues - these could cause runtime errors",
+    "Priority 2: Fix route params Promise issues - Next.js 15 breaking change",
+    "Priority 3: Update UserResource property access for Clerk compatibility",
+    "Priority 4: Configure Jest DOM matchers for tests",
+    "Priority 5: Fix remaining type annotations and implicit 'any' types"
+  ],
+  "autoFixAvailable": true,
+  "healthScore": 78,
+  "notes": "Build succeeds but TypeScript has 186 warnings. Most are related to recent framework updates (Next.js 15, Clerk v5). No critical runtime issues detected."
+}

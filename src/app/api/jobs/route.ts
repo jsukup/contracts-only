@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createPublicSupabaseClient } from '@/lib/auth-server'
 import { JobMatchingEngine } from '@/lib/matching'
 import { createBatchNotifications, NotificationTypeEnum } from '@/lib/notifications'
+import { normalizeLocationForSearch } from '@/lib/location-utils'
 
 export async function GET(req: NextRequest) {
   try {
@@ -49,8 +50,19 @@ export async function GET(req: NextRequest) {
     }
     
     if (location) {
-      // Location filter - search in the location field
-      query = query.ilike('location', `%${location}%`)
+      // Flexible location matching - tries multiple patterns in priority order
+      const locationSearch = normalizeLocationForSearch(location)
+      const variations = locationSearch.supabaseOrConditions
+      
+      // Use the first (most specific) variation as primary filter
+      // This handles "New York, NY, USA" -> "New York, NY" scenario
+      if (variations.length > 1) {
+        // Try the city, state combination first (most likely match)
+        query = query.ilike('location', `%${variations[1]}%`)
+      } else {
+        // Fall back to exact match
+        query = query.ilike('location', `%${variations[0]}%`)
+      }
     }
     
     if (hourlyRate) {

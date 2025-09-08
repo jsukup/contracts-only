@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase'
 import { JobWhereInput, JobOrderByInput } from '@/lib/database'
 import { JobWithIncludes } from '@/lib/types'
+import { normalizeLocationForSearch } from '@/lib/location-utils'
 
 export async function GET(req: NextRequest) {
   try {
@@ -163,12 +164,18 @@ export async function GET(req: NextRequest) {
       jobsQuery = jobsQuery.or(`title.ilike.%${search}%,company.ilike.%${search}%,description.ilike.%${search}%,requirements.ilike.%${search}%`)
     }
 
-    // Location and remote filters
+    // Location and remote filters with flexible location matching
     if (location) {
+      const locationSearch = normalizeLocationForSearch(location)
+      const variations = locationSearch.supabaseOrConditions
+      
+      // Use the most appropriate variation (city, state without country)
+      const locationPattern = variations.length > 1 ? variations[1] : variations[0]
+      
       if (isRemote === 'true') {
-        jobsQuery = jobsQuery.or(`is_remote.eq.true,location.ilike.%${location}%`)
+        jobsQuery = jobsQuery.or(`is_remote.eq.true,location.ilike.%${locationPattern}%`)
       } else {
-        jobsQuery = jobsQuery.ilike('location', `%${location}%`)
+        jobsQuery = jobsQuery.ilike('location', `%${locationPattern}%`)
       }
     } else if (isRemote === 'true') {
       jobsQuery = jobsQuery.eq('is_remote', true)
@@ -236,15 +243,19 @@ export async function GET(req: NextRequest) {
       .select('*', { count: 'exact', head: true })
       .eq('is_active', true)
 
-    // Apply the same filters for count
+    // Apply the same filters for count with flexible location matching
     if (search) {
       countQuery = countQuery.or(`title.ilike.%${search}%,company.ilike.%${search}%,description.ilike.%${search}%,requirements.ilike.%${search}%`)
     }
     if (location) {
+      const locationSearch = normalizeLocationForSearch(location)
+      const variations = locationSearch.supabaseOrConditions
+      const locationPattern = variations.length > 1 ? variations[1] : variations[0]
+      
       if (isRemote === 'true') {
-        countQuery = countQuery.or(`is_remote.eq.true,location.ilike.%${location}%`)
+        countQuery = countQuery.or(`is_remote.eq.true,location.ilike.%${locationPattern}%`)
       } else {
-        countQuery = countQuery.ilike('location', `%${location}%`)
+        countQuery = countQuery.ilike('location', `%${locationPattern}%`)
       }
     } else if (isRemote === 'true') {
       countQuery = countQuery.eq('is_remote', true)
