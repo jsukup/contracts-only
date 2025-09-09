@@ -26,9 +26,12 @@ export function HomeJobFilters({ onFiltersChange, loading = false }: HomeJobFilt
 
   // Debounced filter update
   const debouncedFilterUpdate = useCallback(
-    debounce((filters: JobFilterValues) => {
-      onFiltersChange(filters)
-    }, 500),
+    (filters: JobFilterValues) => {
+      const debouncedFn = debounce(() => {
+        onFiltersChange(filters)
+      }, 500)
+      debouncedFn()
+    },
     [onFiltersChange]
   )
 
@@ -173,7 +176,15 @@ export function HomeJobFilters({ onFiltersChange, loading = false }: HomeJobFilt
 
       {/* Help Text */}
       <div className="mt-3 text-xs text-gray-500">
-        <p>Search by job title keywords, filter by location, or set minimum hourly rate requirements.</p>
+        <p>
+          Feedback? See a job that isn&apos;t a contract?{' '}
+          <a 
+            href="mailto:info@contracts-only.com" 
+            className="text-indigo-600 hover:text-indigo-800 underline"
+          >
+            Contact Us
+          </a>
+        </p>
       </div>
     </div>
   )
