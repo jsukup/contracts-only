@@ -49,3 +49,10 @@ env/
 .venv/
 .env/
 
+# job scraping temporary files
+scripts/temp-scraped-jobs.json
+scripts/latest-verification.json
+scripts/verification-*.json
+scripts/manual-review-list.json
+scripts/test-jobspy-output.json
+

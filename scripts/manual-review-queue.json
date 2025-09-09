@@ -1,0 +1,670 @@
+[
+  {
+    "url": "https://www.indeed.com/viewjob?jk=994b3dd94cbadd25",
+    "initial_score": 0.8,
+    "crawl4ai_score": 0.0,
+    "final_score": 0.8,
+    "confidence_level": "LOW",
+    "job_type_found": "* full-time",
+    "contract_indicators": [
+      "contract",
+      "temp",
+      "contractor",
+      "temporary"
+    ],
+    "full_time_indicators": [
+      "full-time",
+      "vision insurance",
+      "salary",
+      "health insurance",
+      "dental insurance"
+    ],
+    "hourly_rate": null,
+    "duration": null
+  },
+  {
+    "url": "https://www.indeed.com/viewjob?jk=8c9f292b68351b96",
+    "initial_score": 0.75,
+    "crawl4ai_score": 0.0,
+    "final_score": 0.75,
+    "confidence_level": "LOW",
+    "job_type_found": "* full-time",
+    "contract_indicators": [
+      "contract",
+      "temp",
+      "contractor",
+      "temporary"
+    ],
+    "full_time_indicators": [
+      "full-time",
+      "vision insurance",
+      "health insurance",
+      "salary",
+      "dental insurance"
+    ],
+    "hourly_rate": null,
+    "duration": null
+  },
+  {
+    "url": "https://www.indeed.com/viewjob?jk=641bced1c9847267",
+    "initial_score": 0.5,
+    "crawl4ai_score": 0.55,
+    "final_score": 0.535,
+    "confidence_level": "MEDIUM",
+    "job_type_found": "* full-time",
+    "contract_indicators": [
+      "contract",
+      "temp",
+      "contractor"
+    ],
+    "full_time_indicators": [
+      "salary",
+      "full-time"
+    ],
+    "hourly_rate": null,
+    "duration": "52 week"
+  },
+  {
+    "url": "https://www.indeed.com/viewjob?jk=1c0b6f7fdc74b1b6",
+    "initial_score": 0.6,
+    "crawl4ai_score": 0.0,
+    "final_score": 0.6,
+    "confidence_level": "LOW",
+    "job_type_found": "* full-time",
+    "contract_indicators": [
+      "contract",
+      "temp",
+      "contractor"
+    ],
+    "full_time_indicators": [
+      "full-time",
+      "vision insurance",
+      "salary",
+      "health insurance",
+      "dental insurance"
+    ],
+    "hourly_rate": null,
+    "duration": null
+  },
+  {
+    "url": "https://www.indeed.com/viewjob?jk=86831c47d250cc10",
+    "initial_score": 0.6,
+    "crawl4ai_score": 0.0,
+    "final_score": 0.6,
+    "confidence_level": "LOW",
+    "job_type_found": "* full-time",
+    "contract_indicators": [
+      "contract",
+      "temp",
+      "contractor"
+    ],
+    "full_time_indicators": [
+      "full-time",
+      "vision insurance",
+      "permanent",
+      "health insurance",
+      "salary",
+      "dental insurance"
+    ],
+    "hourly_rate": null,
+    "duration": null
+  },
+  {
+    "url": "https://www.indeed.com/viewjob?jk=bcbce3df0a583c60",
+    "initial_score": 0.65,
+    "crawl4ai_score": 0.65,
+    "final_score": 0.65,
+    "confidence_level": "LOW",
+    "job_type_found": null,
+    "contract_indicators": [
+      "contract",
+      "temp",
+      "contractor"
+    ],
+    "full_time_indicators": [
+      "salary"
+    ],
+    "hourly_rate": null,
+    "duration": "12 month"
+  },
+  {
+    "url": "https://www.indeed.com/viewjob?jk=a3d0798aeddbf69d",
+    "initial_score": 0.9,
+    "crawl4ai_score": 0.6,
+    "final_score": 0.69,
+    "confidence_level": "MEDIUM",
+    "job_type_found": "* contract",
+    "contract_indicators": [
+      "consultant",
+      "contract"
+    ],
+    "full_time_indicators": [
+      "salary",
+      "pto"
+    ],
+    "hourly_rate": null,
+    "duration": null
+  },
+  {
+    "url": "https://www.indeed.com/viewjob?jk=d6ac0a70a156d68e",
+    "initial_score": 0.7,
+    "crawl4ai_score": 0.55,
+    "final_score": 0.595,
+    "confidence_level": "MEDIUM",
+    "job_type_found": "* contract",
+    "contract_indicators": [
+      "1099",
+      "contract"
+    ],
+    "full_time_indicators": [
+      "salary",
+      "full-time"
+    ],
+    "hourly_rate": "$100/hr",
+    "duration": "duration:** oct 2025 through june 2026"
+  },
+  {
+    "url": "https://www.indeed.com/viewjob?jk=e9c670544200fc1e",
+    "initial_score": 0.9,
+    "crawl4ai_score": 0.3,
+    "final_score": 0.48,
+    "confidence_level": "MEDIUM",
+    "job_type_found": "* contract",
+    "contract_indicators": [
+      "1099",
+      "consultant",
+      "contract"
+    ],
+    "full_time_indicators": [
+      "full-time",
+      "salary",
+      "pto"
+    ],
+    "hourly_rate": "$50/hr",
+    "duration": "duration:** sep 2025 through june 2026"
+  },
+  {
+    "url": "https://www.indeed.com/viewjob?jk=9347ee7275cacbc4",
+    "initial_score": 0.9,
+    "crawl4ai_score": 0.45,
+    "final_score": 0.585,
+    "confidence_level": "MEDIUM",
+    "job_type_found": "* full-time",
+    "contract_indicators": [
+      "temp",
+      "contractor",
+      "contract",
+      "1099",
+      "independent contractor"
+    ],
+    "full_time_indicators": [
+      "salary",
+      "full-time"
+    ],
+    "hourly_rate": null,
+    "duration": null
+  },
+  {
+    "url": "https://www.indeed.com/viewjob?jk=06bbfafefd42c897",
+    "initial_score": 0.5,
+    "crawl4ai_score": 0.35,
+    "final_score": 0.395,
+    "confidence_level": "LOW",
+    "job_type_found": "* contract",
+    "contract_indicators": [
+      "contract"
+    ],
+    "full_time_indicators": [
+      "salary",
+      "full-time"
+    ],
+    "hourly_rate": null,
+    "duration": null
+  },
+  {
+    "url": "https://www.indeed.com/viewjob?jk=2e33b269bccc2d17",
+    "initial_score": 0.55,
+    "crawl4ai_score": 0.55,
+    "final_score": 0.55,
+    "confidence_level": "LOW",
+    "job_type_found": null,
+    "contract_indicators": [
+      "temp",
+      "contract",
+      "temporary"
+    ],
+    "full_time_indicators": [
+      "salary"
+    ],
+    "hourly_rate": null,
+    "duration": null
+  },
+  {
+    "url": "https://www.indeed.com/viewjob?jk=02eb39a504d34095",
+    "initial_score": 0.65,
+    "crawl4ai_score": 0.0,
+    "final_score": 0.65,
+    "confidence_level": "LOW",
+    "job_type_found": null,
+    "contract_indicators": [
+      "temp",
+      "contractor",
+      "contract",
+      "temporary",
+      "short-term"
+    ],
+    "full_time_indicators": [
+      "vision insurance",
+      "salary",
+      "health insurance",
+      "permanent",
+      "dental insurance"
+    ],
+    "hourly_rate": null,
+    "duration": "durations"
+  },
+  {
+    "url": "https://www.indeed.com/viewjob?jk=495999033dca3df3",
+    "initial_score": 0.6,
+    "crawl4ai_score": 0.45,
+    "final_score": 0.495,
+    "confidence_level": "MEDIUM",
+    "job_type_found": "* full-time",
+    "contract_indicators": [
+      "consultant",
+      "contract",
+      "contractor"
+    ],
+    "full_time_indicators": [
+      "salary",
+      "full-time"
+    ],
+    "hourly_rate": null,
+    "duration": null
+  },
+  {
+    "url": "https://www.indeed.com/viewjob?jk=8626e9b06592d33d",
+    "initial_score": 0.55,
+    "crawl4ai_score": 0.0,
+    "final_score": 0.55,
+    "confidence_level": "LOW",
+    "job_type_found": "* full-time",
+    "contract_indicators": [
+      "consultant",
+      "contract",
+      "temp",
+      "contractor"
+    ],
+    "full_time_indicators": [
+      "full-time",
+      "vision insurance",
+      "health insurance",
+      "salary",
+      "dental insurance"
+    ],
+    "hourly_rate": null,
+    "duration": null
+  },
+  {
+    "url": "https://www.indeed.com/viewjob?jk=8252cdd468f2244f",
+    "initial_score": 0.6,
+    "crawl4ai_score": 0.45,
+    "final_score": 0.495,
+    "confidence_level": "MEDIUM",
+    "job_type_found": "* full-time",
+    "contract_indicators": [
+      "freelance",
+      "contract work",
+      "contract"
+    ],
+    "full_time_indicators": [
+      "salary",
+      "full-time"
+    ],
+    "hourly_rate": null,
+    "duration": null
+  },
+  {
+    "url": "https://www.indeed.com/viewjob?jk=22bc378c332ac9af",
+    "initial_score": 0.65,
+    "crawl4ai_score": 0.6,
+    "final_score": 0.615,
+    "confidence_level": "MEDIUM",
+    "job_type_found": "* part-time",
+    "contract_indicators": [
+      "contract",
+      "temp",
+      "contractor",
+      "temporary"
+    ],
+    "full_time_indicators": [
+      "sick leave",
+      "salary"
+    ],
+    "hourly_rate": "24 hour",
+    "duration": null
+  },
+  {
+    "url": "https://www.indeed.com/viewjob?jk=36a3916846cdadee",
+    "initial_score": 0.65,
+    "crawl4ai_score": 0.6,
+    "final_score": 0.615,
+    "confidence_level": "MEDIUM",
+    "job_type_found": "* part-time",
+    "contract_indicators": [
+      "contract",
+      "temp",
+      "contractor",
+      "temporary"
+    ],
+    "full_time_indicators": [
+      "sick leave",
+      "salary"
+    ],
+    "hourly_rate": "24 hour",
+    "duration": null
+  },
+  {
+    "url": "https://www.indeed.com/viewjob?jk=83bc7bd6bcfd5cf3",
+    "initial_score": 0.8,
+    "crawl4ai_score": 0.65,
+    "final_score": 0.695,
+    "confidence_level": "MEDIUM",
+    "job_type_found": "* full-time",
+    "contract_indicators": [
+      "contract",
+      "temp",
+      "contractor",
+      "temporary"
+    ],
+    "full_time_indicators": [
+      "salary",
+      "full-time"
+    ],
+    "hourly_rate": null,
+    "duration": null
+  },
+  {
+    "url": "https://www.indeed.com/viewjob?jk=8caf519651b33f7e",
+    "initial_score": 0.8,
+    "crawl4ai_score": 0.65,
+    "final_score": 0.695,
+    "confidence_level": "MEDIUM",
+    "job_type_found": "* full-time",
+    "contract_indicators": [
+      "contract",
+      "temp",
+      "contractor",
+      "temporary"
+    ],
+    "full_time_indicators": [
+      "salary",
+      "full-time"
+    ],
+    "hourly_rate": null,
+    "duration": null
+  },
+  {
+    "url": "https://www.indeed.com/viewjob?jk=0b77900733df9050",
+    "initial_score": 0.8,
+    "crawl4ai_score": 0.65,
+    "final_score": 0.695,
+    "confidence_level": "MEDIUM",
+    "job_type_found": "* full-time",
+    "contract_indicators": [
+      "contract",
+      "temp",
+      "contractor",
+      "temporary"
+    ],
+    "full_time_indicators": [
+      "salary",
+      "full-time"
+    ],
+    "hourly_rate": null,
+    "duration": null
+  },
+  {
+    "url": "https://www.indeed.com/viewjob?jk=90d406402917c332",
+    "initial_score": 0.9,
+    "crawl4ai_score": 0.85,
+    "final_score": 0.9,
+    "confidence_level": "LOW",
+    "job_type_found": null,
+    "contract_indicators": [
+      "temp",
+      "contractor",
+      "contract",
+      "consultant",
+      "temporary"
+    ],
+    "full_time_indicators": [
+      "salary",
+      "permanent"
+    ],
+    "hourly_rate": null,
+    "duration": null
+  },
+  {
+    "url": "https://www.indeed.com/viewjob?jk=04b58a22b2e0a0d5",
+    "initial_score": 1.0,
+    "crawl4ai_score": 0.4,
+    "final_score": 0.58,
+    "confidence_level": "MEDIUM",
+    "job_type_found": "* full-time",
+    "contract_indicators": [
+      "temp",
+      "contractor",
+      "contract",
+      "consultant",
+      "temporary"
+    ],
+    "full_time_indicators": [
+      "full-time",
+      "salary",
+      "pto"
+    ],
+    "hourly_rate": null,
+    "duration": null
+  },
+  {
+    "url": "https://www.indeed.com/viewjob?jk=295f91548817a4a6",
+    "initial_score": 0.8,
+    "crawl4ai_score": 0.0,
+    "final_score": 0.8,
+    "confidence_level": "LOW",
+    "job_type_found": "* full-time",
+    "contract_indicators": [
+      "contract",
+      "temp",
+      "contractor",
+      "temporary"
+    ],
+    "full_time_indicators": [
+      "full-time",
+      "vision insurance",
+      "salary",
+      "health insurance",
+      "paid time off"
+    ],
+    "hourly_rate": null,
+    "duration": null
+  },
+  {
+    "url": "https://www.indeed.com/viewjob?jk=17c7b7b4ecc00135",
+    "initial_score": 0.8,
+    "crawl4ai_score": 0.0,
+    "final_score": 0.8,
+    "confidence_level": "LOW",
+    "job_type_found": "* full-time",
+    "contract_indicators": [
+      "contract",
+      "temp",
+      "contractor",
+      "temporary"
+    ],
+    "full_time_indicators": [
+      "full-time",
+      "vision insurance",
+      "salary",
+      "health insurance",
+      "paid time off"
+    ],
+    "hourly_rate": null,
+    "duration": null
+  },
+  {
+    "url": "https://www.indeed.com/viewjob?jk=25f7bc1021c58880",
+    "initial_score": 0.8,
+    "crawl4ai_score": 0.0,
+    "final_score": 0.8,
+    "confidence_level": "LOW",
+    "job_type_found": "* full-time",
+    "contract_indicators": [
+      "contract",
+      "temp",
+      "contractor",
+      "temporary"
+    ],
+    "full_time_indicators": [
+      "full-time",
+      "vision insurance",
+      "salary",
+      "health insurance",
+      "paid time off"
+    ],
+    "hourly_rate": null,
+    "duration": null
+  },
+  {
+    "url": "https://www.indeed.com/viewjob?jk=cceaff3d6b986d1e",
+    "initial_score": 0.8,
+    "crawl4ai_score": 0.65,
+    "final_score": 0.695,
+    "confidence_level": "MEDIUM",
+    "job_type_found": "* full-time",
+    "contract_indicators": [
+      "contract",
+      "temp",
+      "contractor",
+      "temporary"
+    ],
+    "full_time_indicators": [
+      "salary",
+      "full-time"
+    ],
+    "hourly_rate": null,
+    "duration": null
+  },
+  {
+    "url": "https://www.indeed.com/viewjob?jk=b0916a47c627ddf6",
+    "initial_score": 0.8,
+    "crawl4ai_score": 0.65,
+    "final_score": 0.695,
+    "confidence_level": "MEDIUM",
+    "job_type_found": "* temporary",
+    "contract_indicators": [
+      "contract",
+      "temp",
+      "contractor",
+      "temporary"
+    ],
+    "full_time_indicators": [
+      "salary",
+      "full-time"
+    ],
+    "hourly_rate": null,
+    "duration": null
+  },
+  {
+    "url": "https://www.indeed.com/viewjob?jk=13e46d4027e38c64",
+    "initial_score": 0.8,
+    "crawl4ai_score": 0.0,
+    "final_score": 0.8,
+    "confidence_level": "LOW",
+    "job_type_found": "* full-time",
+    "contract_indicators": [
+      "contract",
+      "temp",
+      "contractor",
+      "temporary"
+    ],
+    "full_time_indicators": [
+      "full-time",
+      "vision insurance",
+      "salary",
+      "health insurance",
+      "paid time off"
+    ],
+    "hourly_rate": null,
+    "duration": null
+  },
+  {
+    "url": "https://www.indeed.com/viewjob?jk=ce966935cc558111",
+    "initial_score": 0.75,
+    "crawl4ai_score": 0.2,
+    "final_score": 0.365,
+    "confidence_level": "LOW",
+    "job_type_found": "* full-time",
+    "contract_indicators": [
+      "contract",
+      "temp",
+      "contractor",
+      "temporary"
+    ],
+    "full_time_indicators": [
+      "salary",
+      "health insurance",
+      "permanent",
+      "full-time"
+    ],
+    "hourly_rate": "24 hour",
+    "duration": "9 month"
+  },
+  {
+    "url": "https://www.indeed.com/viewjob?jk=6c0c8fbefd1f71ce",
+    "initial_score": 0.85,
+    "crawl4ai_score": 0.0,
+    "final_score": 0.85,
+    "confidence_level": "LOW",
+    "job_type_found": "* full-time",
+    "contract_indicators": [
+      "contract",
+      "temp",
+      "contractor",
+      "temporary"
+    ],
+    "full_time_indicators": [
+      "full-time",
+      "base salary",
+      "parental leave",
+      "vision insurance",
+      "health insurance",
+      "salary",
+      "dental insurance"
+    ],
+    "hourly_rate": null,
+    "duration": "long term"
+  },
+  {
+    "url": "https://www.indeed.com/viewjob?jk=c88ec15ed975f60e",
+    "initial_score": 0.65,
+    "crawl4ai_score": 0.55,
+    "final_score": 0.58,
+    "confidence_level": "MEDIUM",
+    "job_type_found": "* full-time",
+    "contract_indicators": [
+      "contract",
+      "temp",
+      "contractor",
+      "temporary"
+    ],
+    "full_time_indicators": [
+      "salary",
+      "permanent",
+      "full-time"
+    ],
+    "hourly_rate": null,
+    "duration": null
+  }
+]

@@ -12,84 +12,167 @@ import numpy as np
 SCRAPING_CONFIG = {
     'indeed': {
         'enabled': True,
-        'results_per_term': 50,
+        'results_per_term': 40,
         'delay': 1,  # seconds between requests
         'search_terms': [
-            "software contractor",
-            "contract developer remote", 
-            "contract programmer",
-            "contract-to-hire developer",
-            "independent contractor programming",
-            "contract software engineer",
-            "W2 contract developer",
-            "1099 contractor developer"
+            "independent contractor software",
+            "contract-to-hire developer remote",
+            "1099 contract developer", 
+            "W2 contract programmer",
+            "contract software engineer remote",
+            "contractor programming remote",
+            "freelance developer contract",
+            "temporary software contractor"
         ]
     },
     'linkedin': {
         'enabled': True,
-        'results_per_term': 25,  # Conservative due to rate limits
+        'results_per_term': 20,  # Conservative due to rate limits
         'delay': 3,  # Longer delay for LinkedIn
         'search_terms': [
-            "contract developer",
-            "contractor software",
-            "contract-to-hire",
-            "independent contractor tech"
+            "independent contractor developer",
+            "contract-to-hire software",
+            "contractor remote programming",
+            "freelance software engineer"
         ]
     },
-    'zip_recruiter': {
-        'enabled': True,
-        'results_per_term': 40,
+    'glassdoor': {
+        'enabled': False,  # Disabled due to consistent 400 errors
+        'results_per_term': 30,
         'delay': 2,
         'search_terms': [
-            "software contractor",
-            "contract developer",
-            "contract programmer",
-            "freelance developer"
+            "independent contractor programming",
+            "contract-to-hire developer",
+            "contractor software remote",
+            "freelance programming contract"
         ]
     }
 }
 
-CONTRACT_KEYWORDS = [
-    'contract', 'contractor', 'contract-to-hire', 'c2h', 
-    'independent contractor', 'contract position', 'contract role', 
-    'contracting', 'contract work', 'freelance', 'consultant',
-    'temp', 'temporary', '1099', 'w2 contract'
-]
+# Enhanced contract keywords with weights
+CONTRACT_KEYWORDS = {
+    # High confidence contract indicators
+    'independent contractor': 3,
+    'contract-to-hire': 3,
+    'c2h': 3,
+    '1099 contractor': 3,
+    'w2 contract': 3,
+    'contract position': 3,
+    'contract role': 3,
+    
+    # Medium confidence indicators
+    'contractor': 2,
+    'contract': 2,
+    'freelance': 2,
+    'contracting': 2,
+    'contract work': 2,
+    'consultant': 2,
+    'temp': 2,
+    'temporary': 2,
+    '1099': 2,
+    
+    # Lower confidence indicators
+    'project-based': 1,
+    'short-term': 1,
+    'long-term contract': 2
+}
 
-EXCLUDE_KEYWORDS = [
-    'full-time', 'permanent', 'employee benefits', 'salary',
-    'permanent position', 'staff position', 'direct hire'
-]
+# Strong exclusion keywords (definitive full-time indicators)
+STRONG_EXCLUDE_KEYWORDS = {
+    'full-time employee': 5,
+    'permanent position': 5,
+    'employee benefits': 4,
+    'comprehensive benefits': 4,
+    'health insurance': 3,
+    'dental insurance': 3,
+    'vision insurance': 3,
+    '401k': 3,
+    'paid time off': 3,
+    'pto': 3,
+    'vacation days': 3,
+    'sick leave': 3,
+    'parental leave': 3,
+    'no contractors': 5,
+    'employees only': 5,
+    'w-2 only': 4
+}
+
+# Medium exclusion keywords (potential full-time indicators)
+MEDIUM_EXCLUDE_KEYWORDS = {
+    'full-time': 2,
+    'permanent': 2,
+    'salary': 1,
+    'annual salary': 2,
+    'base salary': 2,
+    'benefits eligible': 1,
+    'staff position': 2,
+    'direct hire': 2
+}
 
 def calculate_contract_score(description, title=""):
-    """Calculate contract relevance score (0-1)"""
+    """Calculate enhanced contract relevance score (0-1) with weighted keywords"""
     if not description:
         return 0
     
     text = (description + " " + title).lower()
     
-    # Positive indicators
-    contract_matches = sum(1 for keyword in CONTRACT_KEYWORDS if keyword in text)
+    # Calculate positive score from contract indicators
+    positive_score = 0
+    for keyword, weight in CONTRACT_KEYWORDS.items():
+        if keyword in text:
+            positive_score += weight * 0.1  # Scale weights to reasonable values
     
-    # Negative indicators
-    exclude_matches = sum(1 for keyword in EXCLUDE_KEYWORDS if keyword in text)
+    # Calculate negative score from strong exclusion terms
+    strong_negative_score = 0
+    for keyword, weight in STRONG_EXCLUDE_KEYWORDS.items():
+        if keyword in text:
+            strong_negative_score += weight * 0.15  # Higher penalty for strong indicators
     
-    # Hourly rate bonus
-    hourly_bonus = 0.2 if re.search(r'\$\d+.*(?:hr|hour)', text) else 0
+    # Calculate negative score from medium exclusion terms
+    medium_negative_score = 0
+    for keyword, weight in MEDIUM_EXCLUDE_KEYWORDS.items():
+        if keyword in text:
+            medium_negative_score += weight * 0.05  # Lower penalty for medium indicators
     
-    # Duration mention bonus
-    duration_bonus = 0.1 if re.search(r'\d+\s*(?:week|month|year)', text) else 0
+    # Bonus for hourly rate mentions (strong contract indicator)
+    hourly_bonus = 0
+    if re.search(r'\$\d+.*(?:/hr|/hour|per hour|hourly)', text):
+        hourly_bonus = 0.3
+    elif re.search(r'hourly.*rate|rate.*hourly', text):
+        hourly_bonus = 0.2
     
-    # Base score from contract keywords
-    base_score = min(contract_matches * 0.2, 0.8)
+    # Bonus for duration mentions (contracts have specific durations)
+    duration_bonus = 0
+    if re.search(r'\d+\s*(?:month|week|months|weeks)\s*(?:contract|project|assignment)', text):
+        duration_bonus = 0.2
+    elif re.search(r'\d+\s*(?:month|week|months|weeks)', text):
+        duration_bonus = 0.1
     
-    # Apply bonuses
-    score = base_score + hourly_bonus + duration_bonus
+    # Check for explicit job type mentions
+    job_type_penalty = 0
+    if re.search(r'job\s*type\s*:?\s*full[-\s]*time', text) or re.search(r'employment\s*type\s*:?\s*full[-\s]*time', text):
+        job_type_penalty = 0.5
+    elif re.search(r'job\s*type\s*:?\s*permanent', text) or re.search(r'employment\s*type\s*:?\s*permanent', text):
+        job_type_penalty = 0.4
     
-    # Penalize for exclusion terms
-    score = max(0, score - exclude_matches * 0.3)
+    job_type_bonus = 0
+    if re.search(r'job\s*type\s*:?\s*contract', text) or re.search(r'employment\s*type\s*:?\s*contract', text):
+        job_type_bonus = 0.4
+    elif re.search(r'job\s*type\s*:?\s*(?:temp|temporary|freelance)', text):
+        job_type_bonus = 0.3
     
-    return min(score, 1.0)
+    # Calculate final score
+    total_score = positive_score + hourly_bonus + duration_bonus + job_type_bonus
+    total_penalty = strong_negative_score + medium_negative_score + job_type_penalty
+    
+    final_score = total_score - total_penalty
+    
+    # Additional logic: if strong exclusion terms are present with no contract terms, score should be very low
+    if strong_negative_score > 0.4 and positive_score < 0.2:
+        final_score = max(final_score, 0.1)  # Cap at very low score
+    
+    # Normalize to 0-1 range
+    return max(0.0, min(1.0, final_score))
 
 def extract_rate_range(text):
     """Extract hourly rate range from text"""
@@ -141,12 +224,13 @@ def scrape_jobs_from_source(source_name, config, limit_per_term):
                 time.sleep(config['delay'])
             
             jobs = scrape_jobs(
-                site_name=[source_name if source_name != 'zip_recruiter' else 'zip_recruiter'],
+                site_name=[source_name],
                 search_term=term,
                 location="United States",
                 results_wanted=min(limit_per_term, config['results_per_term']),
                 hours_old=168,  # Last week
-                country_indeed='USA'
+                country_indeed='USA',
+                job_type='contract'  # Force contract jobs only
             )
             
             if len(jobs) > 0:
@@ -188,15 +272,29 @@ def process_and_filter_jobs(all_jobs, min_contract_score=0.3):
     
     # Filter and score jobs
     filtered_jobs = []
+    explicit_rejects = 0
     
     for job in unique_jobs:
-        # Calculate contract score
-        description = str(job.get('description', ''))
-        title = str(job.get('title', ''))
-        contract_score = calculate_contract_score(description, title)
+        # EXPLICIT JOB TYPE REJECTION - Check job_type field first
+        job_type = str(job.get('job_type', '')).lower().strip()
+        if job_type in ['fulltime', 'full-time', 'full_time', 'permanent', 'employee', 'staff']:
+            explicit_rejects += 1
+            continue
+            
+        # EXPLICIT JOB TYPE ACCEPTANCE - Skip scoring if already confirmed contract
+        explicit_contract = job_type in ['contract', 'contractor', 'freelance', 'temp', 'temporary', 'consultant']
         
-        # Skip jobs with low contract relevance
-        if contract_score < min_contract_score:
+        if explicit_contract:
+            # Skip keyword scoring for explicitly marked contract jobs
+            contract_score = 0.8  # High confidence for explicit contract jobs
+        else:
+            # Calculate contract score for unclear job types
+            description = str(job.get('description', ''))
+            title = str(job.get('title', ''))
+            contract_score = calculate_contract_score(description, title)
+        
+        # Skip jobs with low contract relevance (only applies to keyword-scored jobs)
+        if not explicit_contract and contract_score < min_contract_score:
             continue
         
         # Extract rate information
@@ -216,6 +314,7 @@ def process_and_filter_jobs(all_jobs, min_contract_score=0.3):
             
         filtered_jobs.append(job)
     
+    print(f"🚫 Explicit job type rejections: {explicit_rejects}")
     print(f"✅ After filtering: {len(filtered_jobs)} contract-relevant jobs")
     return filtered_jobs
 

@@ -1,0 +1,24 @@
+{
+  "decisions": [
+    {
+      "url": "https://www.indeed.com/viewjob?jk=4c83e7b993238674",
+      "company": "Genisis Technology Solutions",
+      "title": "Salesforce Architect (w2)",
+      "manual_decision": "ACCEPT",
+      "notes": "Contract role confirmed by user review",
+      "reviewed_at": "2025-09-09T16:25:00.000Z",
+      "reviewed_by": "human"
+    },
+    {
+      "url": "https://www.indeed.com/viewjob?jk=de3046d0d6b2fa4c",
+      "company": "infolabs inc", 
+      "title": "Programmer – Advanced (Mainframe / COBOL / IDMS)",
+      "manual_decision": "ACCEPT",
+      "notes": "Contract role confirmed by user review",
+      "reviewed_at": "2025-09-09T16:25:00.000Z",
+      "reviewed_by": "human"
+    }
+  ],
+  "total_reviewed": 2,
+  "session_completed_at": "2025-09-09T16:25:00.000Z"
+}

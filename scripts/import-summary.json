@@ -1,0 +1,19 @@
+{
+  "import_summary": {
+    "total_jobs_processed": 55,
+    "auto_accepted": 33,
+    "manual_review_accepted": 2,
+    "total_accepted": 35,
+    "acceptance_rate": "63.6%",
+    "manual_review_rate": "3.6%",
+    "finalized_at": "2025-09-09T18:05:47.165866"
+  },
+  "source_breakdown": {
+    "indeed": 35
+  },
+  "next_steps": [
+    "Review final-accepted-jobs.json",
+    "Import to database using: node scripts/job-seeder.js --import-verified final-accepted-jobs.json",
+    "Monitor for any import errors"
+  ]
+}

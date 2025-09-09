@@ -18,7 +18,7 @@ require('dotenv').config();
 const CONFIG = {
   SYSTEM_POSTER_ID: 'system-job-poster-001',
   MAX_TOTAL_JOBS: 500,
-  MIN_CONTRACT_SCORE: 0.3,
+  MIN_CONTRACT_SCORE: 0.5,  // Increased from 0.3 to be more selective
   PYTHON_ENV: path.join(__dirname, '..', 'job-scraper-env'),
   STALE_JOB_DAYS: 30,
   DUPLICATE_CHECK_FIELDS: ['job_url', 'title_company_hash'],
